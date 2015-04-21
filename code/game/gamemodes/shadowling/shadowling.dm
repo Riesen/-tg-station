@@ -68,7 +68,7 @@ Made by Xhuis
 	name = "shadowling"
 	config_tag = "shadowling"
 	antag_flag = BE_SHADOWLING
-	required_players = 20
+	required_players = 10
 	required_enemies = 2
 	recommended_enemies = 2
 	restricted_jobs = list("AI", "Cyborg")
@@ -89,8 +89,11 @@ Made by Xhuis
 		for(var/job in restricted_jobs)
 			if(player.assigned_role == job)
 				antag_candidates -= player
-
-	var/shadowlings = 2 //How many shadowlings there are; hardcoded to 2
+	
+	if(num_players()< 15)
+		var/shadowlings = 1
+	if(num_players()>= 15)
+		var/shadowlings = 2 //How many shadowlings there are; two for over 15 and 1 for under
 
 	while(shadowlings)
 		var/datum/mind/shadow = pick(antag_candidates)
