@@ -5,6 +5,7 @@ datum/objective
 	var/target_amount = 0				//If they are focused on a particular number. Steal objectives have their own counter.
 	var/completed = 0					//currently only used for custom objectives.
 	var/dangerrating = 0				//How hard the objective is, essentially. Used for dishing out objectives and checking overall victory.
+	var/martyr_compatible = 0			//If you can suceed it while being dead/gibbed
 
 datum/objective/New(var/text)
 	if(text)
@@ -47,6 +48,7 @@ datum/objective/proc/update_explanation_text()
 datum/objective/assassinate
 	var/target_role_type=0
 	dangerrating = 10
+	martyr_compatible = 1
 
 datum/objective/assassinate/find_target_by_role(role, role_type=0)
 	target_role_type = role_type
@@ -71,6 +73,7 @@ datum/objective/assassinate/update_explanation_text()
 
 datum/objective/mutiny
 	var/target_role_type=0
+	martyr_compatible = 1
 
 datum/objective/mutiny/find_target_by_role(role, role_type=0)
 	target_role_type = role_type
@@ -99,6 +102,7 @@ datum/objective/mutiny/update_explanation_text()
 datum/objective/maroon
 	var/target_role_type=0
 	dangerrating = 5
+	martyr_compatible = 1
 
 datum/objective/maroon/find_target_by_role(role, role_type=0)
 	target_role_type = role_type
@@ -156,6 +160,7 @@ datum/objective/debrain/update_explanation_text()
 datum/objective/protect//The opposite of killing a dude.
 	var/target_role_type=0
 	dangerrating = 10
+	martyr_compatible = 1
 
 datum/objective/protect/find_target_by_role(role, role_type=0)
 	target_role_type = role_type
@@ -183,6 +188,7 @@ datum/objective/protect/update_explanation_text()
 datum/objective/hijack
 	explanation_text = "Hijack the emergency shuttle by escaping alone."
 	dangerrating = 25
+	martyr_compatible = 0 //You can't get both, but still
 
 datum/objective/hijack/check_completion()
 	if(!owner.current || owner.current.stat)
@@ -210,6 +216,7 @@ datum/objective/hijack/check_completion()
 datum/objective/block
 	explanation_text = "Do not allow any organic lifeforms to escape on the shuttle alive."
 	dangerrating = 25
+	martyr_compatible = 1
 
 datum/objective/block/check_completion()
 	if(!istype(owner.current, /mob/living/silicon))
@@ -293,6 +300,18 @@ datum/objective/survive/check_completion()
 	if(!is_special_character(owner.current)) //This fails borg'd traitors
 		return 0
 	return 1
+
+
+datum/objective/martyr
+	explanation_text = "Die a glorious death."
+	dangerrating = 1
+
+datum/objective/martyr/check_completion()
+	if(!owner.current) //Gibbed, etc.
+		return 1
+	if(owner.current && owner.current.stat == DEAD) //You're dead! Yay!
+		return 1
+	return 0
 
 
 
@@ -524,6 +543,7 @@ datum/objective/absorb/check_completion()
 
 datum/objective/destroy
 	dangerrating = 10
+	martyr_compatible = 1
 
 datum/objective/destroy/find_target()
 	var/list/possible_targets = active_ais(1)
