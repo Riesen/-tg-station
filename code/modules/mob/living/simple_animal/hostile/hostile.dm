@@ -42,8 +42,6 @@
 		ranged_cooldown--
 	if(client)
 		return 0
-	if(ckey || key) //really prevent destructive behaviour if the player logged off
-		return 0
 	if(!AICanContinue())
 		return 0
 	if(!stat)

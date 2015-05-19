@@ -91,20 +91,17 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 			camera.status = 0
 
 	//MMI copypasta, magic and more magic
-	if(!mmi || !mmi.brainmob)
-		mmi = new(src)
-		mmi.brain = new /obj/item/organ/brain(mmi)
-		mmi.brain.name = "[real_name]'s brain"
-		mmi.locked = 1
-		mmi.icon_state = "mmi_full"
-		mmi.name = "Man-Machine Interface: [real_name]"
-		mmi.brainmob = new(src)
-		mmi.brainmob.name = src.real_name
-		mmi.brainmob.real_name = src.real_name
-		mmi.brainmob.container = mmi
-		mmi.contents += mmi.brainmob
-
-	updatename()
+	mmi = new(src)
+	mmi.brain = new /obj/item/organ/brain(mmi)
+	mmi.brain.name = "[real_name]'s brain"
+	mmi.locked = 1
+	mmi.icon_state = "mmi_full"
+	mmi.name = "Man-Machine Interface: [real_name]"
+	mmi.brainmob = new(src)
+	mmi.brainmob.name = src.real_name
+	mmi.brainmob.real_name = src.real_name
+	mmi.brainmob.container = mmi
+	mmi.contents += mmi.brainmob
 
 	spawn (10)
 		updateSeeStaticMobs()
@@ -210,6 +207,9 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 
 	if (istype(W, /obj/item/weapon/weldingtool))
 		var/obj/item/weapon/weldingtool/WT = W
+		if (src.health >= src.maxHealth)	//When you don't inherit parent functions shit like this goes forgotten
+			user << "<span class='warning'>[src] is already in good condition.</span>"
+			return 1
 		if (WT.remove_fuel(0))
 			adjustBruteLoss(-30)
 			updatehealth()
@@ -391,15 +391,19 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 /mob/living/silicon/robot/mommi/attack_hand(mob/user)
 	add_fingerprint(user)
 
-	if(opened && !wiresexposed && (!istype(user, /mob/living/silicon)))
+	if(opened && !wiresexposed && (!istype(user, /mob/living/silicon) || ismommi(user)))	//MoMMIs can remove MoMMI power cells
 		if(cell)
-			cell.updateicon()
-			cell.add_fingerprint(user)
-			user.put_in_active_hand(cell)
-			user << "You remove \the [cell]."
-			cell = null
-			updateicon()
-			return
+			if (user == src)
+				user << "You lack the dexterity to remove your own power cell."
+				return
+			else
+				cell.updateicon()
+				cell.add_fingerprint(user)
+				user.put_in_active_hand(cell)
+				user << "You remove \the [cell]."
+				cell = null
+				updateicon()
+				return
 
 
 	if(!istype(user, /mob/living/silicon))
@@ -670,9 +674,10 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 	if(is_blind(src))
 		src << "<span class='notice'>Something is there but you can't see it.</span>"
 		return
-	if(istype(A, /mob) && !ismommi(A) && src.keeper)
-		src << "<span class='notice'>Something is there, but you can't see it.</span>"
-		return
+	if(istype(A, /mob) && src.keeper)
+		if(!src.can_interfere(A))
+			src << "<span class='notice'>Something is there, but you can't see it.</span>"
+			return
 
 	face_atom(A)
 	A.examine(src)
@@ -692,8 +697,15 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 
 
 /mob/living/silicon/robot/mommi/start_pulling(var/atom/movable/AM)
-	if(istype(AM,/mob) && !ismommi(AM))
+	if(istype(AM,/mob))
 		if(src.keeper)
-			src << "Your laws prevent you from doing this"
-			return
+			if(!src.can_interfere(AM))
+				src << "Your laws prevent you from doing this"
+				return
 	..(AM)
+
+/mob/living/silicon/robot/mommi/proc/can_interfere(mob/AN)
+	if(istype(AN,/mob/living/carbon/human) || istype(AN,/mob/living/silicon) || AN.client || AN.ckey)	//If it's a human, silicon or other sentient it's not ok => animals are fair game!
+		if(!ismommi(AN) || (ismommi(AN) && !AN:keeper))	//Keeper MoMMIs can be interfered with
+			return 0	//Not ok
+	return 1	//Ok!

@@ -104,8 +104,6 @@
 	build_path = /obj/item/weapon/gun/energy/temperature
 	category = list("Weapons")
 
-// remove floral ray soon
-
 /datum/design/flora_gun
 	name = "Floral Somatoray"
 	desc = "A tool that discharges controlled radiation which induces mutation in plant cells. Harmless to other organic life."

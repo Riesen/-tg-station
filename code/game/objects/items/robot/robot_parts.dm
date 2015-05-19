@@ -222,7 +222,6 @@
 			chest.cell.loc = O
 			chest.cell = null
 			W.loc = O//Should fix cybros run time erroring when blown up. It got deleted before, along with the frame.
-			O.updatename()
 			O.mmi = W
 
 			feedback_inc("cyborg_birth",1)

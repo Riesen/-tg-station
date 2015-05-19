@@ -7,7 +7,7 @@
 	gender = NEUTER
 	pass_flags = PASSTABLE
 	languages = MONKEY
-	ventcrawler = 2
+	ventcrawler = 1
 
 /mob/living/carbon/monkey/New()
 	create_reagents(1000)

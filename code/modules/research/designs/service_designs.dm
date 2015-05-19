@@ -22,19 +22,9 @@
 	build_path = /obj/item/weapon/holosign_creator
 	category = list("service")
 
-/datum/design/flora_gun
-	name = "Floral Somatoray"
-	desc = "A tool that discharges controlled radiation which induces mutation in plant cells. Harmless to other organic life."
-	id = "flora_gun"
-	req_tech = list("materials" = 2, "biotech" = 3, "powerstorage" = 3, "service" = 2)
-	build_type = PROTOLATHE
-	materials = list("$metal" = 2000, "$glass" = 500, "radium" = 20)
-	build_path = /obj/item/weapon/gun/energy/floragun
-	category = list("service")
-
 /datum/design/galoshes
 	name = "Galoshes"
-	desc = "A pair of yellow rubber boots, designed to prevent slipping on wet surfaces."
+	desc = "A pair of yellow rubber boots, designed to prevent slipping on wet surfaces." 
 	id = "galoshes"
 	req_tech = list("materials" = 3 "service" = 3)
 	build_type = PROTOLATHE
@@ -44,7 +34,7 @@
 
 /datum/design/soapnt
 	name = "Soap"
-	desc = "A Nanotrasen brand bar of soap. Smells of plasma."
+	desc = "A Nanotrasen brand bar of soap. Smells of plasma." 
 	id = "soapnt"
 	req_tech = ("plasma" = 2 "service" = 1)
 	build_type = PROTOLATHE
@@ -64,7 +54,7 @@
 
 /datum/design/fastcart //needs to be created
 	name = "Janicart SpeedBoost Module"
-	desc = "An upgraded motor for the janicart which greatly improves the speed it travels."
+	desc = "An upgraded motor for the janicart which greatly improves the speed it travels." 
 	id = "fastcart"
 	req_tech = ("materials" = 2 "programming" = 4, "magnets" = 2 "service" = 6)
 	build_type = PROTOLATHE
@@ -74,7 +64,7 @@
 
 /datum/design/tankcart //needs to be created
 	name = "Janicart Armor Module"
-	desc = "Upgraded plating for the janicart which greatly improves the durability of it and protects the user."
+	desc = "Upgraded plating for the janicart which greatly improves the durability of it and protects the user." 
 	id = "tankcart"
 	req_tech = ("materials" = 4 "service" = 5)
 	build_type = PROTOLATHE
@@ -84,7 +74,7 @@
 
 /datum/design/spacecart //needs to be created and sprited
 	name = "Janicart Thruster Module"
-	desc = "Adds a set of recharging thrusters to the janicart for those hard to reach messes in space."
+	desc = "Adds a set of recharging thrusters to the janicart for those hard to reach messes in space." 
 	id = "spacecart"
 	req_tech = ("materials" = 6, "magnets" = 4, "powerstorage" = 7, "service" = 8)
 	build_type = PROTOLATHE
@@ -92,7 +82,7 @@
 	build_path = /obj/item/devices/upgrades/spacecart
 	category = list("service")
 
-/datum/design/whetstone //needs to be sprited
+/datum/design/Whetstone //needs to be sprited
 	name = "Whetstone"
 	desc = "A strange stone used by many citizens of ancient Earth to sharpen metal tools."
 	id = "whetstone"
@@ -101,7 +91,7 @@
 	materials = ("$metal" = 2500)
 	build_path = /obj/item/weapon/kitchen/whetstone
 	category = list("service")
-
+	
 /datum/design/borghypo
 	name = "Advanced Shaker"
 	desc = "A tool used to generate drinks, like the one service cyborgs use."
@@ -109,9 +99,9 @@
 	req_tech = list("materials" = 7 "programming" = 3, "powerstorage" = 4, "bluespace" = 4, "service" = 8)
 	build_type = PROTOLATHE
 	materials = list("$metal" = 5000, "$glass" = 1000, "$diamond" = 2000)
-	build_path = /obj/item/weapon/reagent_containers/borghypo/borgshaker/human
+	build_path = /obj/item/weapon/reagent_containers/borghypo/borgshaker
 	category = list("service")
-
+	
 /datum/design/crack //needs to be sprited
 	name = "Secret Spice"
 	desc = "A fine white powder that makes most food and drinks taste REALLY good."
@@ -121,7 +111,7 @@
 	materials = list("$plasma" = 500, "$glass" = 500)
 	build_path = /obj/item/weapon/reagent_containers/food/condiment/crack
 	category = list("service")
-
+	
 /datum/design/plantbag
 	name = "Plant Bag of Holding"
 	desc = "A bag infused with bluespace magic to allow infinite storage of flora."
@@ -141,7 +131,7 @@
 	materials = list("$metal" = 5000, "$glass" = 1000, "$diamond" = 2000, "$plasma" = 1000)
 	build_path = /obj/item/weapon/chainsaw
 	category = list("service")
-
+	
 /datum/design/muffinbutton //needs to be created and sprited
 	name = "Muffin Dispenser"
 	desc = "A strange machine that generates unlimited muffins with the push of a button."
