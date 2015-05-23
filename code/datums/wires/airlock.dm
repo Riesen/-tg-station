@@ -43,7 +43,7 @@ var/const/AIRLOCK_WIRE_LIGHT = 2048
 	(A.normalspeed==0 ? "The 'Check Timing Mechanism' light is on." : "The 'Check Timing Mechanism' light is off."),
 	(A.emergency==0 ? "The emergency lights are off." : "The emergency lights are on."))
 
-/datum/wires/airlock/Topic(href, href_list)	//Todo: close window if electronics are removed
+/datum/wires/airlock/Topic(href, href_list)
 	..()
 	if(in_range(holder, usr) && isliving(usr))
 
@@ -51,7 +51,7 @@ var/const/AIRLOCK_WIRE_LIGHT = 2048
 		if(CanUse(L) && href_list["action"])
 			var/obj/item/I = L.get_active_hand()
 			holder.add_hiddenprint(L)
-			if(href_list["electronics"]) // Removes electronics
+			if(href_list["electronics"]) // Removes electronics. Todo: close window afterwards
 				if(istype(I, /obj/item/weapon/screwdriver))
 					var/obj/machinery/door/airlock/A = holder
 					if(!A.shock(L, 50))
