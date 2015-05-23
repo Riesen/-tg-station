@@ -34,6 +34,7 @@ var/const/AIRLOCK_WIRE_LIGHT = 2048
 /datum/wires/airlock/GetInteractWindow()
 	var/obj/machinery/door/airlock/A = holder
 	. += ..()
+	. += "<A href='?src=\ref[src];action=1;electronics=1'>Remove electronics</A>"
 	. += text("<br>\n[]<br>\n[]<br>\n[]<br>\n[]<br>\n[]<br>\n[]<br>\n[]", (A.locked ? "The door bolts have fallen!" : "The door bolts look up."),
 	(A.lights ? "The door bolt lights are on." : "The door bolt lights are off!"),
 	((A.hasPower()) ? "The test light is on." : "The test light is off!"),
@@ -41,6 +42,23 @@ var/const/AIRLOCK_WIRE_LIGHT = 2048
 	(A.safe==0 ? "The 'Check Wiring' light is on." : "The 'Check Wiring' light is off."),
 	(A.normalspeed==0 ? "The 'Check Timing Mechanism' light is on." : "The 'Check Timing Mechanism' light is off."),
 	(A.emergency==0 ? "The emergency lights are off." : "The emergency lights are on."))
+
+/datum/wires/airlock/Topic(href, href_list)	//Todo: close window if electronics are removed
+	..()
+	if(in_range(holder, usr) && isliving(usr))
+
+		var/mob/living/L = usr
+		if(CanUse(L) && href_list["action"])
+			var/obj/item/I = L.get_active_hand()
+			holder.add_hiddenprint(L)
+			if(href_list["electronics"]) // Removes electronics
+				if(istype(I, /obj/item/weapon/screwdriver))
+					var/obj/machinery/door/airlock/A = holder
+					if(!A.shock(L, 50))
+						playsound(A.loc, 'sound/items/Screwdriver.ogg', 100, 1)
+						A.remove_electronics(L)
+				else
+					L << "<span class='error'>You need a screwdriver!</span>"
 
 /datum/wires/airlock/UpdateCut(var/index, var/mended)
 
