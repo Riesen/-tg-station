@@ -7,7 +7,7 @@
 	if(R.canmove)
 		handle_ventcrawl()
 */
-
+/*
 /mob/living/silicon/robot/mommi/verb/hide()
 	set name = "Hide"
 	set desc = "Allows to hide beneath tables or certain items. Toggled on or off."
@@ -30,7 +30,7 @@
 					"<span class='notice'>You have stopped hiding.</span>")
 
 	updateicon()
-
+*/
 /mob/living/silicon/robot/mommi/verb/park()
 	set name = "Toggle Parking Brake"
 	set desc = "Lock yourself in place"

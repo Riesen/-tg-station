@@ -201,11 +201,11 @@
 	if (src.healths)
 		if (src.stat != 2)
 			switch(health)
-				if(40 to INFINITY)
+				if(25 to INFINITY)
 					src.healths.icon_state = "health0"
-				if(25 to 40)
+				if(15 to 25)
 					src.healths.icon_state = "health2"
-				if(0 to 25)
+				if(0 to 15)
 					src.healths.icon_state = "health3"
 				if(-25 to 0)
 					src.healths.icon_state = "health4"
