@@ -968,7 +968,7 @@ About the new airlock wires panel:
 			if(emagged)
 				user << "<span class='warning'>You discard the damaged electronics.</span>"
 				qdel(src)
-				return
+				return 1
 			user << "<span class='notice'>You removed the airlock electronics!</span>"
 
 			var/obj/item/weapon/airlock_electronics/ae
@@ -985,7 +985,9 @@ About the new airlock wires panel:
 				ae.loc = src.loc
 
 			qdel(src)
-			return
+			return 1
+	else
+		return 0
 
 /obj/machinery/door/airlock/plasma/attackby(C as obj, mob/user as mob, params)
 	if(is_hot(C) > 300)//If the temperature of the object is over 300, then ignite

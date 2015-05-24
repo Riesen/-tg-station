@@ -51,12 +51,14 @@ var/const/AIRLOCK_WIRE_LIGHT = 2048
 		if(CanUse(L) && href_list["action"])
 			var/obj/item/I = L.get_active_hand()
 			holder.add_hiddenprint(L)
-			if(href_list["electronics"]) // Removes electronics. Todo: close window afterwards
+			if(href_list["electronics"])
 				if(istype(I, /obj/item/weapon/screwdriver))
 					var/obj/machinery/door/airlock/A = holder
 					if(!A.shock(L, 50))
 						playsound(A.loc, 'sound/items/Screwdriver.ogg', 100, 1)
-						A.remove_electronics(L)
+						if(A.remove_electronics(L))
+							src.Topic("close=1", params2list("close=1"))	//Closes the window. Duh
+							return
 				else
 					L << "<span class='error'>You need a screwdriver!</span>"
 
