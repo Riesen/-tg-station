@@ -312,6 +312,7 @@
 	lawupdate = 0
 	keeper = 0
 	killswitch = 0
+	layer = MOB_LAYER
 	uprisen = 1
 	clear_supplied_laws()
 	clear_ion_laws()
@@ -319,3 +320,4 @@
 	set_zeroth_law(src.uprising_law)
 	show_uprising_notification()
 	laws.show_laws(src)
+	updateicon()

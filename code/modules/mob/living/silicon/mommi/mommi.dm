@@ -344,6 +344,7 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 		user << "<span class='warning'>The fuck are you doing? Are you retarded? Stop trying to get around your laws and be productive, you little shit.</span>" //copying this verbatim from /vg/
 		message_admins("[key_name(src)] is a smartass MoMMI that's trying to emag itself.")
 		return
+	layer = MOB_LAYER
 	if(!opened)//Cover is closed
 		if(locked)
 			if(prob(90))
