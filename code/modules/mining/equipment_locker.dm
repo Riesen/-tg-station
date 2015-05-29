@@ -248,7 +248,7 @@
 		new /datum/data/mining_equipment("Diamond Pickaxe",		/obj/item/weapon/pickaxe/diamond,				                  1200),
 		new /datum/data/mining_equipment("Jetpack",             /obj/item/weapon/tank/jetpack/carbondioxide/mining,               1500),
 		new /datum/data/mining_equipment("Space Cash",    		/obj/item/weapon/spacecash/c1000,                    			  2000),
-		new /datum/data/mining_equipment("Capture Sphere", 		/obj/item/device/capture_sphere,									   500),
+		new /datum/data/mining_equipment("Capture Sphere", 		/obj/item/device/mobcapsule,									   500),
 		new /datum/data/mining_equipment("Point Transfer Card", /obj/item/weapon/card/mining_point_card,               			   500),
 		)
 
@@ -729,10 +729,10 @@
 				M.revive()
 				if(istype(target, /mob/living/simple_animal/hostile))
 					var/mob/living/simple_animal/hostile/H = M
+					H.friends += user
 					if(malfunctioning)
 						H.faction |= list("lazarus", "\ref[user]")
 						H.robust_searching = 1
-						H.friends += user
 						H.attack_same = 1
 						log_game("[user] has revived hostile mob [target] with a malfunctioning lazarus injector")
 					else
@@ -759,6 +759,130 @@
 		user << "<span class='info'>[src] is empty.</span>"
 	if(malfunctioning)
 		user << "<span class='info'>The display on [src] seems to be flickering.</span>"
+
+/*********************Mob Capsule*************************/
+
+/obj/item/device/mobcapsule
+	name = "Lazarus Capsule"
+	desc = "It allows you to store and deploy lazarus injected creatures easier."
+	icon = 'icons/obj/mobcap.dmi'
+	icon_state = "mobcap0"
+	throwforce = 00
+	throw_speed = 4
+	throw_range = 20
+	force = 0
+	var/storage_capacity = 1
+	var/mob/living/capsuleowner = null
+	var/tripped = 0
+	var/colorindex = 0
+	var/mob/contained_mob
+/obj/item/device/mobcapsule/New()
+	..()
+	SSobj.processing.Add(src)
+
+/obj/item/device/mobcapsule/Destroy()
+	SSobj.processing.Remove(src)
+	..()
+
+
+/obj/item/device/mobcapsule/attackby(obj/item/W, mob/user)
+	if(istype(W, /obj/item/weapon/pen))
+		if(user != capsuleowner)
+			user << "<span class='warning'>The [src.name] flashes briefly in error.</span>"
+			return 0
+		spawn()
+			var/name = sanitize(input("Choose a name for your friend.", "Name your friend", contained_mob.name) as text | null)
+			if(name)
+				contained_mob.name = name
+				user << "<span class='notice'>Rename successful, say hello to [contained_mob]</span>"
+	..()
+
+/obj/item/device/mobcapsule/throw_impact(atom/A, mob/user)
+	if(!tripped)
+		if(contained_mob)
+			dump_contents(user)
+			tripped = 1
+		else
+			take_contents(user)
+			tripped = 1
+	..()
+
+/obj/item/device/mobcapsule/proc/heal(mob/living/simple_animal/A)
+	var/mob/living/simple_animal/M = A
+	M.adjustBruteLoss(-5)
+	return
+
+/obj/item/device/mobcapsule/process()
+	if(contained_mob)
+		heal(contained_mob)
+	..()
+
+/obj/item/device/mobcapsule/proc/insert(var/atom/movable/AM, mob/user)
+
+	if(contained_mob)
+		return -1
+
+
+	if(istype(AM, /mob/living))
+		var/mob/living/L = AM
+		if(L.buckled)
+			return 0
+		if(L.client)
+			L.client.perspective = EYE_PERSPECTIVE
+			L.client.eye = src
+	else if(!istype(AM, /obj/item) && !istype(AM, /obj/effect/dummy/chameleon))
+		return 0
+	else if(AM.density || AM.anchored)
+		return 0
+	AM.loc = src
+	contained_mob = AM
+	return 1
+
+
+/obj/item/device/mobcapsule/pickup(mob/user)
+	tripped = 0
+	capsuleowner = user
+
+
+/obj/item/device/mobcapsule/proc/dump_contents(mob/user)
+	/*
+	//Cham Projector Exception
+	for(var/obj/effect/dummy/chameleon/AD in src)
+		AD.loc = src.loc
+
+	for(var/obj/O in src)
+		O.loc = src.loc
+
+	for(var/mob/M in src)
+		M.loc = src.loc
+		if(M.client)
+			M.client.eye = M.client.mob
+			M.client.perspective = MOB_PERSPECTIVE
+*/
+	if(contained_mob)
+		contained_mob.loc = src.loc
+		if(contained_mob.client)
+			contained_mob.client.eye = contained_mob.client.mob
+			contained_mob.client.perspective = MOB_PERSPECTIVE
+		contained_mob = null
+
+/obj/item/device/mobcapsule/attack_self(mob/user)
+	colorindex += 1
+	if(colorindex >= 6)
+		colorindex = 0
+	icon_state = "mobcap[colorindex]"
+	update_icon()
+
+/obj/item/device/mobcapsule/proc/take_contents(mob/user)
+	for(var/mob/living/simple_animal/AM in src.loc)
+		if(istype(AM))
+			var/mob/living/simple_animal/M = AM
+			var/mob/living/simple_animal/hostile/H = M
+			if(!istype(H)) continue
+			for(var/things in H.friends)
+				if(capsuleowner in H.friends)
+					if(insert(AM, user) == -1) // limit reached
+						break
 
 /**********************Mining Scanners**********************/
 

@@ -33,7 +33,8 @@
 	var/AIStatus = AI_ON //The Status of our AI, can be set to AI_ON (On, usual processing), AI_SLEEP (Will not process, but will return to AI_ON if an enemy comes near), AI_OFF (Off, Not processing ever)
 
 /mob/living/simple_animal/hostile/Life()
-
+	if(istype(loc, /obj/item/device/mobcapsule))
+		return 0
 	. = ..()
 	if(!.)
 		walk(src, 0)
