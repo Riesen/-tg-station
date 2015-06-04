@@ -944,34 +944,7 @@ About the new airlock wires panel:
 			beingcrowbarred = 0
 		if( beingcrowbarred && (density && welded && !operating && src.p_open && (!hasPower()) && !src.locked) )
 			playsound(src.loc, 'sound/items/Crowbar.ogg', 100, 1)
-			user.visible_message("<span class='warning'>[user] removes the electronics from the airlock assembly.</span>", \
-								 "You start to remove electronics from the airlock assembly.")
-			if(do_after(user,40))
-				if(src.loc)
-					if(src.doortype)
-						new src.doortype(src.loc)
-
-					if(emagged)
-						user << "<span class='warning'>You discard the damaged electronics.</span>"
-						qdel(src)
-						return
-					user << "<span class='notice'>You removed the airlock electronics!</span>"
-
-					var/obj/item/weapon/airlock_electronics/ae
-					if(!electronics)
-						ae = new/obj/item/weapon/airlock_electronics( src.loc )
-						if(req_one_access)
-							ae.use_one_access = 1
-							ae.conf_access = src.req_one_access
-						else
-							ae.conf_access = src.req_access
-					else
-						ae = electronics
-						electronics = null
-						ae.loc = src.loc
-
-					qdel(src)
-					return
+			remove_electronics(user)
 		else if(hasPower())
 			user << "<span class='warning'> The airlock's motors resist your efforts to force it.</span>"
 		else if(locked)
@@ -1001,6 +974,38 @@ About the new airlock wires panel:
 	else
 		..()
 	return
+
+/obj/machinery/door/airlock/proc/remove_electronics(mob/user as mob)
+	user.visible_message("<span class='warning'>[user] removes the electronics from the airlock assembly.</span>", \
+								 "You start to remove electronics from the airlock assembly.")
+	if(do_after(user,40))
+		if(src.loc)
+			if(src.doortype)
+				new src.doortype(src.loc)
+
+			if(emagged)
+				user << "<span class='warning'>You discard the damaged electronics.</span>"
+				qdel(src)
+				return 1
+			user << "<span class='notice'>You removed the airlock electronics!</span>"
+
+			var/obj/item/weapon/airlock_electronics/ae
+			if(!electronics)
+				ae = new/obj/item/weapon/airlock_electronics( src.loc )
+				if(req_one_access)
+					ae.use_one_access = 1
+					ae.conf_access = src.req_one_access
+				else
+					ae.conf_access = src.req_access
+			else
+				ae = electronics
+				electronics = null
+				ae.loc = src.loc
+
+			qdel(src)
+			return 1
+	else
+		return 0
 
 /obj/machinery/door/airlock/plasma/attackby(C as obj, mob/user as mob, params)
 	if(is_hot(C) > 300)//If the temperature of the object is over 300, then ignite
