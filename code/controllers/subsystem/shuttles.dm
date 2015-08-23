@@ -39,7 +39,9 @@ var/datum/subsystem/shuttle/SSshuttle
 	NEW_SS_GLOBAL(SSshuttle)
 
 
-/datum/subsystem/shuttle/Initialize()
+/datum/subsystem/shuttle/Initialize(timeofday, zlevel)
+	if (zlevel)
+		return ..()
 	if(!emergency)
 		WARNING("No /obj/docking_port/mobile/emergency placed on the map!")
 	if(!supply)
@@ -60,14 +62,12 @@ var/datum/subsystem/shuttle/SSshuttle
 /datum/subsystem/shuttle/fire()
 	points += points_per_decisecond * wait
 
-	var/i=1
 	for(var/thing in mobile)
 		if(thing)
 			var/obj/docking_port/mobile/P = thing
 			P.check()
-			++i
 			continue
-		mobile.Cut(i, i+1)
+		mobile.Remove(thing)
 
 /datum/subsystem/shuttle/proc/getShuttle(id)
 	for(var/obj/docking_port/mobile/M in mobile)
@@ -86,11 +86,11 @@ var/datum/subsystem/shuttle/SSshuttle
 		ERROR("There is no emergency shuttle! The game will be unresolvable. This is likely due to a mapping error")
 		return
 
-	if(!universe.OnShuttleCall(user))
-		return
-
 	if(world.time - round_start_time < config.shuttle_refuel_delay)
 		user << "The emergency shuttle is refueling. Please wait another [abs(round(((world.time - round_start_time) - config.shuttle_refuel_delay)/600))] minutes before trying again."
+		return
+
+	if(!universe.OnShuttleCall(user))
 		return
 
 	switch(emergency.mode)
@@ -110,7 +110,7 @@ var/datum/subsystem/shuttle/SSshuttle
 			user << "The emergency shuttle has been disabled by Centcom."
 			return
 
-	call_reason = strip_html_properly(trim(call_reason))
+	call_reason = html_encode(trim(call_reason))
 
 	if(length(call_reason) < CALL_SHUTTLE_REASON_LENGTH)
 		user << "You must provide a reason."
@@ -145,7 +145,6 @@ var/datum/subsystem/shuttle/SSshuttle
 	log_game("[key_name(user)] has recalled the shuttle.")
 	message_admins("[key_name_admin(user)] has recalled the shuttle.")
 	return 1
-
 
 /datum/subsystem/shuttle/proc/autoEvac()
 	var/callShuttle = 1
@@ -185,6 +184,22 @@ var/datum/subsystem/shuttle/SSshuttle
 			return 2
 	else
 		if(M.dock(getDock(destination)))
+			return 2
+	return 0	//dock successful
+
+
+/datum/subsystem/shuttle/proc/sendTo(shuttleId, endDock, startDock, timed)
+	var/obj/docking_port/mobile/M = getShuttle(shuttleId)
+	if(!M)
+		return 1
+	var/obj/docking_port/stationary/dockedAt = M.get_docked()
+	if(dockedAt && dockedAt.id == endDock)
+		M.dock(getDock(startDock))
+	if(timed)
+		if(M.request(getDock(endDock)))
+			return 2
+	else
+		if(M.dock(getDock(endDock)))
 			return 2
 	return 0	//dock successful
 
@@ -300,6 +315,14 @@ var/datum/subsystem/shuttle/SSshuttle
 	slip.info += "</ul><br>"
 	slip.info += "CHECK CONTENTS AND STAMP BELOW THE LINE TO CONFIRM RECEIPT OF GOODS<hr>" // And now this is actually meaningful.
 	slip.loc = Crate
+	if(istype(Crate, /obj/structure/closet/crate))
+		var/obj/structure/closet/crate/CR = Crate
+		CR.manifest = slip
+		CR.update_icon()
+	if(istype(Crate, /obj/structure/largecrate))
+		var/obj/structure/largecrate/LC = Crate
+		LC.manifest = slip
+		LC.update_icon()
 
 	return Crate
 
@@ -320,6 +343,25 @@ var/datum/subsystem/shuttle/SSshuttle
 	requestlist += O
 
 	return O
+
+/datum/subsystem/shuttle/proc/forceSupplyOrder(packId, _orderedby, _orderedbyRank, _comment)
+	if(!packId)
+		return
+	var/datum/supply_packs/P = supply_packs["[packId]"]
+	if(!P)
+		return
+
+	var/datum/supply_order/O = new()
+	O.ordernum = ordernum++
+	O.object = P
+	O.orderedby = _orderedby
+	O.orderedbyRank = _orderedbyRank
+	O.comment = _comment
+
+	shoppinglist += O
+
+	return O
+
 
 /*
 /datum/subsystem/shuttle/proc/getShuttleFromArea(area/A)

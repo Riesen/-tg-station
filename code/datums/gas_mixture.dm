@@ -12,21 +12,22 @@ What are the archived variables for?
 
 #define MINIMUM_HEAT_CAPACITY	0.0003
 #define QUANTIZE(variable)		(round(variable,0.0001))
-
-/datum/gas
-	sleeping_agent
-		specific_heat = 40
-
-	oxygen_agent_b
-		specific_heat = 300
-
-	volatile_fuel
-		specific_heat = 30
-
+/datum/gas/
 	var/moles = 0
 	var/specific_heat = 0
 
 	var/moles_archived = 0
+
+
+/datum/gas/sleeping_agent
+	specific_heat = 40
+
+/datum/gas/oxygen_agent_b
+	specific_heat = 300
+
+/datum/gas/volatile_fuel
+	specific_heat = 30
+
 
 
 /datum/gas_mixture
@@ -37,7 +38,7 @@ What are the archived variables for?
 
 	var/volume = CELL_VOLUME
 
-	var/temperature = 0 //in Kelvin, use calculate_temperature() to modify
+	var/temperature = 0 //in Kelvin, use calculate_temperature() to modify //thus proc doesn't even exists anymore
 
 	var/last_share
 
@@ -89,6 +90,15 @@ What are the archived variables for?
 		return total_moles()*R_IDEAL_GAS_EQUATION*temperature/volume
 	return 0
 
+/datum/gas_mixture/proc/sanitize_values()
+	temperature = max(0, temperature)
+	toxins = max(0, toxins)
+	oxygen = max(0, oxygen)
+	nitrogen = max(0, nitrogen)
+	carbon_dioxide = max(0, carbon_dioxide)
+	for(var/datum/gas/trace_gas in trace_gases)
+		trace_gas.moles = max(0, trace_gas.moles)
+	return
 
 /datum/gas_mixture/proc/return_temperature()
 	return temperature
@@ -120,6 +130,8 @@ What are the archived variables for?
 /datum/gas_mixture/proc/react(atom/dump_location)
 	var/reacting = 0 //set to 1 if a notable reaction occured (used by pipe_network)
 
+	sanitize_values() //stops values that shouldn't be under 0 from being under 0
+
 	if(trace_gases.len > 0)
 		if(temperature > 900)
 			if(toxins > MINIMUM_HEAT_CAPACITY && carbon_dioxide > MINIMUM_HEAT_CAPACITY)
@@ -150,6 +162,7 @@ What are the archived variables for?
 	var/old_heat_capacity = heat_capacity()
 
 	var/datum/gas/volatile_fuel/fuel_store = locate(/datum/gas/volatile_fuel/) in trace_gases
+	var/datum/gas/sleeping_agent/oxidizer = locate(/datum/gas/sleeping_agent) in trace_gases
 	if(fuel_store) //General volatile gas burn
 		var/burned_fuel = 0
 
@@ -169,8 +182,14 @@ What are the archived variables for?
 
 	//Handle plasma burning
 	if(toxins > MINIMUM_HEAT_CAPACITY)
+		var/oxidizer_burn_rate = 0
 		var/plasma_burn_rate = 0
 		var/oxygen_burn_rate = 0
+		var/n2o_moles //Not always present
+		if (oxidizer)
+			n2o_moles = oxidizer.moles
+		else
+			n2o_moles = 0
 		//more plasma released at higher temperatures
 		var/temperature_scale
 		if(temperature > PLASMA_UPPER_TEMPERATURE)
@@ -178,19 +197,22 @@ What are the archived variables for?
 		else
 			temperature_scale = (temperature-PLASMA_MINIMUM_BURN_TEMPERATURE)/(PLASMA_UPPER_TEMPERATURE-PLASMA_MINIMUM_BURN_TEMPERATURE)
 		if(temperature_scale > 0)
+			oxidizer_burn_rate = (n2o_moles*temperature_scale)/2 //Burns slower than plasma but faster than oxygen
 			oxygen_burn_rate = 1.4 - temperature_scale
-			if(oxygen > toxins*PLASMA_OXYGEN_FULLBURN)
-				plasma_burn_rate = (toxins*temperature_scale)/4
+			if(oxygen + n2o_moles > toxins*PLASMA_OXYGEN_FULLBURN)
+				plasma_burn_rate = ((toxins*temperature_scale)+n2o_moles)/4
 			else
-				plasma_burn_rate = (temperature_scale*(oxygen/PLASMA_OXYGEN_FULLBURN))/4
+				plasma_burn_rate = (temperature_scale*(oxygen/PLASMA_OXYGEN_FULLBURN)+n2o_moles)/4
 			if(plasma_burn_rate > MINIMUM_HEAT_CAPACITY)
 				toxins -= plasma_burn_rate
 				oxygen -= plasma_burn_rate*oxygen_burn_rate
+				if(oxidizer)
+					oxidizer.moles -= plasma_burn_rate*oxidizer_burn_rate
 				carbon_dioxide += plasma_burn_rate
 
 				energy_released += FIRE_PLASMA_ENERGY_RELEASED * (plasma_burn_rate)
 
-				fuel_burnt += (plasma_burn_rate)*(1+oxygen_burn_rate)
+				fuel_burnt += (plasma_burn_rate)*(1+oxygen_burn_rate+oxidizer_burn_rate)
 
 	if(energy_released > 0)
 		var/new_heat_capacity = heat_capacity()
@@ -746,7 +768,7 @@ What are the archived variables for?
 			if(border_multiplier)
 				temperature = (old_self_heat_capacity*temperature - heat_capacity_transferred*border_multiplier*temperature_archived)/new_self_heat_capacity
 			else
-				temperature = (old_self_heat_capacity*temperature - heat_capacity_transferred*border_multiplier*temperature_archived)/new_self_heat_capacity
+				temperature = (old_self_heat_capacity*temperature - heat_capacity_transferred*temperature_archived)/new_self_heat_capacity
 
 		temperature_mimic(model, model.thermal_conductivity, border_multiplier)
 
@@ -907,6 +929,8 @@ What are the archived variables for?
 			sharer.temperature += heat/sharer.heat_capacity
 
 /datum/gas_mixture/compare(datum/gas_mixture/sample)
+	if(!sample)
+		return 0
 	if((abs(oxygen-sample.oxygen) > MINIMUM_AIR_TO_SUSPEND) && \
 		((oxygen < (1-MINIMUM_AIR_RATIO_TO_SUSPEND)*sample.oxygen) || (oxygen > (1+MINIMUM_AIR_RATIO_TO_SUSPEND)*sample.oxygen)))
 		return 0
@@ -948,3 +972,34 @@ What are the archived variables for?
 				else
 					return 0
 	return 1
+
+
+//Takes the amount of the gas you want to PP as an argument
+//So I don't have to do some hacky switches/defines/magic strings
+
+//eg:
+//Tox_PP = get_partial_pressure(gas_mixture.toxins)
+//O2_PP = get_partial_pressure(gas_mixture.oxygen)
+
+//Does handle trace gases!
+
+/datum/gas_mixture/proc/get_breath_partial_pressure(var/gas_pressure)
+	var/breath_pressure = (total_moles()*R_IDEAL_GAS_EQUATION*temperature)/BREATH_VOLUME
+	return (gas_pressure/total_moles())*breath_pressure
+
+
+//Reverse of the above
+/datum/gas_mixture/proc/get_true_breath_pressure(var/breath_pp)
+	var/breath_pressure = (total_moles()/R_IDEAL_GAS_EQUATION/temperature)*BREATH_VOLUME
+	return (breath_pp/breath_pressure*total_moles())
+
+//Mathematical proofs:
+/*
+
+get_breath_partial_pressure(gas_pp) --> gas_pp/total_moles()*breath_pp = pp
+get_true_breath_pressure(pp) --> gas_pp = pp/breath_pp*total_moles()
+
+10/20*5 = 2.5
+10 = 2.5/5*20
+
+*/

@@ -34,6 +34,7 @@ em						{font-style: normal;	font-weight: bold;}
 .servradio				{color: #6eaa2c;}
 .syndradio				{color: #6d3f40;}
 .dsquadradio			{color: #686868;}
+.centcomradio			{color: #686868;}
 .aiprivradio			{color: #ff00ff;}
 
 .yell					{					font-weight: bold;}
@@ -48,6 +49,7 @@ h1.alert, h2.alert		{color: #000000;}
 .disarm					{color: #990000;}
 .passive				{color: #660000;}
 
+.italics				{					font-style: italic;}
 .ancient                                {color: #008B8B;        font-style: italic;}
 .sinister                               {color: #800080;        font-weight: bold;      font-style: italic;}
 .userdanger				{color: #ff0000;	font-weight: bold; font-size: 3;}
@@ -58,6 +60,7 @@ h1.alert, h2.alert		{color: #000000;}
 .info					{color: #0000CC;}
 .notice					{color: #000099;}
 .boldnotice				{color: #000099;	font-weight: bold;}
+.boldannounce                  {color: #ff0000;        font-weight: bold;}
 .adminnotice			{color: #0000ff;}
 .unconscious			{color: #0000ff;	font-weight: bold;}
 .suicide				{color: #ff5050;	font-style: italic;}

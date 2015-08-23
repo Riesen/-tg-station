@@ -36,6 +36,14 @@
 	buy()
 	sell()
 
+/proc/check_open_turf(var/turf/T)
+	if(T.density)
+		return 0
+	for (var/atom/movable/C in T.contents)
+		if(C.density)
+			return 0
+	return 1
+
 /obj/docking_port/mobile/supply/proc/buy()
 	if(z != ZLEVEL_STATION)		//we only buy when we are -at- the station
 		return 1
@@ -44,9 +52,9 @@
 		return 2
 
 	var/list/emptyTurfs = list()
-	for(var/turf/simulated/shuttle/T in areaInstance)
-		if(T.density || T.contents.len)	continue
-		emptyTurfs += T
+	for(var/turf/simulated/floor/T in areaInstance)
+		if(check_open_turf(T))
+			emptyTurfs += T
 
 	for(var/datum/supply_order/SO in SSshuttle.shoppinglist)
 		if(!SO.object) continue
@@ -187,7 +195,7 @@
 		/obj/effect/spider/spiderling,
 		/obj/item/weapon/disk/nuclear,
 		/obj/machinery/nuclearbomb,
-		/obj/item/device/radio/beacon,
+		/obj/item/device/beacon,
 		/obj/machinery/the_singularitygen,
 		/obj/singularity,
 	)
@@ -303,8 +311,7 @@
 	updateUsrDialog()
 	return
 
-/obj/machinery/computer/ordercomp/say_quote(text)
-	return "flashes, \"[text]\""
+
 
 
 /obj/machinery/computer/supplycomp/attack_hand(var/mob/user as mob)
@@ -532,5 +539,4 @@
 	frequency.post_signal(src, status_signal)
 
 
-/obj/machinery/computer/supplycomp/say_quote(text)
-	return "flashes, \"[text]\""
+

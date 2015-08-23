@@ -8,7 +8,7 @@ obj/machinery/air_sensor
 	name = "gas sensor"
 
 	anchored = 1
-	var/state = 0
+	var/status = 0 //Is this even used?
 
 	var/id_tag
 	var/frequency = 1439
@@ -29,7 +29,7 @@ obj/machinery/air_sensor
 obj/machinery/air_sensor/update_icon()
 		icon_state = "gsensor[on]"
 
-obj/machinery/air_sensor/process()
+obj/machinery/air_sensor/process_atmos()
 	if(on)
 		var/datum/signal/signal = new
 		signal.transmission_method = 1 //radio signal
@@ -73,11 +73,12 @@ obj/machinery/air_sensor/initialize()
 
 obj/machinery/air_sensor/New()
 	..()
-
+	SSair.atmos_machinery += src
 	if(radio_controller)
 		set_frequency(frequency)
 
 obj/machinery/air_sensor/Destroy()
+	SSair.atmos_machinery -= src
 	if(radio_controller)
 		radio_controller.remove_object(src,frequency)
 	..()
@@ -88,7 +89,8 @@ obj/machinery/air_sensor/Destroy()
 
 obj/machinery/computer/general_air_control
 	icon = 'icons/obj/computer.dmi'
-	icon_state = "tank"
+	icon_screen = "tank"
+	icon_keyboard= "atmos_key"
 
 	circuit = /obj/item/weapon/circuitboard/air_management
 	name = "computer"
@@ -210,9 +212,6 @@ obj/machinery/computer/general_air_control/Topic(href, href_list)
 /////////////////////////////////////////////////////////////
 
 obj/machinery/computer/general_air_control/large_tank_control
-	icon = 'icons/obj/computer.dmi'
-	icon_state = "tank"
-
 	var/input_tag
 	var/output_tag
 	frequency = 1441
@@ -229,10 +228,10 @@ obj/machinery/computer/general_air_control/large_tank_control/proc/reconnect(mob
 	var/datum/radio_frequency/gas_freq = radio_controller.return_frequency(1441)
 	var/list/devices = air_freq.devices["_default"]
 	devices |= gas_freq.devices["_default"]
-	for(var/obj/machinery/atmospherics/unary/vent_pump/U in devices)
+	for(var/obj/machinery/atmospherics/components/unary/vent_pump/U in devices)
 		var/list/text = text2list(U.id_tag, "_")
 		IO |= text[1]
-	for(var/obj/machinery/atmospherics/unary/outlet_injector/U in devices)
+	for(var/obj/machinery/atmospherics/components/unary/outlet_injector/U in devices)
 		var/list/text = text2list(U.id, "_")
 		IO |= text[1]
 	if(!IO.len)
@@ -257,10 +256,10 @@ obj/machinery/computer/general_air_control/large_tank_control/proc/reconnect(mob
 
 	set_frequency(frequency)
 
-	for(var/obj/machinery/atmospherics/unary/outlet_injector/U in devices)
+	for(var/obj/machinery/atmospherics/components/unary/outlet_injector/U in devices)
 		U.broadcast_status()
 
-	for(var/obj/machinery/atmospherics/unary/vent_pump/U in devices)
+	for(var/obj/machinery/atmospherics/components/unary/vent_pump/U in devices)
 		U.broadcast_status()
 
 obj/machinery/computer/general_air_control/large_tank_control/return_text()
@@ -354,7 +353,8 @@ obj/machinery/computer/general_air_control/large_tank_control/Topic(href, href_l
 
 obj/machinery/computer/general_air_control/fuel_injection
 	icon = 'icons/obj/computer.dmi'
-	icon_state = "atmos"
+	icon_screen = "atmos"
+	icon_keyboard = "atmos_key"
 
 	var/device_tag
 	var/list/device_info

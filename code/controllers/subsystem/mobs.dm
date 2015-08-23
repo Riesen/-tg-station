@@ -10,7 +10,7 @@ var/datum/subsystem/mobs/SSmob
 
 
 /datum/subsystem/mobs/stat_entry()
-	stat(name, "[round(cost,0.001)]ds (CPU:[round(cpu,1)]%) [mob_list.len]")
+	..("P:[mob_list.len]")
 
 
 /datum/subsystem/mobs/fire()
@@ -20,3 +20,13 @@ var/datum/subsystem/mobs/SSmob
 			thing:Life(seconds)
 			continue
 		mob_list.Remove(thing)
+
+/datum/subsystem/mobs/AfterInitialize()
+	set_clownplanet_mob_ai(AI_OFF)
+
+
+
+/datum/subsystem/mobs/proc/set_clownplanet_mob_ai(var/AIstatus)
+	for(var/mob/living/simple_animal/hostile/M in living_mob_list)
+		if(M.z == ZLEVEL_CLOWN)	//Suspend mob AI in clown planet
+			M.AIStatus = AIstatus

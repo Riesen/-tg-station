@@ -10,13 +10,14 @@
 	item_state = "gun"
 	flags =  CONDUCT
 	slot_flags = SLOT_BELT
-	m_amt = 2000
+	materials = list(MAT_METAL=2000)
 	w_class = 3.0
 	throwforce = 5
 	throw_speed = 3
 	throw_range = 5
 	force = 5.0
 	origin_tech = "combat=1"
+	needs_permit = 1
 	attack_verb = list("struck", "hit", "bashed")
 
 	var/fire_sound = "gunshot"
@@ -235,13 +236,14 @@
 
 /obj/item/weapon/gun/attack(mob/M as mob, mob/user)
 	if (M == user && user.zone_sel.selecting == "mouth" && !mouthshoot && ishuman(user)) //Handle gun suicide
-	/*	if(istype(M.wear_mask, /obj/item/clothing/mask/happy)) No happy mask in tg (yet)
-			M << "<span class='sinister'>BUT WHY? I'M SO HAPPY!</span>"
-			return */
+		var/mob/living/carbon/human/H = M
+		if(istype(H.wear_mask, /obj/item/clothing/mask/happy))
+			H << "<span class='sinister'>BUT WHY? I'M SO HAPPY!</span>"
+			return
 		if(src.can_trigger_gun(M)) //fug firing pins
 			mouthshoot = 1
 			M.visible_message("<span class='warning'>[user] sticks their gun in their mouth, ready to pull the trigger...</span>")
-			if(!do_after(user, 40))
+			if(!do_after(user, 40, target = M))
 				M.visible_message("<span class='notice'>[user] decided life was worth living</span>")
 				mouthshoot = 0
 				return
@@ -273,7 +275,7 @@
 				user.drop_item()
 				user << "<span class='notice'>You click [S] into place on [src].</span>"
 				if(S.on)
-					SetLuminosity(0)
+					set_light(0)
 				F = S
 				A.loc = src
 				update_icon()
@@ -323,35 +325,15 @@
 	if(F)
 		action_button_name = "Toggle Gunlight"
 		if(F.on)
-			if(loc == user)
-				user.AddLuminosity(F.brightness_on)
-			else if(isturf(loc))
-				SetLuminosity(F.brightness_on)
+			set_light(F.brightness_on)
 		else
-			if(loc == user)
-				user.AddLuminosity(-F.brightness_on)
-			else if(isturf(loc))
-				SetLuminosity(0)
+			set_light(0)
 		update_icon()
 	else
 		action_button_name = null
-		if(loc == user)
-			user.AddLuminosity(-5)
-		else if(isturf(loc))
-			SetLuminosity(0)
+		set_light(0)
 		return
 
-/obj/item/weapon/gun/pickup(mob/user)
-	if(F)
-		if(F.on)
-			user.AddLuminosity(F.brightness_on)
-			SetLuminosity(0)
-
-/obj/item/weapon/gun/dropped(mob/user)
-	if(F)
-		if(F.on)
-			user.AddLuminosity(-F.brightness_on)
-			SetLuminosity(F.brightness_on)
 
 
 /obj/item/weapon/gun/attack_hand(mob/user as mob)

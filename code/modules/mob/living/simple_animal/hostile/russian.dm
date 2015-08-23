@@ -21,14 +21,6 @@
 	a_intent = "harm"
 	var/corpse = /obj/effect/landmark/mobcorpse/russian
 	var/weapon1 = /obj/item/weapon/kitchenknife
-	min_oxy = 5
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 1
-	min_co2 = 0
-	max_co2 = 5
-	min_n2 = 0
-	max_n2 = 0
 	unsuitable_atmos_damage = 15
 	faction = list("russian")
 	status_flags = CANPUSH
@@ -52,11 +44,12 @@
 		casingtype = /obj/item/ammo_casing/a762
 	..()
 
-/mob/living/simple_animal/hostile/russian/Die()
-	..()
-	if(corpse)
-		new corpse (src.loc)
-	if(weapon1)
-		new weapon1 (src.loc)
+/mob/living/simple_animal/hostile/russian/death(gibbed)
+	..(gibbed)
+	if(!gibbed)
+		if(corpse)
+			new corpse (src.loc)
+		if(weapon1)
+			new weapon1 (src.loc)
 	qdel(src)
 	return

@@ -322,7 +322,7 @@ About the new airlock wires panel:
 
 /obj/machinery/door/airlock/Destroy()
 	if(id_tag)
-		for(var/obj/machinery/doorButtons/D in world)
+		for(var/obj/machinery/doorButtons/D in range(15,src))
 			D.removeMe(src)
 	..()
 
@@ -913,7 +913,7 @@ About the new airlock wires panel:
 							"You begin [welded ? "unwelding":"welding"] the airlock...", \
 							"You hear welding.")
 			playsound(loc, 'sound/items/Welder.ogg', 40, 1)
-			if(do_after(user,40,5,1))
+			if(do_after(user,40,5,1, target = src))
 				if(density && !operating)//Door must be closed to weld.
 					if( !istype(src, /obj/machinery/door/airlock) || !user || !W || !W.isOn() || !user.loc )
 						return
@@ -946,7 +946,7 @@ About the new airlock wires panel:
 			playsound(src.loc, 'sound/items/Crowbar.ogg', 100, 1)
 			user.visible_message("<span class='warning'>[user] removes the electronics from the airlock assembly.</span>", \
 								 "You start to remove electronics from the airlock assembly.")
-			if(do_after(user,40))
+			if(do_after(user,40, target = src))
 				if(src.loc)
 					if(src.doortype)
 						new src.doortype(src.loc)
@@ -1004,8 +1004,8 @@ About the new airlock wires panel:
 
 /obj/machinery/door/airlock/plasma/attackby(C as obj, mob/user as mob, params)
 	if(is_hot(C) > 300)//If the temperature of the object is over 300, then ignite
-		message_admins("Plasma wall ignited by [key_name(user, user.client)](<A HREF='?_src_=holder;adminmoreinfo=\ref[user]'>?</A>) in ([x],[y],[z] - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
-		log_game("Plasma wall ignited by [user.ckey]([user]) in ([x],[y],[z])")
+		message_admins("Plasma airlock ignited by [key_name_admin(user)](<A HREF='?_src_=holder;adminmoreinfo=\ref[user]'>?</A>) (<A HREF='?_src_=holder;adminplayerobservefollow=\ref[user]'>FLW</A>) in ([x],[y],[z] - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
+		log_game("Plasma wall ignited by [key_name(user)] in ([x],[y],[z])")
 		ignite(is_hot(C))
 		return
 	..()
@@ -1043,20 +1043,20 @@ About the new airlock wires panel:
 
 /obj/machinery/door/airlock/close(var/forced=0)
 	if(operating || welded || locked)
-		return
+		return 0
 	if(!forced)
 		if( !hasPower() || isWireCut(AIRLOCK_WIRE_DOOR_BOLTS) )
-			return
+			return 0
 	if(safe)
 		for(var/atom/movable/M in get_turf(src))
 			if(M.density && M != src) //something is blocking the door
 				spawn (60)
 					autoclose()
-				return
+				return 0
 
 	if(forced < 2)
 		if(emagged)
-			return
+			return 0
 		use_power(50)
 		if(istype(src, /obj/machinery/door/airlock/glass))
 			playsound(src.loc, 'sound/machines/windowdoor.ogg', 30, 1)
@@ -1083,7 +1083,7 @@ About the new airlock wires panel:
 	sleep(5)
 	update_icon()
 	if(visible && !glass)
-		SetOpacity(1)
+		src.set_opacity(1)
 	operating = 0
 	air_update_turf(1)
 	update_freelook_sight()
@@ -1096,7 +1096,7 @@ About the new airlock wires panel:
 	wires = new(src)
 	if(src.closeOtherId != null)
 		spawn (5)
-			for (var/obj/machinery/door/airlock/A in world)
+			for (var/obj/machinery/door/airlock/A in range(15,src))
 				if(A.closeOtherId == src.closeOtherId && A != src)
 					src.closeOther = A
 					break

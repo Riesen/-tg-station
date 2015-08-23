@@ -7,8 +7,8 @@
 	var/fingerprintslast = null
 	var/list/blood_DNA
 	var/last_bumped = 0
-	var/throwpass = 0
 	var/explosion_block = 0
+	var/allow_spin = 1
 
 	///Chemistry.
 	var/datum/reagents/reagents = null
@@ -38,6 +38,19 @@
 
 	//finally check for centcom itself
 	return istype(T.loc,/area/centcom)
+
+/atom/proc/onSyndieBase()
+	var/turf/T = get_turf(src)
+	if(!T)
+		return 0
+
+	if(T.z != ZLEVEL_CENTCOM)//if not, don't bother
+		return 0
+
+	if(istype(T.loc,/area/shuttle/syndicate) || istype(T.loc,/area/syndicate_mothership))
+		return 1
+
+	return 0
 
 /atom/proc/throw_impact(atom/hit_atom)
 	if(istype(hit_atom,/mob/living))
@@ -390,23 +403,6 @@ var/list/blood_splatter_icons = list()
 		blood_DNA = null
 		return 1
 
-
-/atom/proc/get_global_map_pos()
-	if(!islist(global_map) || isemptylist(global_map)) return
-	var/cur_x = null
-	var/cur_y = null
-	var/list/y_arr = null
-	for(cur_x=1,cur_x<=global_map.len,cur_x++)
-		y_arr = global_map[cur_x]
-		cur_y = y_arr.Find(src.z)
-		if(cur_y)
-			break
-//	world << "X = [cur_x]; Y = [cur_y]"
-	if(cur_x && cur_y)
-		return list("x"=cur_x,"y"=cur_y)
-	else
-		return 0
-
 /atom/proc/isinspace()
 	if(istype(get_turf(src), /turf/space))
 		return 1
@@ -433,4 +429,11 @@ var/list/blood_splatter_icons = list()
 /atom/proc/narsie_act()
 	return
 /atom/proc/rift_act()
+	return 0
+
+/atom/proc/SinguloCanEat()
+	return 1
+
+
+/atom/proc/storage_contents_dump_act(obj/item/weapon/storage/src_object, mob/user)
 	return 0

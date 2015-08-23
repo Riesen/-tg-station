@@ -20,8 +20,8 @@ var/list/sqrtTable = list(1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 
 /proc/Ceiling(x)
 	return -round(-x)
 
-/proc/Clamp(val, min, max)
-	return max(min, min(val, max))
+///proc/Clamp(val, min, max)
+//	return max(min, min(val, max))
 
 // cotangent
 /proc/Cot(x)
@@ -164,3 +164,4 @@ var/gaussian_next
 		gaussian_next = R2 * working
 	return (mean + stddev * R1)
 #undef ACCURACY
+

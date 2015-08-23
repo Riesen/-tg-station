@@ -1,5 +1,26 @@
 #define MIDNIGHT_ROLLOVER		864000	//number of deciseconds in a day
 
+#define JANUARY		1
+#define FEBRUARY	2
+#define MARCH		3
+#define APRIL		4
+#define MAY			5
+#define JUNE		6
+#define JULY		7
+#define AUGUST		8
+#define SEPTEMBER	9
+#define OCTOBER		10
+#define NOVEMBER	11
+#define DECEMBER	12
+
+//Select holiday names -- If you test for a holiday in the code, make the holiday's name a define and test for that instead
+#define NEW_YEAR				"New Year"
+#define VALENTINES				"Valentine's Day"
+#define APRIL_FOOLS				"April Fool's Day"
+#define EASTER					"Easter"
+#define HALLOWEEN				"Halloween"
+#define CHRISTMAS				"Christmas"
+#define FRIDAY_13TH				"Friday the 13th"
 
 //Human Overlays Indexes/////////
 #define SPECIES_LAYER			26		// mutantrace colors... these are on a seperate layer in order to prvent
@@ -60,6 +81,8 @@
 
 #define MINERAL_MATERIAL_AMOUNT 2000
 //The amount of materials you get from a sheet of mineral like iron/diamond/glass etc
+#define MAX_STACK_SIZE 50
+//The maximum size of a stack object.
 
 
 #define CLICK_CD_MELEE 8
@@ -86,11 +109,14 @@
 #define STAGE_THREE 5
 #define STAGE_FOUR 7
 #define STAGE_FIVE 9
+#define STAGE_SIX 11 //From supermatter shard
 
 //zlevel defines, can be overridden for different maps in the appropriate _maps file.
 #define ZLEVEL_SPACEMAX 7
+#define ZLEVEL_CLOWN 8
 #define ZLEVEL_MINING 5
 #define ZLEVEL_SPACEMIN 3
+#define ZLEVEL_DEEPSPACE 6
 #define ZLEVEL_ABANDONNEDTSAT 3
 #define ZLEVEL_CENTCOM 2
 #define ZLEVEL_STATION 1
@@ -122,3 +148,12 @@
 #define SECONDS * 10
 #define MINUTES * 600
 #define HOURS   * 36000
+
+#define MAT_METAL		"$metal"
+#define MAT_GLASS		"$glass"
+#define MAT_SILVER		"$silver"
+#define MAT_GOLD		"$gold"
+#define MAT_DIAMOND		"$diamond"
+#define MAT_URANIUM		"$uranium"
+#define MAT_PLASMA		"$plasma"
+#define MAT_BANANIUM	"$bananium"

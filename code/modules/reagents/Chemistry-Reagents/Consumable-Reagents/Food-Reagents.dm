@@ -194,8 +194,13 @@ datum/reagent/consumable/condensedcapsaicin/reaction_mob(var/mob/living/M, var/m
 		//check for protection
 		var/mouth_covered = 0
 		var/eyes_covered = 0
-		var/obj/item/safe_thing = null
 
+		if(M.check_part_covered("eyes"))
+			eyes_covered = 1
+		if(M.check_part_covered("mouth"))
+			mouth_covered = 1
+
+		/* The following code is shit
 		//monkeys and humans can have masks
 		if( victim.wear_mask )
 			if ( victim.wear_mask.flags & MASKCOVERSEYES )
@@ -219,6 +224,7 @@ datum/reagent/consumable/condensedcapsaicin/reaction_mob(var/mob/living/M, var/m
 				eyes_covered = 1
 				if ( !safe_thing )
 					safe_thing = H.glasses
+		*/
 
 		//actually handle the pepperspray effects
 		if ( eyes_covered && mouth_covered )
@@ -227,7 +233,7 @@ datum/reagent/consumable/condensedcapsaicin/reaction_mob(var/mob/living/M, var/m
 			if(prob(5))
 				victim.emote("scream")
 			victim.eye_blurry = max(M.eye_blurry, 3)
-			victim.eye_blind = max(M.eye_blind, 1)
+			victim.eye_covered = max(M.eye_covered, 1)
 			victim.confused = max(M.confused, 3)
 			victim.damageoverlaytemp = 60
 			victim.Weaken(3)
@@ -241,7 +247,7 @@ datum/reagent/consumable/condensedcapsaicin/reaction_mob(var/mob/living/M, var/m
 			if(prob(5))
 				victim.emote("scream")
 			victim.eye_blurry = max(M.eye_blurry, 5)
-			victim.eye_blind = max(M.eye_blind, 2)
+			victim.eye_covered = max(M.eye_covered, 2)
 			victim.confused = max(M.confused, 6)
 			victim.damageoverlaytemp = 75
 			victim.Weaken(5)
@@ -350,7 +356,9 @@ datum/reagent/consumable/cornoil/reaction_turf(var/turf/simulated/T, var/volume)
 	src = null
 	if(volume >= 3)
 		T.MakeSlippery()
+
 	var/obj/effect/hotspot/hotspot = (locate(/obj/effect/hotspot) in T)
+
 	if(hotspot)
 		var/datum/gas_mixture/lowertemp = T.remove_air( T:air:total_moles() )
 		lowertemp.temperature = max( min(lowertemp.temperature-2000,lowertemp.temperature / 2) ,0)

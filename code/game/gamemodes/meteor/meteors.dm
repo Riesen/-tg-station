@@ -164,8 +164,7 @@
 
 /obj/effect/meteor/proc/make_debris()
 	for(var/throws = dropamt, throws > 0, throws--)
-		var/obj/item/O = new meteordrop(get_turf(src))
-		O.throw_at(dest, 5, 10)
+		new meteordrop(get_turf(src))
 
 /obj/effect/meteor/proc/meteor_effect(var/sound=1)
 	if(sound)
@@ -174,7 +173,7 @@
 			if(!T || T.z != src.z)
 				continue
 			var/dist = get_dist(M.loc, src.loc)
-			shake_camera(M, dist > 20 ? 3 : 5, dist > 20 ? 1 : 3)
+			shake_camera(M, dist > 20 ? 2 : 4, dist > 20 ? 1 : 3)
 			M.playsound_local(src.loc, meteorsound, 50, 1, get_rand_frequency(), 10)
 
 ///////////////////////
@@ -248,7 +247,7 @@
 	hits = 2
 	heavy = 1
 	meteorsound = 'sound/effects/blobattack.ogg'
-	meteordrop = /obj/item/weapon/reagent_containers/food/snacks/meat
+	meteordrop = /obj/item/weapon/reagent_containers/food/snacks/meat/slab
 	var/meteorgibs = /obj/effect/gibspawner/generic
 
 /obj/effect/meteor/meaty/make_debris()
@@ -267,7 +266,7 @@
 //Meaty Ore Xeno edition
 /obj/effect/meteor/meaty/xeno
 	color = "#5EFF00"
-	meteordrop = /obj/item/weapon/reagent_containers/food/snacks/meat/xeno
+	meteordrop = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/xeno
 	meteorgibs = /obj/effect/gibspawner/xeno
 
 /obj/effect/meteor/meaty/xeno/ram_turf(var/turf/T)

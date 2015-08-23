@@ -76,12 +76,12 @@
 // Used to get a properly sanitized input, of max_length
 /proc/stripped_input(var/mob/user, var/message = "", var/title = "", var/default = "", var/max_length=MAX_MESSAGE_LEN)
 	var/name = input(user, message, title, default) as text|null
-	return strip_html_properly(name, max_length)
+	return trim(html_encode(name), max_length) //trim is "outside" because html_encode can expand single symbols into multiple symbols (such as turning < into &lt;)
 
 // Used to get a properly sanitized multiline input, of max_length
 /proc/stripped_multiline_input(var/mob/user, var/message = "", var/title = "", var/default = "", var/max_length=MAX_MESSAGE_LEN)
 	var/name = input(user, message, title, default) as message|null
-	return strip_html_properly(name, max_length)
+	return trim(html_encode(name), max_length)
 
 //Filters out undesirable characters from names
 /proc/reject_bad_name(var/t_in, var/allow_numbers=0, var/max_length=MAX_NAME_LEN)
@@ -147,56 +147,8 @@
 
 	return t_out
 
-//this proc strips html properly, this means that it removes everything between < and >, and between "http" and "://"
-//also limit the size of the input, if specified to
-/proc/strip_html_properly(var/input,var/max_length=MAX_MESSAGE_LEN)
-	if(!input)
-		return
 
-	if(max_length)
-		input = copytext(input,1,max_length)
-
-	var/sanitized_output
-	var/next_html_tag = findtext(input, "<")
-	var/next_http = findtext(input, "http", 1, next_html_tag)
-
-	//the opening and closing of the expression to skip, e.g '<' and '>'
-	var/opening = non_zero_min(next_html_tag, next_http)
-	var/closing
-
-	sanitized_output = copytext(input, 1, opening)
-
-	while(next_html_tag || next_http)
-
-		//we treat < ... >
-		if(opening == next_html_tag)
-			closing = findtext(input, ">", opening + 1)
-			if(closing)
-				next_html_tag = findtext(input, "<", closing)
-				next_http = findtext(input, "http", closing, next_html_tag)
-			else //no matching ">"
-				next_html_tag = 0
-
-		//we treat "http(s)://"
-		else
-			closing = findtext(input, "://", opening + 1)
-			if(closing)
-				closing += 2 //skip these extra //
-				next_http = findtext(input, "http", closing)
-				next_html_tag = findtext(input, "<", closing, next_http)
-			else //no matching "://"
-				next_http = 0
-
-		//check if we've something to skip
-		if(closing)
-			opening = non_zero_min(next_html_tag, next_http)
-			sanitized_output += copytext(input, closing + 1, opening)
-
-	sanitized_output += copytext(input, opening) //don't forget the remaining text
-
-	return sanitized_output
-
-//strip_html_properly helper proc that returns the smallest non null of two numbers
+//helper proc that returns the smallest non null of two numbers
 //or 0 if they're both null (needed because of findtext returning 0 when a value is not present)
 /proc/non_zero_min(var/a, var/b)
 	if(!a)
@@ -485,3 +437,15 @@ var/global/list/watt_suffixes = list("W", "KW", "MW", "GW", "TW", "PW", "EW", "Z
 		number/=1000
 		i++
 	return "[format_num(number)] [watt_suffixes[i]]"
+
+//Needed to make some params2list stuff work (smartfridges etc.)
+/proc/encodeparams(t)		//Yes, this is horrible, but >BYOND
+	if(length(t) < 1)		//No input means nothing needs to be parsed
+		return
+	t = replacetext(t, "%", "%25") //Replaced first for obvious reasons
+	t = replacetext(t, "+", "%2b")
+	t = replacetext(t, "=", "%3d")
+	t = replacetext(t, ";", "%3b")
+	t = replacetext(t, "&", "%26")
+
+	return t

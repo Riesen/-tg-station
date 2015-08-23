@@ -18,7 +18,7 @@ RCD
 	throw_speed = 3
 	throw_range = 5
 	w_class = 3.0
-	m_amt = 100000
+	materials = list(MAT_METAL=100000)
 	origin_tech = "engineering=4;materials=2"
 	var/datum/effect/effect/system/spark_spread/spark_system
 	var/matter = 0
@@ -172,7 +172,7 @@ RCD
 				if(checkResource(3, user))
 					user << "Building Wall ..."
 					playsound(src.loc, 'sound/machines/click.ogg', 50, 1)
-					if(do_after(user, 20))
+					if(do_after(user, 20, target = A))
 						if(!useResource(3, user)) return 0
 						activate()
 						A:ChangeTurf(/turf/simulated/wall)
@@ -191,7 +191,7 @@ RCD
 					if(door_check)
 						user << "Building Airlock..."
 						playsound(src.loc, 'sound/machines/click.ogg', 50, 1)
-						if(do_after(user, 50))
+						if(do_after(user, 50, target = A))
 							if(!useResource(10, user)) return 0
 							activate()
 							var/obj/machinery/door/airlock/T = new airlock_type( A )
@@ -214,7 +214,7 @@ RCD
 				if(checkResource(5, user))
 					user << "Deconstructing Wall..."
 					playsound(src.loc, 'sound/machines/click.ogg', 50, 1)
-					if(do_after(user, 40))
+					if(do_after(user, 40, target = A))
 						if(!useResource(5, user)) return 0
 						activate()
 						A:ChangeTurf(/turf/simulated/floor/plating)
@@ -242,7 +242,7 @@ RCD
 				if(checkResource(20, user))
 					user << "Deconstructing Airlock..."
 					playsound(src.loc, 'sound/machines/click.ogg', 50, 1)
-					if(do_after(user, 50))
+					if(do_after(user, 50, target = A))
 						if(!useResource(20, user)) return 0
 						activate()
 						qdel(A)
@@ -297,8 +297,7 @@ RCD
 	density = 0
 	anchored = 0.0
 	origin_tech = "materials=2"
-	m_amt = 16000
-	g_amt = 8000
+	materials = list(MAT_METAL=16000, MAT_GLASS=8000)
 	var/ammoamt = 20
 
 /obj/item/weapon/rcd_ammo/large

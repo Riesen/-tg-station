@@ -1,7 +1,8 @@
 /obj/machinery/computer/security
 	name = "security camera console"
 	desc = "Used to access the various cameras on the station."
-	icon_state = "cameras"
+	icon_screen = "cameras"
+	icon_keyboard = "security_key"
 	circuit = /obj/item/weapon/circuitboard/security
 	var/obj/machinery/camera/current = null
 	var/last_pic = 1.0
@@ -9,7 +10,7 @@
 	var/mapping = 0//For the overview file, interesting bit of code.
 
 /obj/machinery/computer/security/check_eye(var/mob/user as mob)
-	if ((get_dist(user, src) > 1 || user.eye_blind || !( current ) || !( current.status )) && (!istype(user, /mob/living/silicon)))
+	if ((get_dist(user, src) > 1 || is_blind(user) || !( current ) || !( current.status )) && (!istype(user, /mob/living/silicon)))
 		return null
 	var/list/viewing = viewers(src)
 	if((istype(user,/mob/living/silicon/robot)) && (!(viewing.Find(user))))
@@ -66,7 +67,7 @@
 			return 0
 
 		if(C)
-			if ((get_dist(user, src) > 1 || user.machine != src || user.eye_blind || !( C.can_use() )) && (!istype(user, /mob/living/silicon/ai)))
+			if ((get_dist(user, src) > 1 || user.machine != src || is_blind(user) || !( C.can_use() )) && (!istype(user, /mob/living/silicon/ai)))
 				if(!C.can_use() && !isAI(user))
 					src.current = null
 				return 0
@@ -96,7 +97,7 @@
 
 /obj/machinery/computer/security/telescreen/update_icon()
 	icon_state = initial(icon_state)
-	SetLuminosity(brightness_on)
+	set_light(light_range_on, light_power_on)
 	if(stat & BROKEN)
 		icon_state += "b"
 	return
@@ -114,12 +115,15 @@
 /obj/machinery/computer/security/wooden_tv
 	name = "security camera monitor"
 	desc = "An old TV hooked into the stations camera network."
-	icon_state = "security_det"
+	icon_state = "television"
+	icon_screen = "detective_tv"
+	icon_keyboard = null
 
 
 /obj/machinery/computer/security/mining
 	name = "outpost camera console"
 	desc = "Used to access the various cameras on the outpost."
-	icon_state = "miningcameras"
+	icon_screen = "mining"
+	icon_keyboard = "mining_key"
 	network = list("MINE")
 	circuit = "/obj/item/weapon/circuitboard/mining"

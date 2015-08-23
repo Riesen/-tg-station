@@ -88,6 +88,9 @@
 	burst_size = 2
 	pin = /obj/item/device/firing_pin/implant/pindicate
 
+/obj/item/weapon/gun/projectile/automatic/c20r/unrestricted
+	pin = /obj/item/device/firing_pin
+
 /obj/item/weapon/gun/projectile/automatic/c20r/New()
 	..()
 	update_icon()
@@ -120,6 +123,10 @@
 	burst_size = 5
 	fire_delay = 3
 	pin = /obj/item/device/firing_pin/implant/pindicate
+
+/obj/item/weapon/gun/projectile/automatic/l6_saw/unrestricted
+	pin = /obj/item/device/firing_pin
+
 
 /obj/item/weapon/gun/projectile/automatic/l6_saw/attack_self(mob/user as mob)
 	cover_open = !cover_open
@@ -174,6 +181,9 @@
 	burst_size = 3
 	fire_delay = 2
 	pin = /obj/item/device/firing_pin/implant/pindicate
+
+/obj/item/weapon/gun/projectile/automatic/m90/unrestricted
+	pin = /obj/item/device/firing_pin
 
 /obj/item/weapon/gun/projectile/automatic/m90/New()
 	..()
@@ -230,14 +240,36 @@
 	return
 
 /obj/item/weapon/gun/projectile/automatic/tommygun
-	name = "tommy gun"
-	desc = "A genuine 'Chicago Typewriter'."
+	name = "thompson SMG"
+	desc = "Based on the classic 'Chicago Typewriter'."
 	icon_state = "tommygun"
 	item_state = "shotgun"
+	w_class = 5
 	slot_flags = 0
 	origin_tech = "combat=5;materials=1;syndicate=2"
 	mag_type = /obj/item/ammo_box/magazine/tommygunm45
 	fire_sound = 'sound/weapons/Gunshot_smg.ogg'
 	can_suppress = 0
 	burst_size = 4
+	fire_delay = 1
+
+/obj/item/weapon/gun/projectile/automatic/mini_uzi
+	name = "Uzi"
+	desc = "A lightweight, burst-fire submachine gun, for when you really want someone dead. Uses 9mm rounds."
+	icon_state = "mini-uzi"
+	origin_tech = "combat=5;materials=2;syndicate=8"
+	mag_type = /obj/item/ammo_box/magazine/uzim9mm
+	burst_size = 2
+
+/obj/item/weapon/gun/projectile/automatic/ar
+	name = "ARG"
+	desc = "A robust assault rile used by Nanotrasen fighting forces."
+	icon_state = "arg"
+	item_state = "arg"
+	slot_flags = 0
+	origin_tech = "combat=5;materials=1"
+	mag_type = /obj/item/ammo_box/magazine/m556
+	fire_sound = 'sound/weapons/Gunshot_smg.ogg'
+	can_suppress = 0
+	burst_size = 3
 	fire_delay = 1

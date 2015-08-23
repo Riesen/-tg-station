@@ -11,7 +11,7 @@
 	var/list/components = null
 	var/list/req_components = null
 	var/list/req_component_names = null // user-friendly names of components
-	var/state = 1
+	var/status = 1
 
 // unfortunately, we have to instance the objects really quickly to get the names
 // fortunately, this is only called once when the board is added and the items are immediately GC'd
@@ -57,18 +57,18 @@
 	if(P.crit_fail)
 		user << "<span class='danger'>This part is faulty, you cannot add this to the machine!</span>"
 		return
-	switch(state)
+	switch(status)
 		if(1)
 			if(istype(P, /obj/item/stack/cable_coil))
 				var/obj/item/stack/cable_coil/C = P
 				if(C.get_amount() >= 5)
 					playsound(src.loc, 'sound/items/Deconstruct.ogg', 50, 1)
 					user << "<span class='notice'>You start to add cables to the frame.</span>"
-					if(do_after(user, 20))
-						if(C.get_amount() >= 5 && state == 1)
+					if(do_after(user, 20, target = src))
+						if(C.get_amount() >= 5 && status == 1)
 							C.use(5)
 							user << "<span class='notice'>You add cables to the frame.</span>"
-							state = 2
+							status = 2
 							icon_state = "box_1"
 				else
 					user << "<span class='warning'>You need five length of cable to wire the frame.</span>"
@@ -88,7 +88,7 @@
 					user.drop_item()
 					P.loc = src
 					icon_state = "box_2"
-					state = 3
+					status = 3
 					components = list()
 					req_components = circuit.req_components.Copy()
 					update_namelist()
@@ -98,7 +98,7 @@
 			if(istype(P, /obj/item/weapon/wirecutters))
 				playsound(src.loc, 'sound/items/Wirecutter.ogg', 50, 1)
 				user << "<span class='notice'>You remove the cables.</span>"
-				state = 1
+				status = 1
 				icon_state = "box_0"
 				var/obj/item/stack/cable_coil/A = new /obj/item/stack/cable_coil( src.loc )
 				A.amount = 5
@@ -106,7 +106,7 @@
 		if(3)
 			if(istype(P, /obj/item/weapon/crowbar))
 				playsound(src.loc, 'sound/items/Crowbar.ogg', 50, 1)
-				state = 2
+				status = 2
 				circuit.loc = src.loc
 				components.Remove(circuit)
 				circuit = null
@@ -201,6 +201,8 @@
 micro-manipulator, console screen, beaker, Microlaser, matter bin, power cells.
 Note: Once everything is added to the public areas, will add m_amt and g_amt to circuit boards since autolathe won't be able
 to destroy them and players will be able to make replacements.
+
+>implying
 */
 
 /obj/item/weapon/circuitboard/vendor
@@ -216,7 +218,8 @@ to destroy them and players will be able to make replacements.
 							/obj/machinery/vending/snack = "Getmore Chocolate Corp",
 							/obj/machinery/vending/cola = "Robust Softdrinks",
 							/obj/machinery/vending/cigarette = "ShadyCigs Deluxe",
-							/obj/machinery/vending/autodrobe = "AutoDrobe")
+							/obj/machinery/vending/autodrobe = "AutoDrobe",
+							/obj/machinery/vending/slurpslurpy_machine = "SlurpSlurpy Machine")
 
 /obj/item/weapon/circuitboard/vendor/attackby(obj/item/I, mob/user, params)
 	if(istype(I, /obj/item/weapon/screwdriver))
@@ -238,6 +241,15 @@ to destroy them and players will be able to make replacements.
 							/obj/item/stack/cable_coil = 5,
 							/obj/item/weapon/stock_parts/cell = 5,
 							/obj/item/weapon/stock_parts/capacitor = 1)
+
+/obj/item/weapon/circuitboard/emitter
+	name = "circuit board (Emitter)"
+	build_path = /obj/machinery/power/emitter
+	board_type = "machine"
+	origin_tech = "programming=4;powerstorage=5;engineering=5"
+	req_components = list(
+							/obj/item/weapon/stock_parts/micro_laser = 1,
+							/obj/item/weapon/stock_parts/manipulator = 1)
 
 /obj/item/weapon/circuitboard/power_compressor
 	name = "circuit board (Power Compressor)"
@@ -309,7 +321,7 @@ to destroy them and players will be able to make replacements.
 
 /obj/item/weapon/circuitboard/cryo_tube
 	name = "circuit board (Cryotube)"
-	build_path = /obj/machinery/atmospherics/unary/cryo_cell
+	build_path = /obj/machinery/atmospherics/components/unary/cryo_cell
 	board_type = "machine"
 	origin_tech = "programming=4;biotech=3;engineering=4"
 	req_components = list(
@@ -320,7 +332,7 @@ to destroy them and players will be able to make replacements.
 /obj/item/weapon/circuitboard/thermomachine
 	name = "circuit board (Freezer)"
 	desc = "Use screwdriver to switch between heating and cooling modes."
-	build_path = /obj/machinery/atmospherics/unary/cold_sink/freezer
+	build_path = /obj/machinery/atmospherics/components/unary/cold_sink/freezer
 	board_type = "machine"
 	origin_tech = "programming=3;plasmatech=3"
 	req_components = list(
@@ -331,12 +343,12 @@ to destroy them and players will be able to make replacements.
 
 /obj/item/weapon/circuitboard/thermomachine/attackby(obj/item/I, mob/user, params)
 	if(istype(I, /obj/item/weapon/screwdriver))
-		if(build_path == /obj/machinery/atmospherics/unary/cold_sink/freezer)
-			build_path = /obj/machinery/atmospherics/unary/heat_reservoir/heater
+		if(build_path == /obj/machinery/atmospherics/components/unary/cold_sink/freezer)
+			build_path = /obj/machinery/atmospherics/components/unary/heat_reservoir/heater
 			name = "circuit board (Heater)"
 			user << "<span class='notice'>You set the board to heating.</span>"
 		else
-			build_path = /obj/machinery/atmospherics/unary/cold_sink/freezer
+			build_path = /obj/machinery/atmospherics/components/unary/cold_sink/freezer
 			name = "circuit board (Freezer)"
 			user << "<span class='notice'>You set the board to cooling.</span>"
 
@@ -358,6 +370,7 @@ to destroy them and players will be able to make replacements.
 	origin_tech = "programming=1;biotech=1"
 	req_components = list(
 							/obj/item/weapon/stock_parts/matter_bin = 2,
+							/obj/item/weapon/stock_parts/manipulator = 1,
 							/obj/item/weapon/stock_parts/console_screen = 1)
 
 /obj/item/weapon/circuitboard/microwave
@@ -368,7 +381,80 @@ to destroy them and players will be able to make replacements.
 	req_components = list(
 							/obj/item/weapon/stock_parts/micro_laser = 1,
 							/obj/item/stack/cable_coil = 2,
+							/obj/item/weapon/stock_parts/matter_bin = 1,
 							/obj/item/weapon/stock_parts/console_screen = 1)
+
+/obj/item/weapon/circuitboard/deepfryer
+	name = "circuit board (Deep Fryer)"
+	build_path = /obj/machinery/cooking/deepfryer
+	board_type = "machine"
+	origin_tech = "programming=1"
+	req_components = list(
+							/obj/item/weapon/stock_parts/micro_laser = 1,
+							/obj/item/stack/cable_coil = 2,
+							/obj/item/weapon/stock_parts/matter_bin = 1,)
+
+/obj/item/weapon/circuitboard/gibber
+	name = "circuit board (Gibber)"
+	build_path = /obj/machinery/gibber
+	board_type = "machine"
+	origin_tech = "programming=1"
+	req_components = list(
+							/obj/item/weapon/stock_parts/matter_bin = 1,
+							/obj/item/weapon/stock_parts/manipulator = 1)
+
+/obj/item/weapon/circuitboard/processor
+	name = "circuit board (Food processor)"
+	build_path = /obj/machinery/processor
+	board_type = "machine"
+	origin_tech = "programming=1"
+	req_components = list(
+							/obj/item/weapon/stock_parts/matter_bin = 1,
+							/obj/item/weapon/stock_parts/manipulator = 1)
+
+/obj/item/weapon/circuitboard/recycler
+	name = "circuit board (Recycler)"
+	build_path = /obj/machinery/recycler
+	board_type = "machine"
+	origin_tech = "programming=1"
+	req_components = list(
+							/obj/item/weapon/stock_parts/matter_bin = 1,
+							/obj/item/weapon/stock_parts/manipulator = 1)
+
+/obj/item/weapon/circuitboard/seed_extractor
+	name = "circuit board (Seed Extractor)"
+	build_path = /obj/machinery/seed_extractor
+	board_type = "machine"
+	origin_tech = "programming=1"
+	req_components = list(
+							/obj/item/weapon/stock_parts/matter_bin = 1,
+							/obj/item/weapon/stock_parts/manipulator = 1)
+
+/obj/item/weapon/circuitboard/smartfridge
+	name = "circuit board (Smartfridge)"
+	build_path = /obj/machinery/smartfridge
+	board_type = "machine"
+	origin_tech = "programming=1"
+	req_components = list(
+							/obj/item/weapon/stock_parts/matter_bin = 1)
+
+/obj/item/weapon/circuitboard/monkey_recycler
+	name = "circuit board (Monkey Recycler)"
+	build_path = /obj/machinery/monkey_recycler
+	board_type = "machine"
+	origin_tech = "programming=1"
+	req_components = list(
+							/obj/item/weapon/stock_parts/matter_bin = 1,
+							/obj/item/weapon/stock_parts/manipulator = 1)
+
+/obj/item/weapon/circuitboard/holopad
+	name = "circuit board (AI Holopad)"
+	build_path = /obj/machinery/hologram/holopad
+	board_type = "machine"
+	origin_tech = "programming=1"
+	req_components = list(
+							/obj/item/weapon/stock_parts/capacitor = 1)
+
 
 /obj/item/weapon/circuitboard/chem_dispenser
 	name = "circuit board (Portable Chem Dispenser)"
@@ -663,6 +749,8 @@ obj/item/weapon/circuitboard/rdserver
 	req_components = list(
 							/obj/item/weapon/stock_parts/console_screen = 1,
 							/obj/item/weapon/stock_parts/matter_bin = 1,
+							/obj/item/weapon/stock_parts/micro_laser = 1,
+							/obj/item/weapon/stock_parts/manipulator = 1,
 							/obj/item/device/assembly/igniter = 1)
 
 /obj/item/weapon/circuitboard/mining_equipment_vendor

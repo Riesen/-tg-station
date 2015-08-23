@@ -231,14 +231,16 @@
 
 	if(eye_blind)
 		eye_blind = 0
-		eye_blind = max(eye_blind, 1)
+
+	if(eye_covered)
+		eye_covered = 0
 
 	setEarDamage((ear_damage < 25 ? 0 : ear_damage),(disabilities & DEAF ? 1 :0))
 
 	density = !( src.lying )
 
 	if(disabilities & BLIND)
-		eye_blind = max(eye_blind, 1)
+		eye_covered = max(eye_covered, 1)
 
 	if(eye_blurry > 0)
 		eye_blurry = 0

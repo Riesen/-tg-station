@@ -185,7 +185,8 @@
 	dispensable_reagents = list()
 	var/list/special_reagents = list(list("hydrogen", "oxygen", "silicon", "phosphorus", "sulfur", "carbon", "nitrogen", "water"),
 						 		list("lithium", "sugar", "sacid", "copper", "mercury", "sodium","iodine","bromine","tungsten"),
-								list("ethanol", "chlorine", "potassium", "aluminium", "radium", "fluorine", "iron", "fuel","silver","stable_plasma"))
+								list("ethanol", "chlorine", "potassium", "aluminium", "radium", "fluorine", "iron", "fuel","silver","stable_plasma"),
+								list("oil", "phenol", "acetone", "ammonia", "diethylamine"))
 
 /obj/machinery/chem_dispenser/constructable/New()
 	..()
@@ -245,7 +246,8 @@
 	dispensable_reagents = list()
 	uiname = "Booze Dispenser"
 	special_reagents = list(list("lemon_lime","sugar","orangejuice","limejuice","sodawater","tonic","beer","kahlua","whiskey","wine","vodka","gin","rum","tequila","vermouth","cognac","ale"),
-						 		list(),
+						 		list(),  //Ideas for higher tier reagents?
+								list(),
 								list())
 
 /obj/machinery/chem_dispenser/constructable/drinks
@@ -257,6 +259,7 @@
 	uiname = "Soda Dispenser"
 	special_reagents = list(list("water","ice","coffee","cream","tea","icetea","cola","spacemountainwind","dr_gibb","space_up","tonic","sodawater","lemon_lime","sugar","orangejuice","limejuice","tomatojuice"),
 						 		list(),
+								list(),
 								list())
 
 
@@ -1527,7 +1530,8 @@ obj/machinery/computer/pandemic/proc/replicator_cooldown(var/waittime)
 		if(isnum(val))
 			desired_temp = Clamp(desired_temp+val, 0, 1000)
 		else if(val == "input")
-			desired_temp = Clamp(input("Please input the target temperature", name) as num, 0, 1000)
+			var/temp = input("Please input the target temperature", name) as num
+			desired_temp = Clamp(temp, 0, 1000)
 		else
 			return 0
 		. = 1

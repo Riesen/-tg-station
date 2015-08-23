@@ -523,9 +523,9 @@
 /datum/chemical_reaction/slimeteleport/on_reaction(var/datum/reagents/holder, var/created_volume)
 	feedback_add_details("slime_cores_used","[replacetext(name," ","_")]")
 	if(holder.my_atom)
-		var/obj/item/device/radio/beacon/chosen
+		var/obj/item/device/beacon/chosen
 		var/list/possible = list()
-		for(var/obj/item/device/radio/beacon/W in world)
+		for(var/obj/item/device/beacon/W in beacons)
 			possible += W
 
 		if(possible.len > 0)
@@ -547,7 +547,8 @@
 			var/y_distance = TO.y - FROM.y
 			var/x_distance = TO.x - FROM.x
 			for (var/atom/movable/A in range(5, FROM )) // iterate thru list of mobs in the area
-				if(istype(A, /obj/item/device/radio/beacon)) continue // don't teleport beacons because that's just insanely stupid
+				if(istype(A, /obj/item/device/beacon)) continue // don't teleport beacons because that's just insanely stupid
+				if(istype(A, /atom/movable/lighting_overlay)) continue //don't move the lighting while at it!
 				if(A.anchored) continue
 
 
@@ -570,6 +571,22 @@
 							M.client.screen -= blueeffect
 							qdel(blueeffect)
 
+/datum/chemical_reaction/slimefloor2
+	name = "Bluespace Floor"
+	id = "m_floor2"
+	result = null
+	required_reagents = list("water" = 1)
+	result_amount = 1
+	required_container = /obj/item/slime_extract/bluespace
+	required_other = 1
+
+/datum/chemical_reaction/slimefloor2/on_reaction(var/datum/reagents/holder, var/created_volume)
+	feedback_add_details("slime_cores_used","[replacetext(name," ","_")]")
+	var/obj/item/stack/tile/bluespace/P = new /obj/item/stack/tile/bluespace
+	P.amount = 25
+	P.loc = get_turf(holder.my_atom)
+
+
 //Cerulean
 /datum/chemical_reaction/slimepsteroid2
 	name = "Slime Steroid 2"
@@ -586,11 +603,28 @@
 	P.loc = get_turf(holder.my_atom)
 
 //Sepia
+/datum/chemical_reaction/slimestop
+	name = "Slime Stop"
+	id = "m_stop"
+	result = null
+	required_reagents = list("plasma" = 1)
+	result_amount = 1
+	required_container = /obj/item/slime_extract/sepia
+	required_other = 1
+
+/datum/chemical_reaction/slimestop/on_reaction(var/datum/reagents/holder)
+	feedback_add_details("slime_cores_used","[replacetext(name," ","_")]")
+	var/mob/mob = get_mob_by_key(holder.my_atom.fingerprintslast)
+	var/obj/effect/timestop/T = new /obj/effect/timestop
+	T.loc = get_turf(holder.my_atom)
+	T.immune = mob
+	T.timestop()
+
 /datum/chemical_reaction/slimecamera
 	name = "Slime Camera"
 	id = "m_camera"
 	result = null
-	required_reagents = list("plasma" = 1)
+	required_reagents = list("blood" = 1)
 	result_amount = 1
 	required_container = /obj/item/slime_extract/sepia
 	required_other = 1
@@ -599,20 +633,24 @@
 	feedback_add_details("slime_cores_used","[replacetext(name," ","_")]")
 	var/obj/item/device/camera/P = new /obj/item/device/camera
 	P.loc = get_turf(holder.my_atom)
+	var/obj/item/device/camera_film/Z = new /obj/item/device/camera_film
+	Z.loc = get_turf(holder.my_atom)
 
-/datum/chemical_reaction/slimefilm
-	name = "Slime Film"
-	id = "m_film"
+/datum/chemical_reaction/slimefloor
+	name = "Sepia Floor"
+	id = "m_floor"
 	result = null
-	required_reagents = list("blood" = 1)
+	required_reagents = list("water" = 1)
 	result_amount = 1
 	required_container = /obj/item/slime_extract/sepia
 	required_other = 1
 
-/datum/chemical_reaction/slimefilm/on_reaction(var/datum/reagents/holder)
+/datum/chemical_reaction/slimefloor/on_reaction(var/datum/reagents/holder)
 	feedback_add_details("slime_cores_used","[replacetext(name," ","_")]")
-	var/obj/item/device/camera_film/P = new /obj/item/device/camera_film
+	var/obj/item/stack/tile/sepia/P = new /obj/item/stack/tile/sepia
+	P.amount = 25
 	P.loc = get_turf(holder.my_atom)
+
 
 //Pyrite
 /datum/chemical_reaction/slimepaint
@@ -631,3 +669,5 @@
 	var/obj/P = new chosen
 	if(P)
 		P.loc = get_turf(holder.my_atom)
+
+

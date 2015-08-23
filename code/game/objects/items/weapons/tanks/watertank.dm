@@ -351,12 +351,13 @@
 			if(get_dist(T, src) < 2) // Otherwise we'll get silliness like people using Nanofrost to kill people through walls with cold air
 				G.temperature = 2
 			T.air_update_turf()
+
 			for(var/obj/effect/hotspot/H in T)
 				H.Kill()
 				if(G.toxins)
 					G.nitrogen += (G.toxins)
 					G.toxins = 0
-		for(var/obj/machinery/atmospherics/unary/vent_pump/V in T)
+		for(var/obj/machinery/atmospherics/components/unary/vent_pump/V in T)
 			V.welded = 1
 			V.update_icon()
 			V.visible_message("<span class='danger'>[V] was frozen shut!</span>")

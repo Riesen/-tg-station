@@ -35,7 +35,7 @@
 	speak_chance = 5
 	turns_per_move = 5
 	see_in_dark = 10
-	meat_type = /obj/item/weapon/reagent_containers/food/snacks/meat/spider
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/spider
 	meat_amount = 2
 	response_help  = "pets"
 	response_disarm = "gently pushes aside"
@@ -174,6 +174,9 @@
 
 	var/T = src.loc
 
+	if(stat == DEAD)
+		return
+
 	if(busy != SPINNING_WEB)
 		busy = SPINNING_WEB
 		src.visible_message("<span class='notice'>\the [src] begins to secrete a sticky substance.</span>")
@@ -189,6 +192,8 @@
 	set name = "Wrap"
 	set category = "Spider"
 	set desc = "Wrap up prey to feast upon and objects for safe keeping."
+	if(stat == DEAD)
+		return
 
 	if(!cocoon_target)
 		var/list/choices = list()
@@ -245,6 +250,9 @@
 	set name = "Lay Eggs"
 	set category = "Spider"
 	set desc = "Lay a clutch of eggs, but you must wrap a creature for feeding first."
+
+	if(stat == DEAD)
+		return
 
 	var/obj/effect/spider/eggcluster/E = locate() in get_turf(src)
 	if(E)

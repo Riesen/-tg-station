@@ -13,6 +13,7 @@
 	var/amt_dam_tox = 0
 
 	var/amt_eye_blind = 0
+	var/amt_eye_covered = 0
 	var/amt_eye_blurry = 0
 
 	var/destroys = "none" //can be "none", "gib" or "disintegrate"
@@ -22,13 +23,14 @@
 /obj/effect/proc_holder/spell/targeted/inflict_handler/cast(list/targets)
 
 	for(var/mob/living/target in targets)
+		playsound(target,sound, 50,1)
 		switch(destroys)
 			if("gib")
 				target.gib()
 			if("gib_brain")
 				if(ishuman(target) || ismonkey(target))
 					var/mob/living/carbon/C_target = target
-					var/obj/item/organ/brain/B = C_target.getorgan(/obj/item/organ/brain)
+					var/obj/item/organ/internal/brain/B = C_target.getorgan(/obj/item/organ/internal/brain)
 					if(B)
 						B.loc = get_turf(C_target)
 						B.transfer_identity(C_target)
@@ -60,6 +62,7 @@
 		target.Stun(amt_stunned)
 
 		target.eye_blind += amt_eye_blind
+		target.eye_covered += amt_eye_covered
 		target.eye_blurry += amt_eye_blurry
 		//summoning
 		if(summon_type)

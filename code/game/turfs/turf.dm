@@ -20,29 +20,41 @@
 	var/temperature = T20C
 
 	var/holy = 0 //Will be probably used for supernatural shit
+	var/shuttle = 0 //If it counts as a shuttle tile for specific shuttles
 
 	var/blocks_air = 0
 
 	var/PathNode/PNode = null //associated PathNode in the A* algorithm
 
+	var/slowdown = 0 //negative for faster, positive for slower
+
 	flags = 0
+
+	var/dynamic_lighting = 1
 
 /turf/New()
 	..()
 	turfs.Add(src)
 	for(var/atom/movable/AM in src)
 		Entered(AM)
+	set_opacity(src.opacity)
+	reconsider_lights()
 	return
 
 // Adds the adjacent turfs to the current atmos processing
 /turf/Del()
 	turfs.Remove(src)
+	set_opacity(0)
+	reconsider_lights()
 	for(var/direction in cardinal)
 		if(atmos_adjacent_turfs & direction)
 			var/turf/simulated/T = get_step(src, direction)
 			if(istype(T))
 				SSair.add_to_active(T)
 	..()
+
+/turf/Destroy()
+	return QDEL_HINT_HARDDEL_NOW
 
 /turf/attack_hand(mob/user as mob)
 	user.Move_Pulled(src)
@@ -132,32 +144,50 @@
 /turf/proc/ChangeTurf(var/path)
 	if(!path)			return
 	if(path == type)	return src
-	var/old_lumcount = lighting_lumcount - initial(lighting_lumcount)
-	var/old_opacity = opacity
+	var/list/old_affecting_lights = affecting_lights
+	#if LIGHTING_RESOLUTION == 1
+	var/old_lighting_overlay = lighting_overlay
+	#else
+	var/old_lighting_overlays = lighting_overlays
+	#endif
+
+//	var/old_opacity = opacity
 	var/old_baseturf = baseturf
 	SSair.remove_from_active(src)
 
 	var/turf/W = new path(src)
 	W.baseturf = old_baseturf
+	W.affecting_lights = old_affecting_lights
+	#if LIGHTING_RESOLUTION == 1
+	W.lighting_overlay = old_lighting_overlay
+	#else
+	W.lighting_overlays = old_lighting_overlays
+	#endif
+	if(!istype(W, /turf/space))
+		W.lighting_build_overlays()
+		W.update_overlay()
+	else
+		W.lighting_clear_overlays()
 
 	if(istype(W, /turf/simulated))
 		W:Assimilate_Air()
 		W.RemoveLattice()
 
-	W.lighting_lumcount += old_lumcount
-	if(old_lumcount != W.lighting_lumcount)	//light levels of the turf have changed. We need to shift it to another lighting-subarea
-		W.lighting_changed = 1
-		SSlighting.changed_turfs += W
+//	W.lighting_lumcount += old_lumcount
+//	if(old_lumcount != W.lighting_lumcount)	//light levels of the turf have changed. We need to shift it to another lighting-subarea
+//		W.lighting_changed = 1
+//		SSlighting.changed_turfs += W
 
-	if(old_opacity != W.opacity)			//opacity has changed. Need to update surrounding lights
-		if(W.lighting_lumcount)				//unless we're being illuminated, don't bother (may be buggy, hard to test)
-			W.UpdateAffectingLights()
+//	if(old_opacity != W.opacity)			//opacity has changed. Need to update surrounding lights
+//		if(W.lighting_lumcount)				//unless we're being illuminated, don't bother (may be buggy, hard to test)
+//			W.UpdateAffectingLights()
 
 	for(var/turf/space/S in range(W,1))
 		S.update_starlight()
 
 	W.levelupdate()
 	W.CalculateAdjacentTurfs()
+
 	universe.OnTurfChange(W)
 	return W
 
@@ -213,6 +243,10 @@
 /turf/proc/Bless()
 	flags |= NOJAUNT
 
+/turf/storage_contents_dump_act(obj/item/weapon/storage/src_object, mob/user)
+	for(var/obj/item/I in src_object)
+		src_object.remove_from_storage(I, src) //No check needed, put everything inside
+	return 1
 
 //////////////////////////////
 //Distance procs
@@ -287,3 +321,45 @@
 		if (dist <= R.consume_range)
 			R.consume(AM)
 			continue
+
+
+/turf/indestructible
+	name = "wall"
+	icon = 'icons/turf/walls.dmi'
+	density = 1
+	blocks_air = 1
+	opacity = 1
+
+/turf/indestructible/splashscreen
+	name = "Space Station 13"
+	icon = 'icons/misc/fullscreen.dmi'
+	icon_state = "title"
+	layer = FLY_LAYER
+
+/turf/indestructible/riveted
+	icon_state = "riveted"
+
+/turf/indestructible/riveted/New()
+	..()
+	if(smooth)
+		smooth_icon(src)
+		icon_state = ""
+/turf/indestructible/riveted/uranium
+	icon = 'icons/turf/walls/uranium_wall.dmi'
+	icon_state = "uranium"
+	smooth = 1
+	canSmoothWith = null
+
+/turf/indestructible/abductor
+	icon_state = "alien1"
+	shuttle = 1
+
+/turf/indestructible/fakeglass
+	name = "window"
+	icon_state = "fakewindows"
+	opacity = 0
+
+/turf/indestructible/fakedoor
+	name = "Centcom Access"
+	icon = 'icons/obj/doors/Doorele.dmi'
+	icon_state = "door_closed"

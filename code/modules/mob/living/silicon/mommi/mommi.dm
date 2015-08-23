@@ -98,7 +98,7 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 	//MMI copypasta, magic and more magic
 	if(!mmi || !mmi.brainmob)
 		mmi = new(src)
-		mmi.brain = new /obj/item/organ/brain(mmi)
+		mmi.brain = new /obj/item/organ/internal/brain(mmi)
 		mmi.brain.name = "[real_name]'s brain"
 		mmi.locked = 1
 		mmi.icon_state = "mmi_full"
@@ -134,12 +134,12 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 	set name = "Change appearance"
 	set desc = "Changes your look"
 	if (client)
-		var/icontype = input("Select an icon!", "Mobile MMI", null) in list("Basic", "Hover", "Keeper", "Replicator", "Prime")
+		var/icontype = input("Select an icon!", "Mobile MMI", null) in list("Basic", "Hover", "RepairBot", "Scout", "Keeper", "Replicator", "Prime")
 		switch(icontype)
 			if("Replicator") subtype = "replicator"
 			if("Keeper")	 subtype = "keeper"
-		//	if("RepairBot")	 subtype = "repairbot"
-		//	if("Scout")	 	 subtype = "scout"
+			if("RepairBot")	 subtype = "repairbot"
+			if("Scout")	 	 subtype = "scout"
 			if("Hover")	     subtype = "hovermommi"
 			if("Prime")	     subtype = "mommiprime"
 			else			 subtype = "mommi"
@@ -723,6 +723,8 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 	..(AM)
 
 /mob/living/silicon/robot/mommi/proc/can_interfere(var/mob/AN)
+	if(!istype(AN))
+		return 1 //Not a mob
 	if(src.keeper)
 		if(AN.client || AN.ckey || (iscarbon(AN) && (!ismonkey(AN) && !isslime(AN))) || issilicon(AN))	//If it's a non-monkey/slime carbon, silicon or other sentient it's not ok => animals are fair game!
 			if(!ismommi(AN) || (ismommi(AN) && !AN:keeper))	//Keeper MoMMIs can be interfered with

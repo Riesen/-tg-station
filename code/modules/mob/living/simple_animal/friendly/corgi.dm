@@ -13,7 +13,7 @@
 	emote_see = list("shakes its head.", "shivers.")
 	speak_chance = 1
 	turns_per_move = 10
-	meat_type = /obj/item/weapon/reagent_containers/food/snacks/meat/corgi
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/corgi
 	meat_amount = 3
 	response_help  = "pets"
 	response_disarm = "bops"
@@ -29,8 +29,8 @@
 	..()
 	regenerate_icons()
 
-/mob/living/simple_animal/corgi/Die()
-	..()
+/mob/living/simple_animal/corgi/death(gibbed)
+	..(gibbed)
 	regenerate_icons()
 
 /mob/living/simple_animal/corgi/revive()
@@ -104,7 +104,7 @@
 					emote_hear = list("barks", "woofs", "yaps","pants")
 					emote_see = list("shakes its head", "shivers")
 					desc = "It's a corgi."
-					SetLuminosity(0)
+					set_light(0)
 					inventory_head.loc = src.loc
 					inventory_head = null
 					regenerate_icons()
@@ -150,7 +150,7 @@
 					//The objects that corgis can wear on their backs.
 					var/list/allowed_types = list(
 						/obj/item/clothing/suit/armor/vest,
-						/obj/item/clothing/suit/space/deathsquad,
+						/obj/item/clothing/suit/space/hardsuit/deathsquad,
 						/obj/item/device/radio,
 						/obj/item/device/radio/off,
 						/obj/item/clothing/suit/cardborg,
@@ -313,7 +313,7 @@
 				name = "[real_name] the red-nosed Corgi"
 				emote_hear = list("lights the way!", "illuminates.", "yaps!")
 				desc = "He has a very shiny nose."
-				SetLuminosity(1)
+				set_light(2)
 				valid = 1
 
 			if(/obj/item/clothing/head/sombrero)
@@ -326,7 +326,7 @@
 				desc = "Can actually be trusted to not run off on his own."
 				valid = 1
 
-			if(/obj/item/clothing/head/helmet/space/deathsquad)
+			if(/obj/item/clothing/head/helmet/space/hardsuit/deathsquad)
 				name = "Trooper [real_name]"
 				desc = "That's not red paint. That's real corgi blood."
 				valid = 1
@@ -468,6 +468,8 @@
 	icon_state = "puppy"
 	icon_living = "puppy"
 	icon_dead = "puppy_dead"
+	density = 0
+	pass_flags = PASSMOB
 	mob_size = MOB_SIZE_SMALL
 
 //puppies cannot wear anything.

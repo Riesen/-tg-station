@@ -14,8 +14,7 @@
 	var/Toxins_pp = (breath.toxins/breath.total_moles())*breath_pressure
 
 	if(Toxins_pp) // Detect toxins in air
-
-		adjustToxLoss(breath.toxins*250)
+		adjustPlasma(breath.toxins*250)
 		throw_alert("alien_tox")
 
 		toxins_used = breath.toxins
@@ -67,6 +66,11 @@
 			blind.layer = 18
 		else
 			blind.layer = 0
+
+			if(eye_covered)
+				cover.layer = 17
+			else
+				cover.layer = 0
 
 			if (disabilities & NEARSIGHT)
 				client.screen += global_hud.vimpaired

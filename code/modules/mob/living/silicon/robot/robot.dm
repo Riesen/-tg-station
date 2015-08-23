@@ -9,6 +9,7 @@
 	var/custom_name = ""
 	designation = "Default" //used for displaying the prefix & getting the current module of cyborg
 	var/braintype = "Cyborg"
+	has_limbs = 1
 
 //Hud stuff
 
@@ -106,7 +107,7 @@
 	//MMI stuff. Held togheter by magic. ~Miauw
 	if(!mmi || !mmi.brainmob)
 		mmi = new(src)
-		mmi.brain = new /obj/item/organ/brain(mmi)
+		mmi.brain = new /obj/item/organ/internal/brain(mmi)
 		mmi.brain.name = "[real_name]'s brain"
 		mmi.locked = 1
 		mmi.icon_state = "mmi_full"
@@ -467,6 +468,8 @@
 
 	else if (istype(W, /obj/item/weapon/wirecutters) || istype(W, /obj/item/device/multitool) || istype(W, /obj/item/device/assembly/signaler))
 		if (wiresexposed)
+			if(!wires)
+				return
 			wires.Interact(user)
 		else
 			user << "You can't reach the wiring."
@@ -490,12 +493,15 @@
 			return
 		else
 			playsound(src, 'sound/items/Ratchet.ogg', 50, 1)
-			if(do_after(user, 50) && !cell)
+			if(do_after(user, 50, target = src) && !cell)
 				user.visible_message("<span class='danger'>[user] deconstructs [src]!</span>", "<span class='notice'>You unfasten the securing bolts, and [src] falls to pieces!</span>")
 				deconstruct()
 
 	else if(istype(W, /obj/item/weapon/aiModule))
 		var/obj/item/weapon/aiModule/MOD = W
+		if(ismommi(src))
+			user << "You cannot use this module with a MoMMI"
+			return
 		if(!opened)
 			user << "You need access to the robot's insides to do that."
 			return
@@ -531,6 +537,9 @@
 				user << "<span class='danger'>Access denied.</span>"
 
 	else if(istype(W, /obj/item/borg/upgrade/))
+		if(ismommi(src))
+			user << "You cannot use this upgrade with a MoMMI"
+			return
 		var/obj/item/borg/upgrade/U = W
 		if(!opened)
 			usr << "You must access the borgs internals!"

@@ -60,6 +60,9 @@ datum/reagent/toxin/plasma
 datum/reagent/toxin/plasma/on_mob_life(var/mob/living/M as mob)
 	if(holder.has_reagent("inaprovaline"))
 		holder.remove_reagent("inaprovaline", 2*REM)
+	if(iscarbon(M))
+		var/mob/living/carbon/C = M
+		C.adjustPlasma(20)
 	..()
 	return
 
@@ -127,7 +130,7 @@ datum/reagent/toxin/minttoxin
 	toxpwr = 0
 
 datum/reagent/toxin/minttoxin/on_mob_life(var/mob/living/M as mob)
-	if (FAT in M.mutations)
+	if (M.disabilities & FAT)
 		M.gib()
 	..()
 	return
@@ -493,13 +496,14 @@ datum/reagent/toxin/initropidril/on_mob_life(var/mob/living/M as mob)
 				M.losebreath += 10
 				M.adjustOxyLoss(rand(5,25))
 			if(3)
-				var/mob/living/carbon/human/H = M
-				if(!H.heart_attack)
-					H.visible_message("<span class = 'userdanger'>[H] clutches at their chest as if their heart stopped!</span>")
-					H.heart_attack = 1 // rip in pepperoni
-				else
-					H.losebreath += 10
-					H.adjustOxyLoss(rand(5,25))
+				if(istype(M, /mob/living/carbon/human))
+					var/mob/living/carbon/human/H = M
+					if(!H.heart_attack)
+						H.visible_message("<span class = 'userdanger'>[H] clutches at their chest as if their heart stopped!</span>")
+						H.heart_attack = 1 // rip in pepperoni
+					else
+						H.losebreath += 10
+						H.adjustOxyLoss(rand(5,25))
 	..()
 
 datum/reagent/toxin/pancuronium
@@ -667,5 +671,20 @@ datum/reagent/toxin/stoxin/on_mob_life(var/mob/living/M as mob)
 		if(25 to INFINITY) //CAN'T WAKE UP
 			M.Paralyse(20)
 			M.drowsyness  = max(M.drowsyness, 30)
+	..()
+	return
+
+datum/reagent/viral_readaption
+	name = "Viral Readaption"
+	id = "viral_readaption"
+	description = "???"
+	color = "#13BC5E" // rgb: 207, 54, 0
+
+datum/reagent/viral_readaption/on_mob_life(var/mob/living/M as mob)
+	if(prob(1))
+		M.take_overall_damage(80,0)
+		if(M.stat)
+			M << "<span class='userdanger'>You feel like you are being torn apart from the inside!</span>"
+			M.emote("scream")
 	..()
 	return

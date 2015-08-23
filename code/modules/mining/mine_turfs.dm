@@ -4,7 +4,7 @@
 
 /turf/simulated/mineral //wall piece
 	name = "rock"
-	icon = 'icons/turf/walls.dmi'
+	icon = 'icons/turf/mining.dmi'
 	icon_state = "rock_nochance"
 	baseturf = /turf/simulated/floor/plating/asteroid
 	oxygen = 0
@@ -13,7 +13,8 @@
 	density = 1
 	blocks_air = 1
 	temperature = TCMB
-	var/mineralName = ""
+	var/mineralType = null
+	var/mineralName = "" //Used for some display purposes
 	var/mineralAmt = 3
 	var/spread = 0 //will the seam spread?
 	var/spreadChance = 0 //the percentual chance of an ore spreading to the neighbouring tiles
@@ -43,27 +44,28 @@
 	return
 
 /turf/simulated/mineral/New()
-
+	mining_turfs += src
+	..()
 	spawn(1)
 		var/turf/T
-		if((istype(get_step(src, NORTH), /turf/simulated/floor)) || (istype(get_step(src, NORTH), /turf/space)) || (istype(get_step(src, NORTH), /turf/simulated/shuttle/floor)))
+		if((istype(get_step(src, NORTH), /turf/simulated/floor)) || (istype(get_step(src, NORTH), /turf/space)))
 			T = get_step(src, NORTH)
 			if (T)
-				T.overlays += image('icons/turf/walls.dmi', "rock_side_s")
-		if((istype(get_step(src, SOUTH), /turf/simulated/floor)) || (istype(get_step(src, SOUTH), /turf/space)) || (istype(get_step(src, SOUTH), /turf/simulated/shuttle/floor)))
+				T.overlays += image('icons/turf/mining.dmi', "rock_side_s")
+		if((istype(get_step(src, SOUTH), /turf/simulated/floor)) || (istype(get_step(src, SOUTH), /turf/space)))
 			T = get_step(src, SOUTH)
 			if (T)
-				T.overlays += image('icons/turf/walls.dmi', "rock_side_n", layer=6)
-		if((istype(get_step(src, EAST), /turf/simulated/floor)) || (istype(get_step(src, EAST), /turf/space)) || (istype(get_step(src, EAST), /turf/simulated/shuttle/floor)))
+				T.overlays += image('icons/turf/mining.dmi', "rock_side_n", layer=6)
+		if((istype(get_step(src, EAST), /turf/simulated/floor)) || (istype(get_step(src, EAST), /turf/space)))
 			T = get_step(src, EAST)
 			if (T)
-				T.overlays += image('icons/turf/walls.dmi', "rock_side_w", layer=6)
-		if((istype(get_step(src, WEST), /turf/simulated/floor)) || (istype(get_step(src, WEST), /turf/space)) || (istype(get_step(src, WEST), /turf/simulated/shuttle/floor)))
+				T.overlays += image('icons/turf/mining.dmi', "rock_side_w", layer=6)
+		if((istype(get_step(src, WEST), /turf/simulated/floor)) || (istype(get_step(src, WEST), /turf/space)))
 			T = get_step(src, WEST)
 			if (T)
-				T.overlays += image('icons/turf/walls.dmi', "rock_side_e", layer=6)
+				T.overlays += image('icons/turf/mining.dmi', "rock_side_e", layer=6)
 
-	if (mineralName && mineralAmt && spread && spreadChance)
+	if (mineralType && mineralAmt && spread && spreadChance)
 		for(var/dir in cardinal)
 			if(prob(spreadChance))
 				var/turf/T = get_step(src, dir)
@@ -71,7 +73,11 @@
 					Spread(T)
 
 	HideRock()
-	return
+
+
+/turf/simulated/mineral/Destroy()
+	mining_turfs -= src
+	..()
 
 /turf/simulated/mineral/proc/HideRock()
 	if(hidden)
@@ -79,12 +85,12 @@
 	return
 
 /turf/simulated/mineral/proc/Spread(var/turf/T)
-	new src.type(T)
+	T.ChangeTurf(src.type)
 
 /turf/simulated/mineral/random
 	name = "mineral deposit"
 	icon_state = "rock"
-	var/mineralSpawnChanceList = list("Uranium" = 5, "Diamond" = 1, "Gold" = 10, "Silver" = 12, "Plasma" = 20, "Iron" = 40, "Gibtonite" = 4/*, "Adamantine" =5*/, "Cave" = 2)//Currently, Adamantine won't spawn as it has no uses. -Durandan
+	var/mineralSpawnChanceList = list("Uranium" = 5, "Diamond" = 2, "Gold" = 10, "Silver" = 12, "Plasma" = 20, "Iron" = 40, "Gibtonite" = 4/*, "Adamantine" =5*/, "Cave" = 2, "BScrystal" = 1,)//Currently, Adamantine won't spawn as it has no uses. -Durandan
 	var/mineralChance = 13
 
 /turf/simulated/mineral/random/New()
@@ -93,37 +99,39 @@
 		var/mName = pickweight(mineralSpawnChanceList) //temp mineral name
 
 		if (mName)
-			var/turf/simulated/mineral/M
+			var/M
 			switch(mName)
 				if("Uranium")
-					M = new/turf/simulated/mineral/uranium(src)
+					M = /turf/simulated/mineral/uranium
 				if("Iron")
-					M = new/turf/simulated/mineral/iron(src)
+					M = /turf/simulated/mineral/iron
 				if("Diamond")
-					M = new/turf/simulated/mineral/diamond(src)
+					M = /turf/simulated/mineral/diamond
 				if("Gold")
-					M = new/turf/simulated/mineral/gold(src)
+					M = /turf/simulated/mineral/gold
 				if("Silver")
-					M = new/turf/simulated/mineral/silver(src)
+					M = /turf/simulated/mineral/silver
 				if("Plasma")
-					M = new/turf/simulated/mineral/plasma(src)
+					M = /turf/simulated/mineral/plasma
 				if("Cave")
-					new/turf/simulated/floor/plating/asteroid/airless/cave(src)
+					M = /turf/simulated/floor/plating/asteroid/airless/cave
 				if("Gibtonite")
-					M = new/turf/simulated/mineral/gibtonite(src)
+					M = /turf/simulated/mineral/gibtonite
 				if("Bananium")
-					M = new/turf/simulated/mineral/clown(src)
+					M = /turf/simulated/mineral/clown
+				if("BScrystal")
+					M = /turf/simulated/mineral/bscrystal
 				/*if("Adamantine")
 					M = new/turf/simulated/mineral/adamantine(src)*/
 			if(M)
-				src = M
-				M.levelupdate()
+				src.ChangeTurf(M)
+				src.levelupdate()
 	return
 
 /turf/simulated/mineral/random/high_chance
 	icon_state = "rock_highchance"
 	mineralChance = 25
-	mineralSpawnChanceList = list("Uranium" = 35, "Diamond" = 30, "Gold" = 45, "Silver" = 50, "Plasma" = 50)
+	mineralSpawnChanceList = list("Uranium" = 35, "Diamond" = 30, "Gold" = 45, "Silver" = 50, "Plasma" = 50, "BScrystal" = 20)
 
 /turf/simulated/mineral/random/high_chance/New()
 	icon_state = "rock"
@@ -132,30 +140,34 @@
 /turf/simulated/mineral/random/low_chance
 	icon_state = "rock_lowchance"
 	mineralChance = 6
-	mineralSpawnChanceList = list("Uranium" = 2, "Diamond" = 1, "Gold" = 4, "Silver" = 6, "Plasma" = 15, "Iron" = 40, "Gibtonite" = 2)
+	mineralSpawnChanceList = list("Uranium" = 2, "Diamond" = 1, "Gold" = 4, "Silver" = 6, "Plasma" = 15, "Iron" = 40, "Gibtonite" = 2, , "BScrystal" = 1)
 
 /turf/simulated/mineral/random/low_chance/New()
 	icon_state = "rock"
 	..()
 
+
+/turf/simulated/mineral/iron
+	name = "iron deposit"
+	icon_state = "rock_Iron"
+	mineralType = /obj/item/weapon/ore/iron
+	mineralName = "Iron"
+	spreadChance = 20
+	spread = 1
+	hidden = 0
+
 /turf/simulated/mineral/uranium
 	name = "uranium deposit"
+	mineralType = /obj/item/weapon/ore/uranium
 	mineralName = "Uranium"
 	spreadChance = 5
 	spread = 1
 	hidden = 1
 	scan_state = "rock_Uranium"
 
-/turf/simulated/mineral/iron
-	name = "iron deposit"
-	icon_state = "rock_Iron"
-	mineralName = "Iron"
-	spreadChance = 20
-	spread = 1
-	hidden = 0
-
 /turf/simulated/mineral/diamond
 	name = "diamond deposit"
+	mineralType = /obj/item/weapon/ore/diamond
 	mineralName = "Diamond"
 	spreadChance = 0
 	spread = 1
@@ -164,6 +176,7 @@
 
 /turf/simulated/mineral/gold
 	name = "gold deposit"
+	mineralType = /obj/item/weapon/ore/gold
 	mineralName = "Gold"
 	spreadChance = 5
 	spread = 1
@@ -172,6 +185,7 @@
 
 /turf/simulated/mineral/silver
 	name = "silver deposit"
+	mineralType = /obj/item/weapon/ore/silver
 	mineralName = "Silver"
 	spreadChance = 5
 	spread = 1
@@ -181,6 +195,7 @@
 /turf/simulated/mineral/plasma
 	name = "plasma deposit"
 	icon_state = "rock_Plasma"
+	mineralType = /obj/item/weapon/ore/plasma
 	mineralName = "Plasma"
 	spreadChance = 8
 	spread = 1
@@ -190,17 +205,28 @@
 /turf/simulated/mineral/clown
 	name = "bananium deposit"
 	icon_state = "rock_Clown"
+	mineralType = /obj/item/weapon/ore/bananium
 	mineralName = "Bananium"
 	mineralAmt = 3
 	spreadChance = 0
 	spread = 0
 	hidden = 0
 
+/turf/simulated/mineral/bscrystal
+	name = "bluespace crystal deposit"
+	icon_state = "rock_BScrystal"
+	mineralType = /obj/item/bluespace_crystal
+	mineralName = "Bluespace Crystal"
+	mineralAmt = 1
+	spreadChance = 0
+	spread = 0
+	hidden = 1
+	scan_state = "rock_BScrystal"
+
 ////////////////////////////////Gibtonite
 /turf/simulated/mineral/gibtonite
 	name = "gibtonite deposit"
 	icon_state = "rock_Gibtonite"
-	mineralName = "Gibtonite"
 	mineralAmt = 1
 	spreadChance = 0
 	spread = 0
@@ -231,7 +257,7 @@
 		user << "<span class='notice'>You start picking...</span>"
 		P.playDigSound()
 
-		if(do_after(user,P.digspeed))
+		if(do_after(user,P.digspeed, target = src))
 			if(istype(src, /turf/simulated/mineral)) //sanity check against turf being deleted during digspeed delay
 				user << "<span class='notice'>You finish cutting into the rock.</span>"
 				P.update_icon()
@@ -251,19 +277,16 @@
 		var/turf/bombturf = get_turf(src)
 		var/area/A = get_area(bombturf)
 
-		if(user)
-			activated_ckey = "[user.ckey]"
-			activated_name = "[user.name]"
 		var/notify_admins = 0
 		if(z != 5)
 			notify_admins = 1
 			if(!triggered_by_explosion)
-				message_admins("[src.activated_ckey]/([src.activated_name])<A HREF='?_src_=holder;adminmoreinfo=\ref[usr]'>?</A> has triggered a gibtonite deposit reaction at <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[bombturf.x];Y=[bombturf.y];Z=[bombturf.z]'>[A.name] (JMP)</a>.")
+				message_admins("[key_name_admin(user)]<A HREF='?_src_=holder;adminmoreinfo=\ref[user]'>?</A> (<A HREF='?_src_=holder;adminplayerobservefollow=\ref[user]'>FLW</A>) has triggered a gibtonite deposit reaction at <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[bombturf.x];Y=[bombturf.y];Z=[bombturf.z]'>[A.name] (JMP)</a>.")
 			else
 				message_admins("An explosion has triggered a gibtonite deposit reaction at <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[bombturf.x];Y=[bombturf.y];Z=[bombturf.z]'>[A.name] (JMP)</a>.")
 
 		if(!triggered_by_explosion)
-			log_game("[src.activated_ckey] ([src.activated_name]) has triggered a gibtonite deposit reaction at [A.name] ([A.x], [A.y], [A.z]).")
+			log_game("[key_name(user)] has triggered a gibtonite deposit reaction at [A.name] ([A.x], [A.y], [A.z]).")
 		else
 			log_game("An explosion has triggered a gibtonite deposit reaction at [A.name]([bombturf.x],[bombturf.y],[bombturf.z])")
 
@@ -325,6 +348,7 @@
 /turf/simulated/floor/plating/asteroid/airless/cave/New(loc, var/length, var/go_backwards = 1, var/exclude_dir = -1)
 
 	// If length (arg2) isn't defined, get a random length; otherwise assign our length to the length arg.
+	lighting_build_overlays()
 	if(!length)
 		src.length = rand(25, 50)
 	else
@@ -383,20 +407,23 @@
 
 /turf/simulated/floor/plating/asteroid/airless/cave/proc/SpawnFloor(var/turf/T)
 	for(var/turf/S in range(2,T))
-		if(istype(S, /turf/space) || istype(S.loc, /area/mine/explored))
+		if(istype(S, /turf/space) || istype(S.loc, /area/space/mine/explored))
 			sanity = 0
 			break
 	if(!sanity)
 		return
 
 	SpawnMonster(T)
-	var/turf/simulated/floor/t = new /turf/simulated/floor/plating/asteroid/airless(T)
+	var/turf/simulated/floor/t = T.ChangeTurf(/turf/simulated/floor/plating/asteroid/airless)
 	spawn(2)
 		t.fullUpdateMineralOverlays()
+	spawn (300)
+		t.lighting_fix_overlays()
+		t.update_overlay()
 
 /turf/simulated/floor/plating/asteroid/airless/cave/proc/SpawnMonster(var/turf/T)
 	if(prob(30))
-		if(istype(loc, /area/mine/explored))
+		if(istype(loc, /area/space/mine/explored))
 			return
 		for(var/atom/A in range(15,T))//Lowers chance of mob clumps
 			if(istype(A, /mob/living/simple_animal/hostile/asteroid))
@@ -435,7 +462,7 @@
 	if (istype(W, /obj/item/device/measuring_tape))
 		var/obj/item/device/measuring_tape/P = W
 		user.visible_message("<span class='notice'>[user] extends [P] towards [src].</span>","<span class='notice'>You extend [P] towards [src].</span>")
-		if(do_after(user,25))
+		if(do_after(user,25, target = src))
 			user << "<span class='notice'>\icon[P] [src] has been excavated to a depth of [2*excavation_level]cm.</span>"
 		return
 
@@ -467,7 +494,7 @@
 					artifact_debris()
 		P.playDigSound()
 
-		if(do_after(user,P.digspeed))
+		if(do_after(user,P.digspeed, target = src))
 			if(istype(src, /turf/simulated/mineral)) //sanity check against turf being deleted during digspeed delay
 				user << "<span class='notice'>You finish cutting into the rock.</span>"
 				if(finds && finds.len)
@@ -512,30 +539,30 @@
 						archaeo_overlay = "overlay_archaeo[rand(1,3)]"
 						overlays += archaeo_overlay
 
-			var/update_excav_overlay = 0
+				var/update_excav_overlay = 0
 
-			var/subtractions = 0
-			while(excavation_level - 25*(subtractions + 1) >= 0 && subtractions < 3)
-				subtractions++
-			if(excavation_level - P.excavation_amount < subtractions * 25)
-				update_excav_overlay = 1
+				var/subtractions = 0
+				while(excavation_level - 25*(subtractions + 1) >= 0 && subtractions < 3)
+					subtractions++
+				if(excavation_level - P.excavation_amount < subtractions * 25)
+					update_excav_overlay = 1
 
-			//update overlays displaying excavation level
-			if( !(excav_overlay && excavation_level > 0) || update_excav_overlay )
-				var/excav_quadrant = round(excavation_level / 25) + 1
-				excav_overlay = "overlay_excv[excav_quadrant]_[rand(1,3)]"
-				overlays += excav_overlay
+				//update overlays displaying excavation level
+				if( !(excav_overlay && excavation_level > 0) || update_excav_overlay )
+					var/excav_quadrant = round(excavation_level / 25) + 1
+					excav_overlay = "overlay_excv[excav_quadrant]_[rand(1,3)]"
+					overlays += excav_overlay
 
 			//drop some rocks
-			next_rock += P.excavation_amount * 10
-			while(next_rock > 100)
-				next_rock -= 100
-				var/obj/item/weapon/ore/O = new(src)
-				if(!geologic_data)
-					geologic_data = new/datum/geosample(src)
-				geologic_data.UpdateNearbyArtifactInfo(src)
-				O.geologic_data = geologic_data
-				P.update_icon()
+				next_rock += P.excavation_amount * 10
+				while(next_rock > 100)
+					next_rock -= 100
+					var/obj/item/weapon/ore/O = new(src)
+					if(!geologic_data)
+						geologic_data = new/datum/geosample(src)
+					geologic_data.UpdateNearbyArtifactInfo(src)
+					O.geologic_data = geologic_data
+					P.update_icon()
 	else
 		return attack_hand(user)
 	return
@@ -552,26 +579,19 @@
 				if(prob(50))
 					M.Stun(5)
 			M.apply_effect(25, IRRADIATE)
-	if ((src.mineralName != "") && (src.mineralAmt > 0) && (src.mineralAmt < 11))
+	if (mineralType && (src.mineralAmt > 0) && (src.mineralAmt < 11))
 		var/i
 		for (i=0;i<mineralAmt;i++)
-			if (src.mineralName == "Uranium")
-				new /obj/item/weapon/ore/uranium(src)
-			if (src.mineralName == "Iron")
-				new /obj/item/weapon/ore/iron(src)
-			if (src.mineralName == "Gold")
-				new /obj/item/weapon/ore/gold(src)
-			if (src.mineralName == "Silver")
-				new /obj/item/weapon/ore/silver(src)
-			if (src.mineralName == "Plasma")
-				new /obj/item/weapon/ore/plasma(src)
-			if (src.mineralName == "Diamond")
-				new /obj/item/weapon/ore/diamond(src)
-			if (src.mineralName == "Bananium")
-				new /obj/item/weapon/ore/bananium(src)
+			new mineralType(src)
+		feedback_add_details("ore_mined","[mineralType]|[mineralAmt]")
+
+	if(rand(1,1000) == 1)
+		visible_message("<span class='notice'>An old dusty crate was buried within!</span>")
+		DropAbandonedCrate()
 	var/turf/simulated/floor/plating/asteroid/airless/N = ChangeTurf(/turf/simulated/floor/plating/asteroid/airless)
 	playsound(src, 'sound/effects/break_stone.ogg', 50, 1) //beautiful destruction
 	N.fullUpdateMineralOverlays()
+
 	return
 
 /turf/simulated/mineral/proc/excavate_find(var/prob_clean = 0, var/datum/find/F)
@@ -604,6 +624,9 @@
 				del(X)
 
 	finds.Remove(F)
+
+/turf/simulated/mineral/proc/DropAbandonedCrate()
+	new /obj/structure/closet/crate/secure/loot(src)
 
 /turf/simulated/mineral/proc/artifact_debris(var/severity = 0)
 	for(var/j in 1 to rand(1, 3 + max(min(severity, 1), 0) * 2))
@@ -689,7 +712,6 @@
 	icon_plating = "asteroid"
 	baseturf = /turf/simulated/floor/plating/asteroid
 	var/dug = 0       //0 = has not yet been dug, 1 = has already been dug
-	var/archaeo_overlay = ""
 	ignoredirt = 1
 
 /turf/simulated/floor/plating/asteroid/airless
@@ -699,6 +721,7 @@
 
 /turf/simulated/floor/plating/asteroid/New()
 	var/proper_name = name
+	mining_turfs += src
 	..()
 	name = proper_name
 	//if (prob(50))
@@ -708,6 +731,10 @@
 		icon_state = "asteroid[rand(0,12)]"
 //	spawn(2)
 //O		updateMineralOverlays()
+
+/turf/simulated/floor/plating/Destroy()
+	mining_turfs -= src
+	..()
 
 /turf/simulated/floor/plating/asteroid/burn_tile()
 	return
@@ -761,6 +788,8 @@
 		playsound(src, 'sound/effects/shovel_dig.ogg', 50, 1) //FUCK YO RUSTLE I GOT'S THE DIGS SOUND HERE
 
 		sleep(P.digspeed)
+		if (!user)
+			return
 		if ((user.loc == T && user.get_active_hand() == W))
 			user << "<span class='notice'>You dug a hole.</span>"
 			gets_dug()
@@ -800,13 +829,13 @@
 	src.overlays.Cut()
 
 	if(istype(get_step(src, NORTH), /turf/simulated/mineral))
-		src.overlays += image('icons/turf/walls.dmi', "rock_side_n")
+		src.overlays += image('icons/turf/mining.dmi', "rock_side_n")
 	if(istype(get_step(src, SOUTH), /turf/simulated/mineral))
-		src.overlays += image('icons/turf/walls.dmi', "rock_side_s", layer=6)
+		src.overlays += image('icons/turf/mining.dmi', "rock_side_s", layer=6)
 	if(istype(get_step(src, EAST), /turf/simulated/mineral))
-		src.overlays += image('icons/turf/walls.dmi', "rock_side_e", layer=6)
+		src.overlays += image('icons/turf/mining.dmi', "rock_side_e", layer=6)
 	if(istype(get_step(src, WEST), /turf/simulated/mineral))
-		src.overlays += image('icons/turf/walls.dmi', "rock_side_w", layer=6)
+		src.overlays += image('icons/turf/mining.dmi', "rock_side_w", layer=6)
 
 /turf/simulated/mineral/updateMineralOverlays()
 	return

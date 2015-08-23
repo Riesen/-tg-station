@@ -51,6 +51,7 @@
 	var/jobs_have_minimal_access = 0	//determines whether jobs use minimal access or expanded access.
 	var/jobs_have_maint_access = 0 		//Who gets maint access?  See defines above.
 	var/sec_start_brig = 0				//makes sec start in brig or dept sec posts
+	var/critfullblind = 0				//If being in crit should fully blind you or just use the old effect
 
 	var/server
 	var/banappeals
@@ -99,11 +100,8 @@
 	var/protect_assistant_from_antagonist = 0 //If assistants can be traitor/cult/other
 	var/enforce_human_authority = 0		//If non-human species are barred from joining as a head of staff
 	var/allow_latejoin_antagonists = 0 	// If late-joining players can be traitor/changeling
-	var/continuous_round_rev = 0		// Gamemodes which end instantly will instead keep on going until the round ends by escape shuttle or nuke.
-	var/continuous_round_gang = 0
-	var/continuous_round_wiz = 0
-	var/continuous_round_malf = 0
-	var/continuous_round_blob = 0
+	var/list/continuous = list()		// which roundtypes continue if all antagonists die
+	var/list/midround_antag = list() 	// which roundtypes use the midround antagonist system
 	var/midround_antag_time_check = 60  // How late (in minutes) you want the midround antag system to stay on, setting this to 0 will disable the system
 	var/midround_antag_life_check = 0.7 // A ratio of how many people need to be alive in order for the round not to immediately end in midround antagonist
 	var/shuttle_refuel_delay = 12000
@@ -343,6 +341,12 @@
 					config.aggressive_changelog = 1
 				if("reactionary_explosions")
 					config.reactionary_explosions	= 1
+				if("log_runtimes")
+					var/newlog = file("data/logs/runtimes/runtime-[time2text(world.realtime, "YYYY-MM-DD")].log")
+					if (world.log != newlog)
+						world.log << "Now logging runtimes to data/logs/runtimes/runtime-[time2text(world.realtime, "YYYY-MM-DD")].log"
+						world.log = newlog
+
 				else
 					diary << "Unknown setting in configuration: '[name]'"
 
@@ -402,16 +406,18 @@
 					config.sec_start_brig			= 1
 				if("gateway_delay")
 					config.gateway_delay			= text2num(value)
-				if("continuous_round_rev")
-					config.continuous_round_rev		= 1
-				if("continuous_round_gang")
-					config.continuous_round_gang	= 1
-				if("continuous_round_wiz")
-					config.continuous_round_wiz		= 1
-				if("continuous_round_malf")
-					config.continuous_round_malf	= 1
-				if("continuous_round_blob")
-					config.continuous_round_blob	= 1
+				if("continuous")
+					var/mode_name = lowertext(value)
+					if(mode_name in config.modes)
+						config.continuous[mode_name] = 1
+					else
+						diary << "Unknown continuous configuration definition: [mode_name]."
+				if("midround_antag")
+					var/mode_name = lowertext(value)
+					if(mode_name in config.modes)
+						config.midround_antag[mode_name] = 1
+					else
+						diary << "Unknown midround antagonist configuration definition: [mode_name]."
 				if("midround_antag_time_check")
 					config.midround_antag_time_check = text2num(value)
 				if("midround_antag_life_check")
@@ -487,6 +493,8 @@
 					config.starlight			= 1
 				if("grey_assistants")
 					config.grey_assistants			= 1
+				if("crit_full_blindness")
+					config.critfullblind = 1
 				else
 					diary << "Unknown setting in configuration: '[name]'"
 
@@ -560,4 +568,20 @@
 		if(M.can_start())
 			runnable_modes[M] = probabilities[M.config_tag]
 			//world << "DEBUG: runnable_mode\[[runnable_modes.len]\] = [M.config_tag]"
+	return runnable_modes
+
+
+
+/datum/configuration/proc/get_runnable_midround_modes(crew)
+	var/list/datum/game_mode/runnable_modes = new
+	for(var/T in (typesof(/datum/game_mode) - /datum/game_mode - ticker.mode.type))
+		var/datum/game_mode/M = new T()
+		if(!(M.config_tag in modes))
+			qdel(M)
+			continue
+		if(probabilities[M.config_tag]<=0)
+			qdel(M)
+			continue
+		if(M.required_players <= crew)
+			runnable_modes[M] = probabilities[M.config_tag]
 	return runnable_modes

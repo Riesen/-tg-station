@@ -74,6 +74,15 @@
 	adding += inv_box
 
 	inv_box = new /obj/screen/inventory()
+	inv_box.name = "head"
+	inv_box.icon = ui_style
+	inv_box.icon_state = "head"
+	inv_box.screen_loc = ui_monkey_head
+	inv_box.slot_id = slot_head
+	inv_box.layer = 19
+	adding += inv_box
+
+	inv_box = new /obj/screen/inventory()
 	inv_box.name = "back"
 	inv_box.icon = ui_style
 	inv_box.icon_state = "back"
@@ -111,6 +120,16 @@
 	mymob.blind.name = " "
 	mymob.blind.screen_loc = "CENTER-7,CENTER-7"
 	mymob.blind.layer = 0
+//	mymob.blind.mouse_opacity = 0
+
+
+	mymob.cover = new /obj/screen()
+	mymob.cover.icon = 'icons/mob/screen_full.dmi'
+	mymob.cover.icon_state = "coveredimageoverlay"
+	mymob.cover.name = " "
+	mymob.cover.screen_loc = "CENTER-7,CENTER-7"
+	mymob.cover.mouse_opacity = 0
+	mymob.cover.layer = 0
 
 	mymob.damageoverlay = new /obj/screen()
 	mymob.damageoverlay.icon = 'icons/mob/screen_full.dmi'
@@ -132,12 +151,13 @@
 	mymob.zone_sel.icon = ui_style
 	mymob.zone_sel.update_icon()
 
-	mymob.client.screen = null
+	mymob.client.screen = list()
 
 	using = new /obj/screen/resist()
 	using.icon = ui_style
 	using.screen_loc = ui_pull_resist
 	adding += using
 
-	mymob.client.screen += list( mymob.throw_icon, mymob.zone_sel, mymob.internals, mymob.healths, mymob.pullin, mymob.blind, mymob.flash, lingchemdisplay, lingstingdisplay) //, mymob.hands, mymob.rest, mymob.sleep, mymob.mach )
+	mymob.client.screen += list( mymob.throw_icon, mymob.zone_sel, mymob.internals, mymob.healths, mymob.pullin, mymob.blind, mymob.cover, mymob.flash, lingchemdisplay, lingstingdisplay) //, mymob.hands, mymob.rest, mymob.sleep, mymob.mach )
 	mymob.client.screen += adding + other
+	mymob.client.screen += mymob.client.void

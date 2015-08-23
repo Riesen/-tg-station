@@ -75,12 +75,6 @@
 	if(stat & BROKEN || !I || !user)
 		return
 
-	if(isrobot(user) && !ismommi(user))
-		if(!istype(I, /obj/item/weapon/storage/bag/trash))
-			return
-	else
-		if(I.flags & NODROP)
-			return
 
 	src.add_fingerprint(user)
 	if(mode<=0) // It's off
@@ -107,7 +101,7 @@
 				playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
 				user << "<span class='notice'>You start slicing the floorweld off \the [src].</span>"
 
-				if(do_after(user,20))
+				if(do_after(user,20, target = src))
 					if(!src || !W.isOn()) return
 					user << "<span class='notice'>You've sliced the floorweld off \the [src].</span>"
 					Deconstruct()
@@ -123,6 +117,12 @@
 		T.update_icon()
 		update()
 		return
+
+	if(isrobot(user) && !ismommi(user))
+		return
+	else
+		if(I.flags & NODROP)
+			return
 
 	var/obj/item/weapon/grab/G = I
 	if(istype(G))	// handle grabbed mob
@@ -158,7 +158,11 @@
 	else
 		target.visible_message("<span class='danger'>[user] starts putting [target] into [src].</span>", \
 								"<span class='userdanger'>[user] starts putting [target] into [src]!</span>")
+	if(target.buckled)
+		target.buckled.unbuckle_mob()
 	if(do_mob(user, target, 20))
+		if(!loc)
+			return
 		if (target.client)
 			target.client.perspective = EYE_PERSPECTIVE
 			target.client.eye = src
@@ -466,7 +470,7 @@
 		stored.loc = T
 		src.transfer_fingerprints_to(stored)
 		stored.anchored = 0
-		stored.density = 1
+		stored.density = 0
 		stored.update()
 	..()
 // virtual disposal object
@@ -593,11 +597,9 @@
 	playsound(src.loc, 'sound/effects/clang.ogg', 50, 0, 0)
 
 // called to vent all gas in holder to a location
-/obj/structure/disposalholder/proc/vent_gas(var/atom/location)
-	if(location)
-		location.assume_air(gas)  // vent all gas to turf
-	air_update_turf()
-	return
+/obj/structure/disposalholder/proc/vent_gas(turf/T)
+	T.assume_air(gas)
+	T.air_update_turf()
 
 // Disposal pipes
 
@@ -704,6 +706,8 @@
 // update the icon_state to reflect hidden status
 /obj/structure/disposalpipe/proc/update()
 	var/turf/T = src.loc
+	if(!istype(T))
+		return
 	hide(T.intact && !istype(T,/turf/space))	// space never hides pipes
 
 // hide called by levelupdate if turf intact status changes
@@ -850,7 +854,7 @@
 			playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
 			user << "<span class='notice'>You start slicing the disposal pipe.</span>"
 			// check if anything changed over 2 seconds
-			if(do_after(user,30))
+			if(do_after(user,30, target = src))
 				if(!src || !W.isOn()) return
 				Deconstruct()
 				user << "<span class='notice'>You've sliced the disposal pipe.</span>"
@@ -1104,6 +1108,17 @@
 	update()
 	return
 
+/obj/structure/disposalpipe/trunk/Destroy()
+	if(linked)
+		if(istype(linked, /obj/structure/disposaloutlet))
+			var/obj/structure/disposaloutlet/D = linked
+			D.trunk = null
+		else if(istype(linked, /obj/machinery/disposal))
+			var/obj/machinery/disposal/D = linked
+			D.trunk = null
+	..()
+
+
 /obj/structure/disposalpipe/trunk/proc/getlinked()
 	linked = null
 	var/obj/machinery/disposal/D = locate() in src.loc
@@ -1154,7 +1169,7 @@
 		if(W.remove_fuel(0,user))
 			playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
 			user << "<span class='notice'>You start slicing the disposal pipe.</span>"
-			if(do_after(user,30))
+			if(do_after(user,30, target = src))
 				if(!src || !W.isOn()) return
 				Deconstruct()
 				user << "<span class='notice'>You've sliced the disposal pipe.</span>"
@@ -1288,7 +1303,7 @@
 		if(W.remove_fuel(0,user))
 			playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
 			user << "<span class='notice'>You start slicing the floorweld off \the [src].</span>"
-			if(do_after(user,20))
+			if(do_after(user,20, target = src))
 				if(!src || !W.isOn()) return
 				user << "<span class='notice'>You've sliced the floorweld off \the [src].</span>"
 				stored.loc = loc
@@ -1334,3 +1349,9 @@
 		dirs = alldirs.Copy()
 
 	src.streak(dirs)
+
+//How disposal handles getting a storage dump from a storage object
+/obj/machinery/disposal/storage_contents_dump_act(obj/item/weapon/storage/src_object, mob/user)
+	for(var/obj/item/I in src_object)
+		src_object.remove_from_storage(I, src)
+	return 1

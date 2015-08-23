@@ -9,6 +9,8 @@
 	response_help = "passes through"
 	response_disarm = "shoves"
 	response_harm = "hits"
+	emote_taunt = list("wails")
+	taunt_chance = 25
 	speed = 0
 	maxHealth = 80
 	health = 80
@@ -19,25 +21,13 @@
 	attacktext = "grips"
 	attack_sound = 'sound/hallucinations/growl1.ogg'
 
-	min_oxy = 0
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 0
-	min_co2 = 0
-	max_co2 = 0
-	min_n2 = 0
-	max_n2 = 0
+	atmos_requirements = list("min_oxy" = 0, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
 	minbodytemp = 0
 
 	faction = list("faithless")
 
 /mob/living/simple_animal/hostile/faithless/Process_Spacemove(var/movement_dir = 0)
 	return 1
-
-/mob/living/simple_animal/hostile/faithless/FindTarget()
-	. = ..()
-	if(.)
-		emote("me", 1, "wails at [.]!")
 
 /mob/living/simple_animal/hostile/faithless/AttackingTarget()
 	..()

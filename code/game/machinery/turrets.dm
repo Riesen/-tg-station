@@ -13,8 +13,6 @@
 
 /area/turret_protected/Entered(O)
 	..()
-	if( master && master != src )
-		return master.Entered(O)
 
 	if( iscarbon(O) )
 		turretTargets |= O
@@ -27,8 +25,6 @@
 	return 1
 
 /area/turret_protected/Exited(O)
-	if( master && master != src )
-		return master.Exited(O)
 
 	if( ismob(O) && !issilicon(O) )
 		turretTargets -= O
@@ -121,8 +117,6 @@
 /obj/machinery/turret/proc/get_protected_area()
 	var/area/turret_protected/TP = get_area(src)
 	if(istype(TP))
-		if(TP.master && TP.master != TP)
-			TP = TP.master
 		return TP
 	return
 
@@ -349,7 +343,7 @@
 	desc = "Syndicate defense turret. It really packs a bunch."
 	density = 1
 	anchored = 1
-	var/state = 0 //Like stat on mobs, 0 is alive, 1 is damaged, 2 is dead
+	var/status = 0 //Like stat on mobs, 0 is alive, 1 is damaged, 2 is dead
 	var/faction = "syndicate"
 	var/atom/cur_target = null
 	var/scan_range = 9 //You will never see them coming
@@ -379,9 +373,9 @@
 	return
 
 /obj/machinery/gun_turret/update_icon()
-	if(state > 2 || state < 0) //someone fucked up the vars so fix them
+	if(status > 2 || status < 0) //someone fucked up the vars so fix them
 		take_damage(0)
-	icon_state = "[base_icon_state]" + "[state]"
+	icon_state = "[base_icon_state]" + "[status]"
 	return
 
 
@@ -389,14 +383,14 @@
 	health -= damage
 	switch(health)
 		if(101 to INFINITY)
-			state = 0
+			status = 0
 		if(1 to 100)
-			state = 1
+			status = 1
 		if(-INFINITY to 0)
 			if(state != 2)
 				die()
 				return
-			state = 2
+			status = 2
 	update_icon()
 	return
 
@@ -406,7 +400,7 @@
 	return
 
 /obj/machinery/gun_turret/proc/die()
-	state = 2
+	status = 2
 	update_icon()
 
 /obj/machinery/gun_turret/attack_hand(mob/user)
@@ -438,7 +432,7 @@
 
 
 /obj/machinery/gun_turret/process()
-	if(state == 2)
+	if(status == 2)
 		return
 	if(cur_target && !validate_target(cur_target))
 		cur_target = null
@@ -513,11 +507,7 @@
 /obj/machinery/areaturretid/New()
 	..()
 	if(!control_area)
-		var/area/CA = get_area(src)
-		if(CA.master && CA.master != CA)
-			control_area = CA.master
-		else
-			control_area = CA
+		control_area = get_area(src)
 	else if(istext(control_area))
 		for(var/area/A in world)
 			if(A.name && A.name==control_area)
@@ -613,8 +603,9 @@
 	src.attack_hand(usr)
 
 /obj/machinery/areaturretid/proc/updateTurrets()
-	if(control_area)
-		for (var/obj/machinery/turret/aTurret in get_area_all_atoms(control_area))
+	var/area/A = control_area
+	if(A)
+		for (var/obj/machinery/turret/aTurret in A.contents)
 			aTurret.setState(enabled, lethal)
 	src.update_icon()
 

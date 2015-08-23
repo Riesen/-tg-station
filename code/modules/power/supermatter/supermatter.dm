@@ -1,8 +1,8 @@
 //ayy lmao
 #define NITROGEN_RETARDATION_FACTOR 4        //Higher == N2 slows reaction more
 #define THERMAL_RELEASE_MODIFIER 40                //Higher == less heat released during reaction
-#define PLASMA_RELEASE_MODIFIER 1500                //Higher == less plasma released by reaction
-#define OXYGEN_RELEASE_MODIFIER 800        //Higher == less oxygen released at high temperature/power
+#define PLASMA_RELEASE_MODIFIER 1000                //Higher == less plasma released by reaction
+#define OXYGEN_RELEASE_MODIFIER 500        //Higher == less oxygen released at high temperature/power
 #define REACTION_POWER_MODIFIER 1.1                //Higher == more overall power
 
 //These would be what you would get at point blank, decreases with distance
@@ -23,7 +23,7 @@
 	icon_state = "darkmatter"
 	density = 1
 	anchored = 0
-	l_color = "#ffcc00"
+	light_color = LIGHT_COLOR_YELLOW
 
 	var/max_luminosity = 8 // Now varies based on power.
 
@@ -125,7 +125,7 @@
 
 	explosion_power = 8 // WAS 3 - N3X
 
-	max_luminosity = 5
+	max_luminosity = 6
 	max_power=3000
 
 /obj/machinery/power/supermatter/New()
@@ -143,7 +143,7 @@
 /obj/machinery/power/supermatter/proc/explode()
 		exploding = 1
 		explosion(get_turf(src), explosion_power, explosion_power * 2, explosion_power * 3, explosion_power * 4, 1)
-		new /turf/unsimulated/wall/supermatter(get_turf(src))
+		new /turf/simulated/supermatter(get_turf(src))
 		SetUniversalState(/datum/universal_state/supermatter_cascade)
 		qdel(src)
 
@@ -160,6 +160,11 @@
 		prints = ", all touchers : [list2params(src.fingerprintshidden)]"
 	log_admin("New super singularity made by eating a SM crystal [prints]. Last touched by [src.fingerprintslast].")
 	message_admins("New super singularity made by eating a SM crystal [prints]. Last touched by [src.fingerprintslast].")
+	investigate_log("Supermatter shard consumed by singularity.","singulo")
+	visible_message("<span class='userdanger'>[src] is consumed by the singularity!</span>")
+	for(var/mob/M in mob_list)
+		M << 'sound/effects/supermatter.ogg' //everyone goan know bout this
+		M << "<span class='boldannounce'>A horrible screeching fills your ears, and a wave of dread washes over you...</span>"
 	qdel(src)
 	return 15000
 
@@ -171,6 +176,11 @@
 	//S.expand(STAGE_SUPER, 1)
 	log_admin("New super singularity made by eating a SM crystal [prints]. Last touched by [src.fingerprintslast].")
 	message_admins("New super singularity made by eating a SM crystal [prints]. Last touched by [src.fingerprintslast].")
+	investigate_log("Supermatter crystal consumed by singularity.","singulo")
+	visible_message("<span class='userdanger'>[src] is consumed by the singularity!</span>")
+	for(var/mob/M in mob_list)
+		M << 'sound/effects/supermatter.ogg' //everyone goan know bout this
+		M << "<span class='boldannounce'>A horrible screeching fills your ears, and a wave of dread washes over you...</span>"
 	qdel(src)
 	return 20000
 
@@ -308,7 +318,12 @@
 	power -= (power/500)**3
 
 
-	SetLuminosity(Clamp(round(Clamp(power/max_power,0,1)*max_luminosity),0,max_luminosity))
+	var/light_value = Clamp(round(Clamp(power / max_power, 0, 1) * max_luminosity), 0, max_luminosity)
+	set_light(light_value, light_value)
+
+	update_light()
+
+	air_update_turf(1)
 
 	return 1
 
@@ -400,11 +415,11 @@
 		var/mob/living/user = AM
 		user.dust()
 		power += 200
-		message_admins("[src] has consumed [key_name(user)]<A HREF='?_src_=holder;adminmoreinfo=\ref[user]'>?</A> <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>(JMP)</a>.")
+		message_admins("[src] has consumed [key_name_admin(user)]<A HREF='?_src_=holder;adminmoreinfo=\ref[user]'>?</A> (<A HREF='?_src_=holder;adminplayerobservefollow=\ref[user]'>FLW</A>) <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>(JMP)</a>.")
+		investigate_log("has consumed [key_name(user)].", "supermatter")
 	else if(isobj(AM) && !istype(AM, /obj/effect))
+		investigate_log("has consumed [AM].", "supermatter")
 		qdel(AM)
-
-	investigate_log("has consumed [AM].", "supermatter")
 
 	power += 200
 

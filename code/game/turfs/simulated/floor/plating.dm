@@ -39,7 +39,7 @@
 			return
 		else
 			user << "<span class='notice'>Reinforcing the floor...</span>"
-			if(do_after(user, 30))
+			if(do_after(user, 30, target = src))
 				if (R.get_amount() >= 2)
 					ChangeTurf(/turf/simulated/floor/engine)
 					playsound(src, 'sound/items/Deconstruct.ogg', 80, 1)
@@ -98,7 +98,7 @@
 	if(istype(C, /obj/item/weapon/wrench))
 		user << "<span class='notice'>Removing rods...</span>"
 		playsound(src, 'sound/items/Ratchet.ogg', 80, 1)
-		if(do_after(user, 30))
+		if(do_after(user, 30, target = src))
 			new /obj/item/stack/rods(src, 2)
 			ChangeTurf(/turf/simulated/floor/plating)
 			return
@@ -157,3 +157,19 @@
 	nitrogen = 0
 	temperature = TCMB
 
+
+
+/turf/simulated/floor/plating/lava
+	icon_state = "lava"
+
+/turf/simulated/floor/plating/abductor
+	name = "alien floor"
+	icon_state = "alienpod1"
+	shuttle = 1
+
+/turf/simulated/floor/plating/abductor/New()
+	..()
+	icon_state = "alienpod[rand(1,9)]"
+
+/turf/simulated/floor/plating/shuttle
+	shuttle = 1

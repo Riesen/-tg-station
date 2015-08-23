@@ -18,10 +18,12 @@
 
 /mob/living/carbon/human/death(gibbed)
 	if(stat == DEAD)	return
+	if(status_flags & FAKEDEATH)	return
 	if(healths)		healths.icon_state = "health5"
 	stat = DEAD
 	dizziness = 0
 	jitteriness = 0
+	heart_attack = 0
 
 	if(istype(loc, /obj/mecha))
 		var/obj/mecha/M = loc
@@ -32,7 +34,9 @@
 		emote("deathgasp") //let the world KNOW WE ARE DEAD
 
 		update_canmove()
-		if(client) blind.layer = 0
+		if(client)
+			blind.layer = 0
+			cover.layer = 0
 
 	if(dna)
 		dna.species.spec_death(gibbed,src)

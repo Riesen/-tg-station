@@ -771,7 +771,7 @@ var/list/all_supply_groups = list(supply_emergency,supply_security,supply_engine
 					/obj/item/weapon/storage/fancy/egg_box,
 					/obj/item/weapon/reagent_containers/food/condiment/enzyme,
 					/obj/item/weapon/reagent_containers/food/condiment/sugar,
-					/obj/item/weapon/reagent_containers/food/snacks/meat/monkey,
+					/obj/item/weapon/reagent_containers/food/snacks/meat/slab/monkey,
 					/obj/item/weapon/reagent_containers/food/snacks/grown/banana,
 					/obj/item/weapon/reagent_containers/food/snacks/grown/banana,
 					/obj/item/weapon/reagent_containers/food/snacks/grown/banana)
@@ -867,7 +867,7 @@ var/list/all_supply_groups = list(supply_emergency,supply_security,supply_engine
 					/obj/item/weapon/reagent_containers/glass/bottle/ammonia,
 					/obj/item/weapon/reagent_containers/glass/bottle/ammonia,
 					/obj/item/weapon/hatchet,
-					/obj/item/weapon/minihoe,
+					/obj/item/weapon/cultivator,
 					/obj/item/device/analyzer/plant_analyzer,
 					/obj/item/clothing/gloves/botanic_leather,
 					/obj/item/clothing/suit/apron) // Updated with new things
@@ -940,6 +940,14 @@ var/list/all_supply_groups = list(supply_emergency,supply_security,supply_engine
 					/obj/item/weapon/vending_refill/cola,
 					/obj/item/weapon/vending_refill/cola)
 	cost = 15
+	containername = "softdrinks supply crate"
+
+/datum/supply_packs/organic/vending/slurpee
+	name = "Slurpee Supply Crate"
+	contains = list(/obj/item/weapon/vending_refill/slurpslurpy_machine,
+					/obj/item/weapon/vending_refill/slurpslurpy_machine,
+					/obj/item/weapon/vending_refill/slurpslurpy_machine)
+	cost = 30
 	containername = "softdrinks supply crate"
 
 /datum/supply_packs/organic/vending/cigarette

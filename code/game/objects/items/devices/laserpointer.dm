@@ -7,8 +7,7 @@
 	var/pointer_icon_state
 	flags = CONDUCT
 	slot_flags = SLOT_BELT
-	m_amt = 500
-	g_amt = 500
+	materials = list(MAT_METAL=500, MAT_GLASS=500)
 	w_class = 2 //Increased to 2, because diodes are w_class 2. Conservation of matter.
 	origin_tech = "combat=1;magnets=2"
 	var/turf/pointer_loc
@@ -107,7 +106,7 @@
 				severity = 0
 
 			//20% chance to actually hit the eyes
-			if(prob(effectchance * diode.rating) && C.flash_eyes(severity))
+			if(prob(min(effectchance * diode.rating, 100)) && C.flash_eyes(severity))
 				outmsg = "<span class='notice'>You blind [C] by shining [src] in their eyes.</span>"
 			else
 				outmsg = "<span class='notice'>You fail to blind [C] by shining [src] at their eyes.</span>"
@@ -116,7 +115,7 @@
 	else if(issilicon(target))
 		var/mob/living/silicon/S = target
 		//20% chance to actually hit the sensors
-		if(prob(effectchance * diode.rating))
+		if(prob(min(effectchance * diode.rating, 100)))
 			flick("e_flash", S.flash)
 			S.Weaken(rand(5,10))
 			S << "<span class='warning'>Your sensors were overloaded by a laser!</span>"
@@ -128,7 +127,7 @@
 	//cameras
 	else if(istype(target, /obj/machinery/camera))
 		var/obj/machinery/camera/C = target
-		if(prob(effectchance * diode.rating))
+		if(prob(min(effectchance * diode.rating, 100)))
 			C.emp_act(1)
 			outmsg = "<span class='notice'>You hit the lens of [C] with [src], temporarily disabling the camera!</span>"
 			add_logs(user, C, "EMPed", object="laser pointer")

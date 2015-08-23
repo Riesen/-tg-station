@@ -23,11 +23,15 @@
 	var/allow_quick_gather	//Set this variable to allow the object to have the 'toggle mode' verb, which quickly collects all items from a tile.
 	var/collection_mode = 1;  //0 = pick one at a time, 1 = pick all on tile, 2 = pick all of a type
 	var/preposition = "in" // You put things 'in' a bag, but trays need 'on'.
+	var/silent = 0 //If it makes a sound or not
 
 
-/obj/item/weapon/storage/MouseDrop(obj/over_object)
-	if(iscarbon(usr) || isdrone(usr) || ismommi(usr)) //all the check for item manipulation are in other places, you can safely open any storages as anything and its not buggy, i checked
+/obj/item/weapon/storage/MouseDrop(atom/over_object)
+	if(iscarbon(usr) || ismommi(usr)) //all the check for item manipulation are in other places, you can safely open any storages as anything and its not buggy, i checked
 		var/mob/M = usr
+
+		if(!over_object)
+			return
 
 		if (istype(usr.loc,/obj/mecha)) // stops inventory actions in a mech
 			return
@@ -39,13 +43,15 @@
 			show_to(M)
 			return
 
-		if(!( istype(over_object, /obj/screen) ))
-			return ..()
 
-		if(!(loc == usr) || (loc && loc.loc == usr))
-			return
-		playsound(loc, "rustle", 50, 1, -5)
 		if(!( M.restrained() ) && !( M.stat ))
+			if(!( istype(over_object, /obj/screen) ))
+				return content_can_dump(over_object, M)
+
+			if(!(loc == usr) || (loc && loc.loc == usr))
+				return
+			if(!silent)
+				playsound(loc, "rustle", 50, 1, -5)
 			switch(over_object.name)
 				if("r_hand")
 					if(!M.unEquip(src))
@@ -56,7 +62,26 @@
 						return
 					M.put_in_l_hand(src)
 			add_fingerprint(usr)
-			return
+
+/obj/item/weapon/storage/proc/content_can_dump(atom/dest_object, mob/user)
+	if(Adjacent(user) && dest_object.Adjacent(user))
+		if(dest_object.storage_contents_dump_act(src, user))
+			if(!silent)
+				playsound(loc, "rustle", 50, 1, -5)
+			return 1
+	return 0
+
+//Object behaviour on storage dump
+/obj/item/weapon/storage/storage_contents_dump_act(obj/item/weapon/storage/src_object, mob/user)
+	for(var/obj/item/I in src_object)
+		if(can_be_inserted(I,0,user))
+			src_object.remove_from_storage(I, src)
+	orient2hud(user)
+	src_object.orient2hud(user)
+	if(user.s_active) //refresh the HUD to show the transfered contents
+		user.s_active.close(user)
+		user.s_active.show_to(user)
+	return 1
 
 
 /obj/item/weapon/storage/proc/return_inv()
@@ -360,7 +385,8 @@
 	return
 
 /obj/item/weapon/storage/attack_hand(mob/user)
-	playsound(loc, "rustle", 50, 1, -5)
+	if(!silent)
+		playsound(loc, "rustle", 50, 1, -5)
 
 	if(ishuman(user))
 		var/mob/living/carbon/human/H = user

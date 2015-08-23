@@ -129,7 +129,9 @@ datum/reagent/water/reaction_turf(var/turf/simulated/T, var/volume)
 	for(var/mob/living/carbon/slime/M in T)
 		M.apply_water()
 
+
 	var/obj/effect/hotspot/hotspot = (locate(/obj/effect/hotspot) in T)
+
 	if(hotspot && !istype(T, /turf/space))
 		if(T.air)
 			var/datum/gas_mixture/G = T.air
@@ -149,12 +151,12 @@ datum/reagent/water/reaction_obj(var/obj/O, var/volume)
 		var/obj/item/weapon/reagent_containers/food/snacks/monkeycube/cube = O
 		if(!cube.wrapped)
 			cube.Expand()
-/* We don't have this
+
 	// Dehydrated carp
 	if(istype(O,/obj/item/toy/carpplushie/dehy_carp))
 		var/obj/item/toy/carpplushie/dehy_carp/dehy = O
 		dehy.Swell() // Makes a carp
-*/
+
 	return
 
 /*
@@ -779,6 +781,13 @@ datum/reagent/stable_plasma
 	reagent_state = LIQUID
 	color = "#C8A5DC"
 
+/datum/reagent/stable_plasma/on_mob_life(mob/living/M)
+	if(iscarbon(M))
+		var/mob/living/carbon/C = M
+		C.adjustPlasma(10)
+	..()
+	return
+
 datum/reagent/iodine
 	name = "Iodine"
 	id = "iodine"
@@ -803,7 +812,7 @@ datum/reagent/carpet
 /datum/reagent/carpet/reaction_turf(var/turf/simulated/T, var/volume)
 	if(istype(T, /turf/simulated/floor/plating) || istype(T, /turf/simulated/floor/plasteel))
 		var/turf/simulated/floor/F = T
-		F.ChangeTurf(/turf/simulated/floor/fancy/carpet)
+		F.ChangeTurf(/turf/simulated/floor/carpet)
 	..()
 	return
 

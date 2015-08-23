@@ -4,7 +4,7 @@
 #define TINT_BLIND 3
 
 #define HUMAN_MAX_OXYLOSS 3
-#define HUMAN_CRIT_MAX_OXYLOSS (SSmob.wait/30)
+#define HUMAN_CRIT_MAX_OXYLOSS (SSmob.wait * 0.10)
 
 #define HEAT_DAMAGE_LEVEL_1 2
 #define HEAT_DAMAGE_LEVEL_2 3
@@ -34,9 +34,10 @@
 	var/hair_alpha = 255	// the alpha used by the hair. 255 is completely solid, 0 is transparent.
 	var/use_skintones = 0	// does it use skintones or not? (spoiler alert this is only used by humans)
 	var/exotic_blood = null	// If your race wants to bleed something other than bog standard blood, change this.
-	var/meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human //What the species drops on gibbing
+	var/meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human //What the species drops on gibbing
 	var/list/no_equip = list()	// slots the race can't equip stuff to
 	var/nojumpsuit = 0	// this is sorta... weird. it basically lets you equip stuff that usually needs jumpsuits without one, like belts and pockets and ids
+	var/dangerous_existence = null //A flag for transformation spells that tells them "hey if you turn a person into one of these without preperation, they'll probably die!"
 
 	var/say_mod = "says"	// affects the speech message
 
@@ -61,6 +62,29 @@
 	var/sound/miss_sound = 'sound/weapons/punchmiss.ogg'
 
 	var/mob/living/list/ignored_by = list()	// list of mobs that will ignore this species
+
+	//Breathing!
+	var/safe_oxygen_min = 16 // Minimum safe partial pressure of O2, in kPa
+	var/safe_oxygen_max = 0
+	var/safe_nitrogen_min = 0
+	var/safe_nitrogen_max = 0
+	var/safe_co2_min = 0
+	var/safe_co2_max = 10 // Yes it's an arbitrary value who cares?
+	var/safe_toxins_min = 0
+	var/safe_toxins_max = 0.005
+	var/SA_para_min = 1 //Sleeping agent
+	var/SA_sleep_min = 5 //Sleeping agent
+
+	//Breath damage
+	var/oxy_breath_dam_min = 1
+	var/oxy_breath_dam_max = 10
+	var/n2_breath_dam_min = 1
+	var/n2_breath_dam_max = 10
+	var/co2_breath_dam_min = 1
+	var/co2_breath_dam_max = 10
+	var/tox_breath_dam_min = MIN_PLASMA_DAMAGE
+	var/tox_breath_dam_max = MAX_PLASMA_DAMAGE
+
 
 	///////////
 	// PROCS //
@@ -135,7 +159,7 @@
 			standing	+= img_facial_s
 
 	//Applies the debrained overlay if there is no brain
-	if(!H.getorgan(/obj/item/organ/brain))
+	if(!H.getorgan(/obj/item/organ/internal/brain))
 		standing	+= image("icon"='icons/mob/human_face.dmi', "icon_state" = "debrained_s", "layer" = -HAIR_LAYER)
 
 	if((H.wear_suit) && (H.wear_suit.hooded) && (H.wear_suit.suittoggled == 1))
@@ -180,7 +204,9 @@
 
 	// lipstick
 	if(H.lip_style && LIPS in specflags)
-		standing	+= image("icon"='icons/mob/human_face.dmi', "icon_state"="lips_[H.lip_style]_s", "layer" = -BODY_LAYER)
+		var/image/lips = image("icon"='icons/mob/human_face.dmi', "icon_state"="lips_[H.lip_style]_s", "layer" = -BODY_LAYER)
+		lips.color = H.lip_color
+		standing	+= lips
 
 	// eyes
 	if(EYECOLOR in specflags)
@@ -497,7 +523,6 @@
 	H.updatehealth()
 
 	return
-
 /datum/species/proc/handle_vision(var/mob/living/carbon/human/H)
 	if( H.stat == DEAD )
 		H.sight |= (SEE_TURFS|SEE_MOBS|SEE_OBJS)
@@ -515,7 +540,6 @@
 			H.sight |= SEE_TURFS
 			H.sight |= SEE_MOBS
 			H.sight |= SEE_OBJS
-
 
 		H.see_in_dark = (H.sight == SEE_TURFS|SEE_MOBS|SEE_OBJS) ? 8 : darksight
 		var/see_temp = H.see_invisible
@@ -540,13 +564,23 @@
 		if(H.tinttotal >= TINT_IMPAIR)
 			if(tinted_weldhelh)
 				if(H.tinttotal >= TINT_BLIND)
-					H.eye_blind = max(H.eye_blind, 1)
+					H.eye_covered = max(H.eye_covered, 1)
 				if(H.client)
 					H.client.screen += global_hud.darkMask
 
 		if(H.blind)
-			if(H.eye_blind)		H.blind.layer = 18
-			else			H.blind.layer = 0
+			if(H.eye_blind)
+				H.throw_alert("blind")
+				H.blind.layer = 18
+			else
+				H.clear_alert("blind")
+				H.blind.layer = 0
+
+		if(H.cover)
+			if(H.eye_covered)
+				H.cover.layer = 17
+			else
+				H.cover.layer = 0
 
 		if(!H.client)//no client, no screen to update
 			return 1
@@ -554,7 +588,11 @@
 		if( H.disabilities & NEARSIGHT && !istype(H.glasses, /obj/item/clothing/glasses/regular) )
 			H.client.screen += global_hud.vimpaired
 		if(H.eye_blurry)			H.client.screen += global_hud.blurry
-		if(H.druggy)				H.client.screen += global_hud.druggy
+		if(H.druggy)
+			H.client.screen += global_hud.druggy
+			H.throw_alert("high")
+		else
+			H.clear_alert("high")
 
 
 		if(H.eye_stat > 20)
@@ -662,8 +700,8 @@
 			hasjetpack = 1
 	var/grav = has_gravity(H)
 
-	if(!grav && !hasjetpack)
-		mspeed += 1 //Slower space without jetpack
+	if(!grav)
+		mspeed = -1 - hasjetpack
 
 	var/health_deficiency = (100 - H.health + H.staminaloss)
 	if(health_deficiency >= 40)
@@ -687,14 +725,15 @@
 
 	mspeed += speedmod
 
-	if(H.status_flags & IGNORESLOWDOWN)
-		mspeed = 0
+	if(grav)
+		if(H.status_flags & IGNORESLOWDOWN)
+			mspeed = 0
 
-	if(H.status_flags & GOTTAGOFAST)
-		mspeed -= 1
+		if(H.status_flags & GOTTAGOFAST)
+			mspeed -= 1
 
-	if(H.status_flags & GOTTAGOREALLYFAST)
-		mspeed -= 2
+		if(H.status_flags & GOTTAGOREALLYFAST)
+			mspeed -= 2
 
 
 	return mspeed
@@ -704,10 +743,25 @@
 //////////////////
 
 /datum/species/proc/spec_attack_hand(var/mob/living/carbon/human/M, var/mob/living/carbon/human/H)
+	if(!istype(M)) //sanity check for drones.
+		return
 	if((M != H) && H.check_shields(0, M.name))
 		add_logs(M, H, "attempted to touch")
 		H.visible_message("<span class='warning'>[M] attempted to touch [H]!</span>")
 		return 0
+
+	var/datum/martial_art/attacker_style = M.martial_art
+
+	switch(M.a_intent)
+		if("help")
+			if(H.health >= 0)
+				H.help_shake_act(M)
+				if(H != M)
+					add_logs(M, H, "shaked")
+				return 1
+			else
+				M.do_cpr(H)
+
 
 	switch(M.a_intent)
 		if("help")
@@ -718,10 +772,10 @@
 				return 1
 
 			//CPR
-			if((M.head && (M.head.flags & HEADCOVERSMOUTH)) || (M.wear_mask && (M.wear_mask.flags & MASKCOVERSMOUTH)))
+			if((M.check_part_covered("mouth")))
 				M << "<span class='notice'>Remove your mask!</span>"
 				return 0
-			if((H.head && (H.head.flags & HEADCOVERSMOUTH)) || (H.wear_mask && (H.wear_mask.flags & MASKCOVERSMOUTH)))
+			if((H.check_part_covered("mouth")))
 				M << "<span class='notice'>Remove their mask!</span>"
 				return 0
 
@@ -741,107 +795,116 @@
 					H << "<span class='unconscious'>You feel a breath of fresh air enter your lungs. It feels good.</span>"
 
 		if("grab")
-			H.grabbedby(M)
-			return 1
+			if(attacker_style && attacker_style.grab_act(M,H))
+				return 1
+			else
+				H.grabbedby(M)
+				return 1
 
 		if("harm")
-			add_logs(M, H, "punched")
-			M.do_attack_animation(H)
-
-			var/atk_verb = "punch"
-			if(H.lying)
-				atk_verb = "kick"
-			else if(M.dna)
-				atk_verb = M.dna.species.attack_verb
-
-			var/damage = rand(0, 9)
-			if(M.dna)
-				damage += M.dna.species.punchmod
-
-			if(!damage)
-				if(M.dna)
-					playsound(H.loc, M.dna.species.miss_sound, 25, 1, -1)
-				else
-					playsound(H.loc, 'sound/weapons/punchmiss.ogg', 25, 1, -1)
-
-				H.visible_message("<span class='warning'>[M] has attempted to [atk_verb] [H]!</span>")
-				return 0
-
-
-			var/obj/item/organ/limb/affecting = H.get_organ(ran_zone(M.zone_sel.selecting))
-			var/armor_block = H.run_armor_check(affecting, "melee")
-
-			if(M.dna)
-				playsound(H.loc, M.dna.species.attack_sound, 25, 1, -1)
+			if(attacker_style && attacker_style.harm_act(M,H))
+				return 1
 			else
-				playsound(H.loc, 'sound/weapons/punch1.ogg', 25, 1, -1)
+				add_logs(M, H, "punched")
+				M.do_attack_animation(H)
+
+				var/atk_verb = "punch"
+				if(H.lying)
+					atk_verb = "kick"
+				else if(M.dna)
+					atk_verb = M.dna.species.attack_verb
+
+				var/damage = rand(0, 9)
+				if(M.dna)
+					damage += M.dna.species.punchmod
+
+				if(!damage)
+					if(M.dna)
+						playsound(H.loc, M.dna.species.miss_sound, 25, 1, -1)
+					else
+						playsound(H.loc, 'sound/weapons/punchmiss.ogg', 25, 1, -1)
+
+					H.visible_message("<span class='warning'>[M] has attempted to [atk_verb] [H]!</span>")
+					return 0
 
 
-			H.visible_message("<span class='danger'>[M] has [atk_verb]ed [H]!</span>", \
-							"<span class='userdanger'>[M] has [atk_verb]ed [H]!</span>")
+				var/obj/item/organ/limb/affecting = H.get_organ(ran_zone(M.zone_sel.selecting))
+				var/armor_block = H.run_armor_check(affecting, "melee")
 
-			H.apply_damage(damage, BRUTE, affecting, armor_block)
-			if((H.stat != DEAD) && damage >= 9)
-				H.visible_message("<span class='danger'>[M] has weakened [H]!</span>", \
-								"<span class='userdanger'>[M] has weakened [H]!</span>")
-				H.apply_effect(4, WEAKEN, armor_block)
-				H.forcesay(hit_appends)
-			else if(H.lying)
-				H.forcesay(hit_appends)
+				if(M.dna)
+					playsound(H.loc, M.dna.species.attack_sound, 25, 1, -1)
+				else
+					playsound(H.loc, 'sound/weapons/punch1.ogg', 25, 1, -1)
+
+
+				H.visible_message("<span class='danger'>[M] has [atk_verb]ed [H]!</span>", \
+								"<span class='userdanger'>[M] has [atk_verb]ed [H]!</span>")
+
+				H.apply_damage(damage, BRUTE, affecting, armor_block)
+				if((H.stat != DEAD) && damage >= 9)
+					H.visible_message("<span class='danger'>[M] has weakened [H]!</span>", \
+									"<span class='userdanger'>[M] has weakened [H]!</span>")
+					H.apply_effect(4, WEAKEN, armor_block)
+					H.forcesay(hit_appends)
+				else if(H.lying)
+					H.forcesay(hit_appends)
 
 		if("disarm")
-			M.do_attack_animation(H)
-			add_logs(M, H, "disarmed")
+			if(attacker_style && attacker_style.disarm_act(M,H))
+				return 1
+			else
+				M.do_attack_animation(H)
+				add_logs(M, H, "disarmed")
 
-			if(H.w_uniform)
-				H.w_uniform.add_fingerprint(M)
-			var/obj/item/organ/limb/affecting = H.get_organ(ran_zone(M.zone_sel.selecting))
-			var/randn = rand(1, 100)
-			if(randn <= 25)
-				H.apply_effect(2, WEAKEN, H.run_armor_check(affecting, "melee"))
-				playsound(H, 'sound/weapons/thudswoosh.ogg', 50, 1, -1)
-				H.visible_message("<span class='danger'>[M] has pushed [H]!</span>",
-								"<span class='userdanger'>[M] has pushed [H]!</span>")
-				H.forcesay(hit_appends)
-				return
+				if(H.w_uniform)
+					H.w_uniform.add_fingerprint(M)
+				var/obj/item/organ/limb/affecting = H.get_organ(ran_zone(M.zone_sel.selecting))
+				var/randn = rand(1, 100)
+				if(randn <= 25)
+					H.apply_effect(2, WEAKEN, H.run_armor_check(affecting, "melee"))
+					playsound(H, 'sound/weapons/thudswoosh.ogg', 50, 1, -1)
+					H.visible_message("<span class='danger'>[M] has pushed [H]!</span>",
+									"<span class='userdanger'>[M] has pushed [H]!</span>")
+					H.forcesay(hit_appends)
+					return
 
-			var/talked = 0	// BubbleWrap
+				var/talked = 0	// BubbleWrap
 
-			if(randn <= 60)
-				//BubbleWrap: Disarming breaks a pull
-				if(H.pulling)
-					H.visible_message("<span class='warning'>[M] has broken [H]'s grip on [H.pulling]!</span>")
-					talked = 1
-					H.stop_pulling()
-
-				//BubbleWrap: Disarming also breaks a grab - this will also stop someone being choked, won't it?
-				if(istype(H.l_hand, /obj/item/weapon/grab))
-					var/obj/item/weapon/grab/lgrab = H.l_hand
-					if(lgrab.affecting)
-						H.visible_message("<span class='warning'>[M] has broken [H]'s grip on [lgrab.affecting]!</span>")
+				if(randn <= 60)
+					//BubbleWrap: Disarming breaks a pull
+					if(H.pulling)
+						H.visible_message("<span class='warning'>[M] has broken [H]'s grip on [H.pulling]!</span>")
 						talked = 1
-					spawn(1)
-						qdel(lgrab)
-				if(istype(H.r_hand, /obj/item/weapon/grab))
-					var/obj/item/weapon/grab/rgrab = H.r_hand
-					if(rgrab.affecting)
-						H.visible_message("<span class='warning'>[M] has broken [H]'s grip on [rgrab.affecting]!</span>")
-						talked = 1
-					spawn(1)
-						qdel(rgrab)
-				//End BubbleWrap
+						H.stop_pulling()
 
-				if(!talked)	//BubbleWrap
-					if(H.drop_item())
-						H.visible_message("<span class='danger'>[M] has disarmed [H]!</span>", \
-										"<span class='userdanger'>[M] has disarmed [H]!</span>")
-				playsound(H, 'sound/weapons/thudswoosh.ogg', 50, 1, -1)
-				return
+					//BubbleWrap: Disarming also breaks a grab - this will also stop someone being choked, won't it?
+					if(istype(H.l_hand, /obj/item/weapon/grab))
+						var/obj/item/weapon/grab/lgrab = H.l_hand
+						if(lgrab.affecting)
+							H.visible_message("<span class='warning'>[M] has broken [H]'s grip on [lgrab.affecting]!</span>")
+							talked = 1
+						spawn(1)
+							qdel(lgrab)
+					if(istype(H.r_hand, /obj/item/weapon/grab))
+						var/obj/item/weapon/grab/rgrab = H.r_hand
+						if(rgrab.affecting)
+							H.visible_message("<span class='warning'>[M] has broken [H]'s grip on [rgrab.affecting]!</span>")
+							talked = 1
+						spawn(1)
+							qdel(rgrab)
+					//End BubbleWrap
+
+					if(!talked)	//BubbleWrap
+						if(H.drop_item())
+							H.visible_message("<span class='danger'>[M] has disarmed [H]!</span>", \
+											"<span class='userdanger'>[M] has disarmed [H]!</span>")
+					playsound(H, 'sound/weapons/thudswoosh.ogg', 50, 1, -1)
+					return
 
 
-			playsound(H, 'sound/weapons/punchmiss.ogg', 25, 1, -1)
-			H.visible_message("<span class='danger'>[M] attempted to disarm [H]!</span>", \
-							"<span class='userdanger'>[M] attemped to disarm [H]!</span>")
+				playsound(H, 'sound/weapons/punchmiss.ogg', 25, 1, -1)
+				H.visible_message("<span class='danger'>[M] attempted to disarm [H]!</span>", \
+								"<span class='userdanger'>[M] attemped to disarm [H]!</span>")
 	return
 
 /datum/species/proc/spec_attacked_by(var/obj/item/I, var/mob/living/user, var/def_zone, var/obj/item/organ/limb/affecting, var/hit_area, var/intent, var/obj/item/organ/limb/target_limb, target_area, var/mob/living/carbon/human/H)
@@ -860,8 +923,8 @@
 	else
 		return 0
 
-	var/armor = H.run_armor_check(affecting, "melee", "<span class='warning'>Your armor has protected your [hit_area].</span>", "<span class='warning'>Your armor has softened a hit to your [hit_area].</span>")
-	if(armor >= 100)	return 0
+	var/armor = H.run_armor_check(affecting, "melee", "<span class='notice'>Your armor has protected your [hit_area].</span>", "<span class='notice'>Your armor has softened a hit to your [hit_area].</span>",I.armour_penetration)
+	armor = min(90,armor) //cap damage reduction at 90%
 	var/Iforce = I.force //to avoid runtimes on the forcesay checks at the bottom. Some items might delete themselves if you drop them. (stunning yourself, ninja swords)
 
 	apply_damage(I.force, I.damtype, affecting, armor, H)
@@ -899,7 +962,7 @@
 						H.apply_effect(20, PARALYZE, armor)
 					if(prob(I.force + ((100 - H.health)/2)) && H != user && I.damtype == BRUTE)
 						ticker.mode.remove_revolutionary(H.mind)
-						ticker.mode.remove_gangster(H.mind, exclude_bosses=1)
+						ticker.mode.remove_gangster(H.mind)
 
 				if(bloody)	//Apply blood
 					if(H.wear_mask)
@@ -960,7 +1023,7 @@
 	if(blocked <= 0)	return 0
 
 	var/obj/item/organ/limb/organ = null
-	if(isorgan(def_zone))
+	if(islimb(def_zone))
 		organ = def_zone
 	else
 		if(!def_zone)	def_zone = ran_zone(def_zone)
@@ -1002,7 +1065,7 @@
 
 /datum/species/proc/breathe(var/mob/living/carbon/human/H)
 	if(H.reagents.has_reagent("lexorin")) return
-	if(istype(H.loc, /obj/machinery/atmospherics/unary/cryo_cell)) return
+	if(istype(H.loc, /obj/machinery/atmospherics/components/unary/cryo_cell)) return
 
 	var/datum/gas_mixture/environment = H.loc.return_air()
 	var/datum/gas_mixture/breath
@@ -1040,7 +1103,7 @@
 
 				// Handle chem smoke effect  -- Doohl
 				if(!H.has_smoke_protection())
-					for(var/obj/effect/effect/chem_smoke/smoke in view(1, H))
+					for(var/obj/effect/effect/smoke/chem/smoke in view(1, H))
 						if(smoke.reagents.total_volume)
 							smoke.reagents.reaction(H, INGEST)
 							spawn(5)
@@ -1077,47 +1140,72 @@
 
 		return 0
 
-	var/safe_oxygen_min = 16 // Minimum safe partial pressure of O2, in kPa
-	//var/safe_oxygen_max = 140 // Maximum safe partial pressure of O2, in kPa (Not used for now)
-	var/safe_co2_max = 10 // Yes it's an arbitrary value who cares?
-	var/safe_toxins_max = 0.005
-	var/SA_para_min = 1
-	var/SA_sleep_min = 5
-	var/oxygen_used = 0
-	var/breath_pressure = (breath.total_moles()*R_IDEAL_GAS_EQUATION*T20C)/BREATH_VOLUME
+	var/gas_breathed = 0
 
-	//Partial pressure of the O2 in our breath
-	var/O2_pp = (breath.oxygen/breath.total_moles())*breath_pressure
-	// Same, but for the toxins
-	var/Toxins_pp = (breath.toxins/breath.total_moles())*breath_pressure
-	// And CO2, lets say a PP of more than 10 will be bad (It's a little less really, but eh, being passed out all round aint no fun)
-	var/CO2_pp = (breath.carbon_dioxide/breath.total_moles())*breath_pressure // Tweaking to fit the hacky bullshit I've done with atmo -- TLE
-	//var/CO2_pp = (breath.carbon_dioxide/breath.total_moles())*0.5 // The default pressure value
+	//Partial pressures in our breath
+	var/O2_pp = breath.get_breath_partial_pressure(breath.oxygen)
+	var/N2_pp = breath.get_breath_partial_pressure(breath.nitrogen)
+	var/Toxins_pp = breath.get_breath_partial_pressure(breath.toxins)
+	var/CO2_pp = breath.get_breath_partial_pressure(breath.carbon_dioxide)
 
-	if(O2_pp < safe_oxygen_min) // Too little oxygen
-		if(!(NOBREATH in specflags) || (H.health <= config.health_threshold_crit))
-			if(prob(20))
-				spawn(0) H.emote("gasp")
-			if(O2_pp > 0)
-				var/ratio = safe_oxygen_min/O2_pp
-				H.adjustOxyLoss(min(5*ratio, HUMAN_MAX_OXYLOSS)) // Don't fuck them up too fast (space only does HUMAN_MAX_OXYLOSS after all!)
-				H.failed_last_breath = 1
-				oxygen_used = breath.oxygen*ratio/6
-			else
-				H.adjustOxyLoss(HUMAN_MAX_OXYLOSS)
-				H.failed_last_breath = 1
-			H.throw_alert("oxy")
-	else								// We're in safe limits
-		H.failed_last_breath = 0
-		H.adjustOxyLoss(-5)
-		oxygen_used = breath.oxygen/6
+
+	//-- OXY --//
+
+	//Too much oxygen! //Yes, some species may not like it.
+	if(safe_oxygen_max && O2_pp > safe_oxygen_max && !(NOBREATH in specflags))
+		var/ratio = (breath.oxygen/safe_oxygen_max) * 10
+		H.adjustOxyLoss(Clamp(ratio,oxy_breath_dam_min,oxy_breath_dam_max))
+		H.throw_alert("too_much_oxy")
+	else
+		H.clear_alert("too_much_oxy")
+
+	//Too little oxygen!
+	if(safe_oxygen_min && O2_pp < safe_oxygen_min)
+		gas_breathed = handle_too_little_breath(H,O2_pp,safe_oxygen_min,breath.oxygen)
+		H.throw_alert("oxy")
+	else
+		if(safe_oxygen_min)
+			H.failed_last_breath = 0
+			H.adjustOxyLoss(-5)
+		gas_breathed = breath.oxygen/6
 		H.clear_alert("oxy")
 
-	breath.oxygen -= oxygen_used
-	breath.carbon_dioxide += oxygen_used
+	//Exhale
+	breath.oxygen -= gas_breathed
+	breath.carbon_dioxide += gas_breathed
+	gas_breathed = 0
+
+
+	//-- N2 --//
+
+	//Too much nitrogen!
+	if(safe_nitrogen_max && N2_pp > safe_nitrogen_max && !(NOBREATH in specflags))
+		var/ratio = (breath.nitrogen/safe_nitrogen_max) * 10
+		H.adjustOxyLoss(Clamp(ratio,n2_breath_dam_min,n2_breath_dam_max))
+		H.throw_alert("too_much_n2")
+	else
+		H.clear_alert("too_much_n2")
+
+	//Too little nitrogen!
+	if(safe_nitrogen_min && N2_pp < safe_nitrogen_min)
+		gas_breathed = handle_too_little_breath(H,N2_pp,safe_nitrogen_min,breath.nitrogen)
+		H.throw_alert("not_enough_n2")
+	else if (safe_nitrogen_min)  //Not all species breathe N2
+		H.failed_last_breath = 0
+		H.adjustOxyLoss(-5)
+		gas_breathed = breath.nitrogen/6
+		H.clear_alert("not_enough_n2")
+
+	//Exhale
+	breath.nitrogen -= gas_breathed
+	breath.carbon_dioxide += gas_breathed
+	gas_breathed = 0
+
+
+	//-- CO2 --//
 
 	//CO2 does not affect failed_last_breath. So if there was enough oxygen in the air but too much co2, this will hurt you, but only once per 4 ticks, instead of once per tick.
-	if(CO2_pp > safe_co2_max && !(NOBREATH in specflags))
+	if(safe_co2_max && CO2_pp > safe_co2_max && !(NOBREATH in specflags))
 		if(!H.co2overloadtime) // If it's the first breath with too much CO2 in it, lets start a counter, then have them pass out after 12s or so.
 			H.co2overloadtime = world.time
 		else if(world.time - H.co2overloadtime > 120)
@@ -1125,24 +1213,64 @@
 			H.adjustOxyLoss(3) // Lets hurt em a little, let them know we mean business
 			if(world.time - H.co2overloadtime > 300) // They've been in here 30s now, lets start to kill them for their own good!
 				H.adjustOxyLoss(8)
+			H.throw_alert("too_much_co2")
 		if(prob(20)) // Lets give them some chance to know somethings not right though I guess.
 			spawn(0) H.emote("cough")
 
 	else
 		H.co2overloadtime = 0
+		H.clear_alert("too_much_co2")
 
-	if(Toxins_pp > safe_toxins_max && !(NOBREATH in specflags)) // Too much toxins
+	//Too little CO2!
+	if(safe_co2_min && CO2_pp < safe_co2_min)
+		gas_breathed = handle_too_little_breath(H,CO2_pp, safe_co2_min,breath.carbon_dioxide)
+		H.throw_alert("not_enough_co2")
+	else if (safe_co2_min)
+		H.failed_last_breath = 0
+		H.adjustOxyLoss(-5)
+		gas_breathed = breath.carbon_dioxide/6
+		H.clear_alert("not_enough_co2")
+
+	//Exhale
+	breath.carbon_dioxide -= gas_breathed
+	breath.oxygen += gas_breathed
+	gas_breathed = 0
+
+
+	//-- TOX --//
+
+	//Too much toxins!
+	if(safe_toxins_max && Toxins_pp > safe_toxins_max && !(NOBREATH in specflags))
 		var/ratio = (breath.toxins/safe_toxins_max) * 10
-		//adjustToxLoss(Clamp(ratio, MIN_PLASMA_DAMAGE, MAX_PLASMA_DAMAGE))	//Limit amount of damage toxin exposure can do per second
 		if(H.reagents)
-			H.reagents.add_reagent("plasma", Clamp(ratio, MIN_PLASMA_DAMAGE, MAX_PLASMA_DAMAGE))
+			H.reagents.add_reagent("plasma", Clamp(ratio, tox_breath_dam_min, tox_breath_dam_max))
 		H.throw_alert("tox_in_air")
 	else
 		H.clear_alert("tox_in_air")
 
+
+	//Too little toxins!
+	if(safe_toxins_min && Toxins_pp < safe_toxins_min && !(NOBREATH in specflags))
+		gas_breathed = handle_too_little_breath(H,Toxins_pp, safe_toxins_min, breath.toxins)
+		H.throw_alert("not_enough_tox")
+	else
+		H.failed_last_breath = 0
+		if(safe_toxins_min)
+			H.adjustOxyLoss(-5)
+		gas_breathed = breath.toxins/6
+		H.clear_alert("not_enough_tox")
+
+	//Exhale
+	breath.toxins -= gas_breathed
+	breath.carbon_dioxide += gas_breathed
+	gas_breathed = 0
+
+
+	//-- TRACES --//
+
 	if(breath.trace_gases.len && !(NOBREATH in specflags))	// If there's some other shit in the air lets deal with it here.
 		for(var/datum/gas/sleeping_agent/SA in breath.trace_gases)
-			var/SA_pp = (SA.moles/breath.total_moles())*breath_pressure
+			var/SA_pp = breath.get_breath_partial_pressure(SA.moles)
 			if(SA_pp > SA_para_min) // Enough to make us paralysed for a bit
 				H.Paralyse(3) // 3 gives them one second to wake up and run away a bit!
 				if(SA_pp > SA_sleep_min) // Enough to make us sleep as well
@@ -1155,8 +1283,29 @@
 
 	return 1
 
+
+//Returns the amount of true_pp we breathed
+/datum/species/proc/handle_too_little_breath(var/mob/living/carbon/human/H = null,var/breath_pp = 0, var/safe_breath_min = 0, var/true_pp = 0)
+	. = 0
+	if(!H || !safe_breath_min) //the other args are either: Ok being 0 or Specifically handled.
+		return 0
+
+	if(!(NOBREATH in specflags) || (H.health <= config.health_threshold_crit))
+		if(prob(20))
+			spawn(0)
+				H.emote("gasp")
+		if(breath_pp > 0)
+			var/ratio = safe_breath_min/breath_pp
+			H.adjustOxyLoss(min(5*ratio, HUMAN_MAX_OXYLOSS)) // Don't fuck them up too fast (space only does HUMAN_MAX_OXYLOSS after all!
+			H.failed_last_breath = 1
+			. = true_pp*ratio/6
+		else
+			H.adjustOxyLoss(HUMAN_MAX_OXYLOSS)
+			H.failed_last_breath = 1
+
+
 /datum/species/proc/handle_breath_temperature(datum/gas_mixture/breath, var/mob/living/carbon/human/H) // called by human/life, handles temperatures
-	if( (abs(310.15 - breath.temperature) > 50) && !(mutations_list[COLDRES] in H.dna.mutations) && !(COLDRES in specflags)) // Hot air hurts :(
+	if(abs(310.15 - breath.temperature) > 50)
 
 		if(!(mutations_list[COLDRES] in H.dna.mutations)) // COLD DAMAGE
 			switch(breath.temperature)
@@ -1175,18 +1324,18 @@
 					H.apply_damage(HEAT_GAS_DAMAGE_LEVEL_2, BURN, "head")
 				if(1000 to INFINITY)
 					H.apply_damage(HEAT_GAS_DAMAGE_LEVEL_3, BURN, "head")
+
 /datum/species/proc/handle_environment(datum/gas_mixture/environment, var/mob/living/carbon/human/H)
 	if(!environment)
 		return
 
 	var/loc_temp = H.get_temperature(environment)
-	//world << "Loc temp: [loc_temp] - Body temp: [bodytemperature] - Fireloss: [getFireLoss()] - Thermal protection: [get_thermal_protection()] - Fire protection: [thermal_protection + add_fire_protection(loc_temp)] - Heat capacity: [environment_heat_capacity] - Location: [loc] - src: [src]"
 
-	//Body temperature is adjusted in two steps. Firstly your body tries to stabilize itself a bit.
-	if(H.stat != 2)
-		H.stabilize_temperature_from_calories()
+	//Body temperature is adjusted in two steps. First, your body tries to stabilize itself a bit.
+	if(H.stat != DEAD)
+		H.natural_bodytemperature_stabilization()
 
-	//After then, it reacts to the surrounding atmosphere based on your thermal protection
+	//Then, it reacts to the surrounding atmosphere based on your thermal protection
 	if(!H.on_fire) //If you're on fire, you do not heat up or cool down based on surrounding gases
 		if(loc_temp < H.bodytemperature)
 			//Place is colder than we are
@@ -1217,22 +1366,24 @@
 					H.apply_damage(HEAT_DAMAGE_LEVEL_2*heatmod, BURN)
 
 	else if(H.bodytemperature < BODYTEMP_COLD_DAMAGE_LIMIT && !(mutations_list[COLDRES] in H.dna.mutations))
-		if(!istype(H.loc, /obj/machinery/atmospherics/unary/cryo_cell))
-			switch(H.bodytemperature)
-				if(200 to 260)
-					H.throw_alert("temp","cold",1)
+		var/colddamage = !istype(H.loc, /obj/machinery/atmospherics/components/unary/cryo_cell) //Damage from cold if not in a cryo cell
+		switch(H.bodytemperature)
+			if(200 to 260)
+				H.throw_alert("temp","cold",1)
+				if(colddamage)
 					H.apply_damage(COLD_DAMAGE_LEVEL_1*coldmod, BURN)
-				if(120 to 200)
-					H.throw_alert("temp","cold",2)
+			if(120 to 200)
+				H.throw_alert("temp","cold",2)
+				if(colddamage)
 					H.apply_damage(COLD_DAMAGE_LEVEL_2*coldmod, BURN)
-				if(-INFINITY to 120)
-					H.throw_alert("temp","cold",3)
+			if(-INFINITY to 120)
+				H.throw_alert("temp","cold",3)
+				if(colddamage)
 					H.apply_damage(COLD_DAMAGE_LEVEL_3*coldmod, BURN)
-		else
-			H.clear_alert("temp")
-
 	else
 		H.clear_alert("temp")
+
+
 
 	// Account for massive pressure differences.  Done by Polymorph
 	// Made it possible to actually have something that can protect against high pressure... Done by Errorage. Polymorph now has an axe sticking from his head for his previous hardcoded nonsense!
@@ -1281,14 +1432,14 @@
 /datum/species/proc/IgniteMob(var/mob/living/carbon/human/H)
 	if(H.fire_stacks > 0 && !H.on_fire && !(HEATRES in specflags) && !(NOFIRE in specflags))
 		H.on_fire = 1
-		H.AddLuminosity(3)
+		H.set_light(3)
 		H.update_fire()
 
 /datum/species/proc/ExtinguishMob(var/mob/living/carbon/human/H)
 	if(H.on_fire)
 		H.on_fire = 0
 		H.fire_stacks = 0
-		H.AddLuminosity(-3)
+		H.set_light(0)
 		H.update_fire()
 
 #undef HUMAN_MAX_OXYLOSS

@@ -195,7 +195,7 @@
 /mob/living/carbon/canSuicide()
 	if(!..())
 		return
-	if(restrained() && is_muzzled())	//just while I finish up the new 'fun' suiciding verb. This is to prevent metagaming via suicide
-		src << "You can't commit suicide whilst restrained and muzzled! ((You can type Ghost instead however.))"
-		return
 	return 1
+
+/mob/living/simple_animal/hostile/guardian/canSuicide()
+	return 0 //stands can't sudoku

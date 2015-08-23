@@ -29,6 +29,8 @@
 	icon_state = "compressor"
 	anchored = 1
 	density = 1
+	icon_open = "compressor"
+	icon_closed = "compressor"
 	var/obj/machinery/power/turbine/turbine
 	var/datum/gas_mixture/gas_contained
 	var/turf/simulated/inturf
@@ -38,6 +40,7 @@
 	var/capacity = 1e6
 	var/comp_id = 0
 	var/efficiency
+	machine_flags =  SCREWTOGGLE | CROWDESTROY | REPLACEPARTS
 
 
 /obj/machinery/power/turbine
@@ -47,19 +50,21 @@
 	icon_state = "turbine"
 	anchored = 1
 	density = 1
+	icon_open = "turbine"
+	icon_closed = "turbine"
 	var/opened = 0
 	var/obj/machinery/power/compressor/compressor
 	var/turf/simulated/outturf
 	var/lastgen
 	var/productivity = 1
+	machine_flags =  SCREWTOGGLE | CROWDESTROY | REPLACEPARTS
+
 
 /obj/machinery/computer/turbine_computer
 	name = "gas turbine control computer"
 	desc = "A computer to remotely control a gas turbine"
-	icon = 'icons/obj/computer.dmi'
-	icon_state = "turbinecomp"
-	anchored = 1
-	density = 1
+	icon_screen = "turbinecomp"
+	icon_keyboard = "tech_key"
 	circuit = /obj/item/weapon/circuitboard/turbine_computer
 	var/obj/machinery/power/compressor/compressor
 	var/id = 0
@@ -99,8 +104,8 @@
 // 		return !density
 
 /obj/machinery/power/compressor/locate_machinery()
-	if(turbine)
-		return
+//	if(turbine)
+//		return
 	turbine = locate() in get_step(src, get_dir(inturf, src))
 	if(turbine)
 		turbine.locate_machinery()
@@ -112,8 +117,6 @@
 	efficiency = E / 6
 
 /obj/machinery/power/compressor/attackby(obj/item/I, mob/user, params)
-	if(default_deconstruction_screwdriver(user, initial(icon_state), initial(icon_state), I))
-		return
 
 	if(default_change_direction_wrench(user, I))
 		turbine = null
@@ -127,10 +130,9 @@
 			stat |= BROKEN
 		return
 
-	if(exchange_parts(user, I))
-		return
 
-	default_deconstruction_crowbar(I)
+
+	..()
 
 /obj/machinery/power/compressor/CanAtmosPass(var/turf/T)
 	return !density
@@ -138,6 +140,8 @@
 /obj/machinery/power/compressor/process()
 	if(!turbine)
 		stat = BROKEN
+	if (turbine && (stat & BROKEN))
+		stat &= ~BROKEN
 	if(stat & BROKEN || panel_open)
 		return
 	if(!starter)
@@ -226,11 +230,11 @@
 	productivity = P / 6
 
 /obj/machinery/power/turbine/locate_machinery()
-	if(compressor)
-		return
+//	if(compressor)
+//		return
 	compressor = locate() in get_step(src, get_dir(outturf, src))
-	if(compressor)
-		compressor.locate_machinery()
+//	if(compressor)
+//		compressor.locate_machinery()
 
 /obj/machinery/power/turbine/CanAtmosPass(var/turf/T)
 	return !density
@@ -239,7 +243,8 @@
 
 	if(!compressor)
 		stat = BROKEN
-
+	if (compressor && (stat & BROKEN))
+		stat &= ~BROKEN
 	if((stat & BROKEN) || panel_open)
 		return
 	if(!compressor.starter)
@@ -282,8 +287,6 @@
 	interact(user)
 
 /obj/machinery/power/turbine/attackby(obj/item/I, mob/user, params)
-	if(default_deconstruction_screwdriver(user, initial(icon_state), initial(icon_state), I))
-		return
 
 	if(default_change_direction_wrench(user, I))
 		compressor = null
@@ -297,10 +300,8 @@
 			stat |= BROKEN
 		return
 
-	if(exchange_parts(user, I))
-		return
 
-	default_deconstruction_crowbar(I)
+	..()
 
 /obj/machinery/power/turbine/interact(mob/user)
 
@@ -359,6 +360,8 @@
 
 /obj/machinery/computer/turbine_computer/locate_machinery()
 	compressor = locate(/obj/machinery/power/compressor) in range(5)
+	if(compressor)
+		compressor.locate_machinery()
 
 /obj/machinery/computer/turbine_computer/attack_hand(var/mob/user as mob)
 	if(..())

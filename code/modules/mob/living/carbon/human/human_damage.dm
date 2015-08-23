@@ -50,7 +50,7 @@ mob/living/carbon/human/proc/hat_fall_prob()
 	var/loose = 40
 	if(stat || (status_flags & FAKEDEATH))
 		multiplier = 2
-	if(H.flags & (HEADCOVERSEYES | HEADCOVERSMOUTH) || H.flags_inv & (HIDEEYES | HIDEFACE))
+	if(H.body_parts_covered & (EYES | MOUTH) || H.flags_inv & (HIDEEYES | HIDEFACE))
 		loose = 0
 	return loose * multiplier
 
@@ -169,7 +169,7 @@ mob/living/carbon/human/proc/hat_fall_prob()
 			if(blocked <= 0)	return 0
 
 			var/obj/item/organ/limb/organ = null
-			if(isorgan(def_zone))
+			if(islimb(def_zone))
 				organ = def_zone
 			else
 				if(!def_zone)	def_zone = ran_zone(def_zone)

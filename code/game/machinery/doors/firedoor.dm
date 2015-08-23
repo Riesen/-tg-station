@@ -46,7 +46,7 @@
 		if(density)
 			open()
 			return
-		else	//close it up again	//fucking 10/10 commenting here einstein
+		else	//close it up again	//fucking 10/10 commenting here einstein //bravo nolan
 			close()
 			return
 	return
@@ -119,6 +119,10 @@
 		return !density
 	else
 		return 1
+
+//used in the AStar algorithm to determinate if the turf the door is on is passable
+/obj/machinery/door/firedoor/CanAStarPass()
+	return !density
 
 /obj/machinery/door/firedoor/border_only/CheckExit(atom/movable/mover as mob|obj, turf/target as turf)
 	if(istype(mover) && mover.checkpass(PASSGLASS))

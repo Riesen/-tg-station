@@ -6,6 +6,7 @@ turf
 	var/atmos_adjacent_turfs = 0
 	var/atmos_adjacent_turfs_amount = 0
 	var/atmos_supeconductivity = 0
+	var/atmos_overlay_type = ""
 
 turf/assume_air(datum/gas_mixture/giver) //use this for machines to adjust air
 	del(giver)
@@ -66,7 +67,7 @@ turf/simulated/New()
 
 turf/simulated/Del()
 	if(active_hotspot)
-		qdel(active_hotspot)
+		active_hotspot.Kill()
 	..()
 
 turf/simulated/assume_air(datum/gas_mixture/giver)
@@ -76,8 +77,7 @@ turf/simulated/assume_air(datum/gas_mixture/giver)
 
 		air.merge(giver)
 
-		if(air.check_tile_graphic())
-			update_visuals(air)
+		update_visuals(air)
 
 		return 1
 
@@ -104,8 +104,7 @@ turf/simulated/remove_air(amount as num)
 
 		removed = air.remove(amount)
 
-		if(air.check_tile_graphic())
-			update_visuals(air)
+		update_visuals(air)
 
 		return removed
 
@@ -208,8 +207,7 @@ turf/simulated/proc/share_temperature_mutual_solid(turf/simulated/sharer, conduc
 
 	air.react()
 
-	if(air.check_tile_graphic())
-		update_visuals(air)
+	update_visuals(air)
 
 	if(air.temperature > FIRE_MINIMUM_TEMPERATURE_TO_EXIST)
 		hotspot_expose(air.temperature, CELL_VOLUME)
@@ -232,16 +230,35 @@ turf/simulated/proc/share_temperature_mutual_solid(turf/simulated/sharer, conduc
 	temperature_archived = temperature
 	archived_cycle = SSair.times_fired
 
-/turf/simulated/proc/update_visuals(datum/gas_mixture/model)
-	overlays.Cut()
-	var/siding_icon_state = return_siding_icon_state()
-	if(siding_icon_state)
-		overlays += image('icons/turf/floors.dmi',siding_icon_state)
-	switch(model.graphic)
+/turf/simulated/proc/update_visuals()
+	var/new_overlay_type = tile_graphic()
+	if (new_overlay_type == atmos_overlay_type)
+		return
+	var/atmos_overlay = get_atmos_overlay_by_name(atmos_overlay_type)
+	if (atmos_overlay)
+		overlays -= atmos_overlay
+
+	atmos_overlay = get_atmos_overlay_by_name(new_overlay_type)
+	if (atmos_overlay)
+		overlays += atmos_overlay
+	atmos_overlay_type = new_overlay_type
+
+/turf/simulated/proc/get_atmos_overlay_by_name(var/name)
+	switch(name)
 		if("plasma")
-			overlays.Add(SSair.plasma_overlay)
+			return SSair.plasma_overlay
 		if("sleeping_agent")
-			overlays.Add(SSair.sleeptoxin_overlay)
+			return SSair.sleeptoxin_overlay
+	return null
+
+/turf/simulated/proc/tile_graphic()
+	if(air.toxins > MOLES_PLASMA_VISIBLE)
+		return "plasma"
+
+	var/datum/gas/sleeping_agent = locate(/datum/gas/sleeping_agent) in air.trace_gases
+	if(sleeping_agent && (sleeping_agent.moles > 1))
+		return "sleeping_agent"
+	return null
 
 /turf/simulated/proc/share_air(var/turf/simulated/T)
 	if(T.current_cycle < current_cycle)
@@ -272,18 +289,13 @@ turf/simulated/proc/share_temperature_mutual_solid(turf/simulated/sharer, conduc
 
 
 atom/movable/var/pressure_resistance = 5
-atom/movable/var/last_forced_movement = 0
+
 
 atom/movable/proc/experience_pressure_difference(pressure_difference, direction)
-	if(last_forced_movement >= SSair.times_fired)
-		return 0
-	else if(!anchored)
+	if(!anchored && !pulledby)
 		if(pressure_difference > pressure_resistance)
-			last_forced_movement = SSair.times_fired
 			spawn step(src, direction)
 		return 1
-
-
 
 
 /datum/excited_group

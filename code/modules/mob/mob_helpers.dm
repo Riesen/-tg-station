@@ -131,12 +131,7 @@ proc/isovermind(A)
 		return 1
 	return 0
 
-proc/isdrone(A)
-	if(istype(A, /mob/living/simple_animal/drone))
-		return 1
-	return 0
-
-proc/isorgan(A)
+/proc/islimb(A)
 	if(istype(A, /obj/item/organ/limb))
 		return 1
 	return 0
@@ -193,7 +188,7 @@ proc/isorgan(A)
 		return 0
 
 /proc/stars(n, pr)
-	n = strip_html_properly(n)
+	n = html_encode(n)
 	if (pr == null)
 		pr = 25
 	if (pr <= 0)
@@ -409,7 +404,7 @@ It's fairly easy to fix if dealing with single letters but not so much with comp
 proc/is_blind(A)
 	if(ismob(A))
 		var/mob/B = A
-		return	B.eye_blind
+		return	B.eye_blind + B.eye_covered
 	return 0
 
 proc/is_special_character(mob/M) // returns 1 for special characters and 2 for heroes of gamemode //moved out of admins.dm because things other than admin procs were calling this.
@@ -418,16 +413,12 @@ proc/is_special_character(mob/M) // returns 1 for special characters and 2 for h
 	if(!istype(M))
 		return 0
 	if(issilicon(M))
-		if(isrobot(M)) //For cyborgs, returns 1 if the cyborg has a law 0 and special_role. Returns 0 if the borg is merely slaved to an AI traitor.
+		if(isrobot(M)) //For cyborgs, returns 1 if the cyborg has a law 0 and special_role or is slaved to a traitor AI.
 			var/mob/living/silicon/robot/R = M
 			if(R.emagged || R.syndicate) //Count as antags
 				return 1
 			if(R.mind && R.mind.special_role && R.laws && R.laws.zeroth).
-				if(R.connected_ai)
-					if(is_special_character(R.connected_ai) && R.connected_ai.laws && (R.connected_ai.laws.zeroth_borg == R.laws.zeroth || R.connected_ai.laws.zeroth == R.laws.zeroth))
-						return 0 //AI is the real traitor here, so the borg itself is not a traitor
-					return 1 //Slaved but also a traitor
-				return 1 //Unslaved, traitor
+				return 1 //Traitor or slaved to traitor
 		else if(isAI(M))
 			var/mob/living/silicon/ai/A = M
 			if(A.laws && A.laws.zeroth && A.mind && A.mind.special_role)
@@ -501,3 +492,20 @@ proc/is_special_character(mob/M) // returns 1 for special characters and 2 for h
 	else
 		return
 
+
+
+/proc/get_multitool(mob/user as mob)
+	// Get tool
+	var/obj/item/device/multitool/P
+	if(isrobot(user) || ishuman(user))
+		P = user.get_active_hand()
+	else if(isAI(user))
+		var/mob/living/silicon/ai/AI = user
+		P = AI.aiMulti
+//	else if(isAdminGhost(user))
+//		var/mob/dead/observer/G=user
+//		P = G.ghostMulti
+
+	if(!istype(P))
+		return null
+	return P

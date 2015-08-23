@@ -49,8 +49,22 @@
 			/mob/living/simple_animal/hostile/mining_drone,
 			/mob/living/simple_animal/hostile/poison,
 			/mob/living/simple_animal/hostile/blob,
-			/mob/living/simple_animal/ascendant_shadowling
+			/mob/living/simple_animal/ascendant_shadowling,
+			/mob/living/simple_animal/slaughter,
+			/mob/living/simple_animal/hostile/guardian,
+			/mob/living/simple_animal/hostile/guardian/fire,
+			/mob/living/simple_animal/hostile/guardian/punch,
+			/mob/living/simple_animal/hostile/guardian/fast,
+			/mob/living/simple_animal/hostile/guardian/healer,
+			/mob/living/simple_animal/hostile/guardian/ranged,
+			/mob/living/simple_animal/hostile/guardian/bluespace,
+			/mob/living/simple_animal/hostile/guardian/bomb,
+			/mob/living/simple_animal/hostile/guardian/shield,
+			/mob/living/simple_animal/hostile/morph,
+			/mob/living/simple_animal/revenant
 			)//exclusion list for things you don't want the reaction to create.
+			 //>not a whitelist
+			 //T-T-THANKS TG
 		var/list/critters = typesof(/mob/living/simple_animal/hostile) - blocked // list of possible hostile mobs
 		var/atom/A = holder.my_atom
 		var/turf/T = get_turf(A)
@@ -60,7 +74,7 @@
 
 		var/mob/M = get(A, /mob)
 		if(M)
-			message += " - Carried By: [M.real_name] ([M.key]) (<A HREF='?_src_=holder;adminplayeropts=\ref[M]'>PP</A>) (<A HREF='?_src_=holder;adminmoreinfo=\ref[M]'>?</A>)"
+			message += " - Carried By: [key_name_admin(M)](<A HREF='?_src_=holder;adminmoreinfo=\ref[M]'>?</A>) (<A HREF='?_src_=holder;adminplayerobservefollow=\ref[M]'>FLW</A>)"
 		else
 			message += " - Last Fingerprint: [(A.fingerprintslast ? A.fingerprintslast : "N/A")]"
 

@@ -50,7 +50,7 @@
 	return canhear_range
 
 
-/obj/item/device/radio/intercom/Hear(message, atom/movable/speaker, message_langs, raw_message, radio_freq)
+/obj/item/device/radio/intercom/Hear(message, atom/movable/speaker, message_langs, raw_message, radio_freq, list/spans)
 	if(!anyai && !(speaker in ai))
 		return
 	..()
@@ -63,10 +63,10 @@
 			on = 0
 		else
 			var/area/A = src.loc.loc
-			if(!A || !isarea(A) || !A.master || emped)
+			if(!A || !isarea(A) || emped)
 				on = 0
 			else
-				on = A.master.powered(EQUIP) // set "on" to the power status
+				on = A.powered(EQUIP) // set "on" to the power status
 
 		if(!on)
 			icon_state = "intercom-p"

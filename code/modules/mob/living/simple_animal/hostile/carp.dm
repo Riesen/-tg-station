@@ -9,6 +9,8 @@
 	turns_per_move = 5
 	meat_type = /obj/item/weapon/reagent_containers/food/snacks/carpmeat
 	meat_amount = 2
+	emote_taunt = list("gnashes")
+	taunt_chance = 30
 	response_help = "pets"
 	response_disarm = "gently pushes aside"
 	response_harm = "hits"
@@ -23,14 +25,7 @@
 	attack_sound = 'sound/weapons/bite.ogg'
 
 	//Space carp aren't affected by cold.
-	min_oxy = 0
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 0
-	min_co2 = 0
-	max_co2 = 0
-	min_n2 = 0
-	max_n2 = 0
+	atmos_requirements = list("min_oxy" = 0, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
 	minbodytemp = 0
 	maxbodytemp = 1500
 
@@ -38,11 +33,6 @@
 
 /mob/living/simple_animal/hostile/carp/Process_Spacemove(var/movement_dir = 0)
 	return 1	//No drifting in space for space carp!	//original comments do not steal
-
-/mob/living/simple_animal/hostile/carp/FindTarget()
-	. = ..()
-	if(.)
-		emote("me", 1, "nashes at [.]!")
 
 /mob/living/simple_animal/hostile/carp/AttackingTarget()
 	..()
@@ -56,7 +46,8 @@
 	icon_living = "holocarp"
 	maxbodytemp = INFINITY
 
-/mob/living/simple_animal/hostile/carp/holocarp/Die()
+/mob/living/simple_animal/hostile/carp/holocarp/death(gibbed)
+	..(gibbed)
 	qdel(src)
 	return
 

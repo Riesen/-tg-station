@@ -40,7 +40,7 @@
 		return
 
 	// These look weird if you make them dirty
-	if(istype(src, /turf/simulated/floor/fancy/carpet) || istype(src, /turf/simulated/floor/fancy/grass) || istype(src, /turf/simulated/floor/beach) || istype(src, /turf/simulated/floor/holofloor) || istype(src, /turf/simulated/floor/plating/snow) || istype(src, /turf/simulated/floor/plating/ironsand))
+	if(istype(src, /turf/simulated/floor/carpet) || istype(src, /turf/simulated/floor/grass) || istype(src, /turf/simulated/floor/plating/beach) || istype(src, /turf/simulated/floor/holofloor) || istype(src, /turf/simulated/floor/plating/snow) || istype(src, /turf/simulated/floor/plating/ironsand))
 		return
 
 	if(locate(/obj/structure/grille) in contents)
@@ -49,11 +49,11 @@
 	var/area/A = loc
 
 				//zero dirt
-	if(!istype(A) || istype(A, /area/centcom) || istype(A, /area/holodeck) || istype(A, /area/library) || istype(A, /area/janitor) || istype(A, /area/chapel) || istype(A, /area/mine/explored) || istype(A, /area/mine/unexplored) || istype(A, /area/solar) || istype(A, /area/atmos) || istype(A, /area/medical/virology))
+	if(!istype(A) || istype(A, /area/centcom) || istype(A, /area/holodeck) || istype(A, /area/library) || istype(A, /area/janitor) || istype(A, /area/chapel) || istype(A, /area/space/mine/explored) || istype(A, /area/space/mine/unexplored) || istype(A, /area/solar) || istype(A, /area/atmos) || istype(A, /area/medical/virology))
 		return
 
 				//high dirt - 1/3
-	if(istype(A, /area/toxins/test_area) || istype(A, /area/mine/production) || istype(A, /area/mine/living_quarters) || istype(A, /area/mine/north_outpost) || istype(A, /area/mine/west_outpost) || istype(A, /area/wreck) || istype(A, /area/derelict) || istype(A, /area/djstation))
+	if(istype(A, /area/toxins/test_area) || istype(A, /area/mine/production) || istype(A, /area/mine/living_quarters) || istype(A, /area/mine/north_outpost) || istype(A, /area/wreck) || istype(A, /area/derelict) || istype(A, /area/djstation))
 		new /obj/effect/decal/cleanable/dirt(src)	//vanilla, but it works
 		return
 

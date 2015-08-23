@@ -57,7 +57,7 @@
 	. = ..()
 	var/area/A = get_area()
 	if(get_area_type() == AREA_STATION)
-		. += "<p>According to \the [src], you are now in <b>\"[strip_html_properly(A.name)]\"</b>.</p>"
+		. += "<p>According to \the [src], you are now in <b>\"[html_encode(A.name)]\"</b>.</p>"
 	var/datum/browser/popup = new(user, "blueprints", "[src]", 700, 500)
 	popup.set_content(.)
 	popup.open()
@@ -65,8 +65,8 @@
 
 
 /obj/item/areaeditor/permit/create_area()
-	..()
-	qdel(src)
+	if (..())
+		qdel(src)
 
 
 //Station blueprints!!!
@@ -82,7 +82,7 @@
 	. = ..()
 	var/area/A = get_area()
 	if(get_area_type() == AREA_STATION)
-		. += "<p>According to \the [src], you are now in <b>\"[strip_html_properly(A.name)]\"</b>.</p>"
+		. += "<p>According to \the [src], you are now in <b>\"[html_encode(A.name)]\"</b>.</p>"
 		. += "<p>You may <a href='?src=\ref[src];edit_area=1'> move an amendment</a> to the drawing.</p>"
 	var/datum/browser/popup = new(user, "blueprints", "[src]", 700, 500)
 	popup.set_content(.)
@@ -102,7 +102,6 @@
 /obj/item/areaeditor/proc/get_area()
 	var/turf/T = get_turf(usr)
 	var/area/A = T.loc
-	A = A.master
 	return A
 
 
@@ -126,42 +125,45 @@
 
 
 /obj/item/areaeditor/proc/create_area()
-	var/res = detect_room(get_turf(usr))
+	var/turf/T = get_turf(usr)
+	var/res = detect_room(T)
+	var/area/oldarea = T.loc
 	if(!istype(res,/list))
 		switch(res)
 			if(ROOM_ERR_SPACE)
 				usr << "<span class='warning'>The new area must be completely airtight.</span>"
-				return
+				return 0
 			if(ROOM_ERR_TOOLARGE)
 				usr << "<span class='warning'>The new area is too large.</span>"
-				return
+				return 0
 			else
 				usr << "<span class='warning'>Error! Please notify administration.</span>"
-				return
+				return 0
 	var/list/turf/turfs = res
 	var/str = trim(stripped_input(usr,"New area name:", "Blueprint Editing", "", MAX_NAME_LEN))
 	if(!str || !length(str)) //cancel
-		return
+		return 0
 	if(length(str) > 50)
 		usr << "<span class='warning'>The given name is too long.  The area remains undefined.</span>"
-		return
+		return 0
 	var/area/A = new
 	A.name = str
-	A.tagbase="[A.type]_[md5(str)]" // without this dynamic light system ruin everithing
+	//A.tagbase="[A.type]_[md5(str)]" // without this dynamic light system ruin everithing
 	//var/ma
 	//ma = A.master ? "[A.master]" : "(null)"
 	//world << "DEBUG: create_area: <br>A.name=[A.name]<br>A.tag=[A.tag]<br>A.master=[ma]"
 	A.power_equip = 0
 	A.power_light = 0
 	A.power_environ = 0
+	A.has_gravity = oldarea.has_gravity
 	A.always_unpowered = 0
 	move_turfs_to_area(turfs, A)
-	A.SetDynamicLighting()
+	//A.SetDynamicLighting()
 
 	A.addSorted()
 
 	interact()
-	return
+	return 1
 
 
 /obj/item/areaeditor/proc/move_turfs_to_area(var/list/turf/turfs, var/area/A)
@@ -178,8 +180,6 @@
 		usr << "<span class='warning'>The given name is too long.  The area's name is unchanged.</span>"
 		return
 	set_area_machinery_title(A,str,prevname)
-	for(var/area/RA in A.related)
-		RA.name = str
 	usr << "<span class='notice'>You rename the '[prevname]' to '[str]'.</span>"
 	interact()
 	return
@@ -188,28 +188,27 @@
 /obj/item/areaeditor/proc/set_area_machinery_title(var/area/A,var/title,var/oldtitle)
 	if (!oldtitle) // or replacetext goes to infinite loop
 		return
-	for(var/area/RA in A.related)
-		for(var/obj/machinery/alarm/M in RA)
-			M.name = replacetext(M.name,oldtitle,title)
-		for(var/obj/machinery/power/apc/M in RA)
-			M.name = replacetext(M.name,oldtitle,title)
-		for(var/obj/machinery/atmospherics/unary/vent_scrubber/M in RA)
-			M.name = replacetext(M.name,oldtitle,title)
-		for(var/obj/machinery/atmospherics/unary/vent_pump/M in RA)
-			M.name = replacetext(M.name,oldtitle,title)
-		for(var/obj/machinery/door/M in RA)
-			M.name = replacetext(M.name,oldtitle,title)
+	for(var/obj/machinery/alarm/M in A)
+		M.name = replacetext(M.name,oldtitle,title)
+	for(var/obj/machinery/power/apc/M in A)
+		M.name = replacetext(M.name,oldtitle,title)
+	for(var/obj/machinery/atmospherics/components/unary/vent_scrubber/M in A)
+		M.name = replacetext(M.name,oldtitle,title)
+	for(var/obj/machinery/atmospherics/components/unary/vent_pump/M in A)
+		M.name = replacetext(M.name,oldtitle,title)
+	for(var/obj/machinery/door/M in A)
+		M.name = replacetext(M.name,oldtitle,title)
 	//TODO: much much more. Unnamed airlocks, cameras, etc.
 
 
 /obj/item/areaeditor/proc/check_tile_is_border(var/turf/T2,var/dir)
 	if (istype(T2, /turf/space))
 		return BORDER_SPACE //omg hull breach we all going to die here
-	if (istype(T2, /turf/simulated/shuttle))
-		return BORDER_SPACE
 	if (get_area_type(T2.loc)!=AREA_SPACE)
 		return BORDER_BETWEEN
 	if (istype(T2, /turf/simulated/wall))
+		return BORDER_2NDTILE
+	if (istype(T2, /turf/simulated/mineral))
 		return BORDER_2NDTILE
 	if (!istype(T2, /turf/simulated))
 		return BORDER_BETWEEN
@@ -276,7 +275,7 @@
 	. = ..()
 	var/area/A = get_area()
 	if(get_area_type() == AREA_STATION)
-		. += "<p>According to \the [src], you are now in <b>\"[strip_html_properly(A.name)]\"</b>.</p>"
+		. += "<p>According to \the [src], you are now in <b>\"[html_encode(A.name)]\"</b>.</p>"
 	var/datum/browser/popup = new(user, "blueprints", "[src]", 700, 500)
 	popup.set_content(.)
 	popup.open()

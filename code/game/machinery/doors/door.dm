@@ -1,3 +1,4 @@
+
 /obj/machinery/door
 	name = "door"
 	desc = "It opens and closes."
@@ -219,13 +220,13 @@
 
 	do_animate("opening")
 	icon_state = "door0"
-	src.SetOpacity(0)
+	src.set_opacity(0)
 	sleep(5)
 	src.density = 0
 	sleep(5)
 	src.layer = 2.7
 	update_icon()
-	SetOpacity(0)
+	src.set_opacity(0)
 	operating = 0
 	air_update_turf(1)
 	update_freelook_sight()
@@ -246,7 +247,7 @@
 	sleep(5)
 	update_icon()
 	if(visible && !glass)
-		SetOpacity(1)
+		src.set_opacity(1)
 	operating = 0
 	air_update_turf(1)
 	update_freelook_sight()
@@ -285,3 +286,6 @@
 
 /obj/machinery/door/morgue
 	icon = 'icons/obj/doors/doormorgue.dmi'
+
+/obj/machinery/door/storage_contents_dump_act(obj/item/weapon/storage/src_object, mob/user)
+	return 0

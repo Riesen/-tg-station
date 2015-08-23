@@ -21,29 +21,18 @@
 	melee_damage_upper = 12
 	attacktext = "attacks"
 	attack_sound = 'sound/weapons/bite.ogg'
-	var/Attackemote = "growls at"
+	emote_taunt = list("growls")
+	taunt_chance = 30
 
-	min_oxy = 0
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 0
-	min_co2 = 0
-	max_co2 = 0
-	min_n2 = 0
-	max_n2 = 0
+	atmos_requirements = list("min_oxy" = 0, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
 	minbodytemp = 0
 
 	faction = list("mimic")
 	move_to_delay = 9
 
-/mob/living/simple_animal/hostile/mimic/FindTarget()
-	. = ..()
-	if(.)
-		emote("me", 1, "[Attackemote] [.].")
 
-/mob/living/simple_animal/hostile/mimic/Die()
-	..()
-	visible_message("<span class='danger'><b>[src]</b> stops moving!</span>")
+/mob/living/simple_animal/hostile/mimic/death(gibbed)
+	..(gibbed)
 	qdel(src)
 
 
@@ -103,17 +92,15 @@
 	..()
 	icon_state = initial(icon_state)
 
-/mob/living/simple_animal/hostile/mimic/crate/LostTarget()
-	..()
-	icon_state = initial(icon_state)
 
-/mob/living/simple_animal/hostile/mimic/crate/Die()
+/mob/living/simple_animal/hostile/mimic/crate/death(gibbed)
+
 
 	var/obj/structure/closet/crate/C = new(get_turf(src))
 	// Put loot in crate
 	for(var/obj/O in src)
 		O.loc = C
-	..()
+	..(gibbed)
 
 /mob/living/simple_animal/hostile/mimic/crate/AttackingTarget()
 	. =..()
@@ -147,13 +134,13 @@ var/global/list/protected_objects = list(/obj/structure/table, /obj/structure/ca
 /mob/living/simple_animal/hostile/mimic/copy/Life()
 	..()
 	for(var/mob/living/M in contents) //a fix for animated statues from the flesh to stone spell
-		Die()
+		death()
 
-/mob/living/simple_animal/hostile/mimic/copy/Die()
+/mob/living/simple_animal/hostile/mimic/copy/death(gibbed)
 
 	for(var/atom/movable/M in src)
 		M.loc = get_turf(src)
-	..()
+	..(gibbed)
 
 /mob/living/simple_animal/hostile/mimic/copy/ListTargets()
 	// Return a list of targets that isn't the creator
@@ -250,7 +237,7 @@ var/global/list/protected_objects = list(/obj/structure/table, /obj/structure/ca
 	projectiletype = /obj/item/projectile/magic/
 	projectilesound = 'sound/items/bikehorn.ogg'
 	casingtype = null
-	Attackemote = "aims menacingly at"
+	emote_see = list("aims menacingly")
 	var/obj/item/weapon/gun/TrueGun = null
 	var/obj/item/weapon/gun/magic/Zapstick = list()
 	var/obj/item/weapon/gun/projectile/Pewgun = list()
@@ -342,7 +329,7 @@ var/global/list/protected_objects = list(/obj/structure/table, /obj/structure/ca
 			Pewgun.chambered.loc = Pewgun
 			visible_message("<span class='danger'>The <b>[src]</b> cocks itself!</span>")
 
-	else //if somehow the mimic has no weapon
+	else //if somehow the mimic has no weapon //xenobio
 		src.ranged = 0 //BANZAIIII
 		src.retreat_distance = 0
 		src.minimum_distance = 1

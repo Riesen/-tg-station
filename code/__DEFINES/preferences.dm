@@ -7,8 +7,12 @@
 #define MEMBER_PUBLIC	16
 #define INTENT_STYLE	32
 #define MIDROUND_ANTAG	64
+#define SOUND_INSTRUMENTS	128
+#define SOUND_SHIP_AMBIENCE 256
+#define SOUND_PRAYERS 512
 
-#define TOGGLES_DEFAULT (SOUND_ADMINHELP|SOUND_MIDI|SOUND_AMBIENCE|SOUND_LOBBY|MEMBER_PUBLIC|INTENT_STYLE|MIDROUND_ANTAG)
+
+#define TOGGLES_DEFAULT (SOUND_ADMINHELP|SOUND_MIDI|SOUND_AMBIENCE|SOUND_LOBBY|MEMBER_PUBLIC|INTENT_STYLE|MIDROUND_ANTAG|SOUND_INSTRUMENTS|SOUND_SHIP_AMBIENCE)
 
 //Chat toggles
 #define CHAT_OOC		1
@@ -32,7 +36,7 @@
 #define BE_MALF			16
 #define BE_REV			32
 #define BE_ALIEN		64
-#define BE_PAI			128 //Includes Positronic brains, but the flag is already maxed. // technically we have the revenant slot free right now but it'll likely be fixed
+#define BE_PAI			128 //Includes Positronic brains, but the flag is already maxed.
 #define BE_CULTIST		256
 #define BE_BLOB			512
 #define BE_NINJA		1024
@@ -40,4 +44,4 @@
 #define BE_GANG 		4096
 #define BE_SHADOWLING	8192
 #define BE_ABDUCTOR 	16384
-//#define BE_REVENANT	32768 ;^)
+#define BE_REVENANT		32768

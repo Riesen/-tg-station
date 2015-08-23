@@ -176,7 +176,9 @@ datum/hud/New(mob/owner)
 	if(!mymob.client)
 		return 0
 
-	var/ui_style = ui_style2icon(mymob.client.prefs.UI_style)
+	var/ui_style
+	if(mymob && mymob.client && mymob.client.prefs)
+		ui_style = ui_style2icon(mymob.client.prefs.UI_style)
 
 	if(ishuman(mymob))
 		human_hud(ui_style) // Pass the player the UI style chosen in preferences
@@ -198,12 +200,8 @@ datum/hud/New(mob/owner)
 		ghost_hud()
 	else if(isovermind(mymob))
 		blob_hud()
-	else if(isdrone(mymob))
-		drone_hud(ui_style)
 
 
-	if(istype(mymob.loc,/obj/mecha))
-		show_hud(HUD_STYLE_REDUCED)
 
 //Version denotes which style should be displayed. blank or 0 means "next version"
 /datum/hud/proc/show_hud(var/version = 0)

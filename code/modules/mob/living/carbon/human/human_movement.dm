@@ -35,6 +35,10 @@
 
 /mob/living/carbon/human/Move(NewLoc, direct)
 	..()
+	if(dna)
+		for(var/datum/mutation/human/HM in dna.mutations)
+			HM.on_move(src, NewLoc)
+
 	if(shoes)
 		if(!lying)
 			if(loc == NewLoc)
@@ -43,3 +47,10 @@
 				var/obj/item/clothing/shoes/S = shoes
 				S.step_action()
 
+
+/mob/living/carbon/human/experience_pressure_difference()
+	playsound(src, 'sound/effects/space_wind.ogg', 50, 1)
+	if(shoes)
+		if(shoes.flags&NOSLIP)
+			return 0
+	. = ..()

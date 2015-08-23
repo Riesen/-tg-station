@@ -3,7 +3,7 @@
 /obj/machinery/bot
 	icon = 'icons/obj/aibots.dmi'
 	layer = MOB_LAYER
-	luminosity = 3
+	light_range = 3
 	use_power = 0
 	var/obj/item/weapon/card/id/botcard			// the ID card that the bot "holds"
 	var/list/prev_access = list()
@@ -87,12 +87,12 @@
 /obj/machinery/bot/proc/turn_on()
 	if(stat)	return 0
 	on = 1
-	SetLuminosity(initial(luminosity))
+	set_light(initial(luminosity))
 	return 1
 
 /obj/machinery/bot/proc/turn_off()
 	on = 0
-	SetLuminosity(0)
+	set_light(0)
 	bot_reset() //Resets an AI's call, should it exist.
 
 /obj/machinery/bot/New()
@@ -108,6 +108,8 @@
 		radio_controller.remove_object(src,beacon_freq)
 		if(bot_filter)
 			radio_controller.remove_object(src,control_freq)
+	qdel(Radio)
+	qdel(botcard)
 	..()
 
 /obj/machinery/bot/proc/add_to_beacons(bot_filter) //Master filter control for bots. Must be placed in the bot's local New() to support map spawned bots.
@@ -786,6 +788,7 @@ obj/machinery/bot/proc/bot_summon()
 
 
 /obj/machinery/bot/Bump(M as mob|obj) //Leave no door unopened!
+	. = ..()
 	if((istype(M, /obj/machinery/door/airlock) ||  istype(M, /obj/machinery/door/window)) && (!isnull(botcard)))
 		var/obj/machinery/door/D = M
 		if(D.check_access(botcard))

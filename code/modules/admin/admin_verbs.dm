@@ -43,7 +43,7 @@ var/list/admin_verbs_admin = list(
 	/client/proc/check_antagonists,		/*shows all antags*/
 	/datum/admins/proc/access_news_network,	/*allows access of newscasters*/
 	/client/proc/giveruntimelog,		/*allows us to give access to runtime logs to somebody*/
-	/client/proc/getruntimelog,			/*allows us to access runtime logs to somebody*/
+	/client/proc/getruntimelog,			/*allows us to access runtime logs*/
 	/client/proc/getserverlog,			/*allows us to fetch server logs (diary) for other days*/
 	/client/proc/jumptocoord,			/*we ghost and jump to a coordinate*/
 	/client/proc/Getmob,				/*teleports a mob to our location*/
@@ -95,7 +95,6 @@ var/list/admin_verbs_server = list(
 	/datum/admins/proc/delay,
 	/datum/admins/proc/toggleaban,
 	/client/proc/toggle_log_hrefs,
-	/datum/admins/proc/immreboot,
 	/client/proc/everyone_random,
 	/datum/admins/proc/toggleAI,
 	/client/proc/cmd_admin_delete,		/*delete an instance/object/mob/etc*/
@@ -105,6 +104,7 @@ var/list/admin_verbs_server = list(
 	)
 var/list/admin_verbs_debug = list(
 	/client/proc/restart_controller,
+	/client/proc/getruntimelog,
 	/client/proc/cmd_admin_list_open_jobs,
 	/client/proc/Debug2,
 	/client/proc/cmd_debug_make_powernets,
@@ -120,7 +120,8 @@ var/list/admin_verbs_debug = list(
 	/client/proc/test_movable_UI,
 	/client/proc/test_snap_UI,
 	/client/proc/debugNatureMapGenerator,
-	/client/proc/check_bomb_impacts
+	/client/proc/check_bomb_impacts,
+	/proc/machine_upgrade
 	)
 var/list/admin_verbs_possess = list(
 	/proc/possess,
@@ -175,7 +176,6 @@ var/list/admin_verbs_hideable = list(
 	/datum/admins/proc/delay,
 	/datum/admins/proc/toggleaban,
 	/client/proc/toggle_log_hrefs,
-	/datum/admins/proc/immreboot,
 	/client/proc/everyone_random,
 	/datum/admins/proc/toggleAI,
 	/client/proc/restart_controller,
@@ -318,12 +318,12 @@ var/list/admin_verbs_hideable = list(
 	set category = "Admin"
 	set desc = "Toggles ghost-like invisibility (Don't abuse this)"
 	if(holder && mob)
-		if(mob.invisibility == INVISIBILITY_OBSERVER)
+		if(mob.invisibility == INVISIBILITY_MAXIMUM)
 			mob.invisibility = initial(mob.invisibility)
 			mob << "<span class='userdanger'>Invisimin off. Invisibility reset.</span>"
 		else
-			mob.invisibility = INVISIBILITY_OBSERVER
-			mob << "<span class='adminnotice'><b>Invisimin on. You are now as invisible as a ghost.</b></span>"
+			mob.invisibility = INVISIBILITY_MAXIMUM
+			mob << "<span class='adminnotice'><b>Invisimin on. You are now invisible.</b></span>"
 
 
 /client/proc/player_panel()
@@ -464,9 +464,14 @@ var/list/admin_verbs_hideable = list(
 	set category = "Fun"
 	set name = "Give Spell"
 	set desc = "Gives a spell to a mob."
-	var/obj/effect/proc_holder/spell/S = input("Choose the spell to give to that guy", "ABRAKADABRA") as null|anything in spells
+	var/list/spell_list = list()
+	var/type_length = length("/obj/effect/proc_holder/spell") + 2
+	for(var/A in spells)
+		spell_list[copytext("[A]", type_length)] = A
+	var/obj/effect/proc_holder/spell/S = input("Choose the spell to give to that guy", "ABRAKADABRA") as null|anything in spell_list
 	if(!S)
 		return
+	S = spell_list[S]
 	feedback_add_details("admin_verb","GS") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 	log_admin("[key_name(usr)] gave [key_name(T)] the spell [S].")
 	message_admins("<span class='adminnotice'>[key_name_admin(usr)] gave [key_name(T)] the spell [S].</span>")
@@ -515,8 +520,8 @@ var/list/admin_verbs_hideable = list(
 	set category = "Admin"
 
 	if(holder)
-		log_admin("[src] deadmined themself.")
-		message_admins("[src] deadmined themself.")
+		log_admin("[key_name(src)] deadmined themself.")
+		message_admins("[key_name_admin(src)] deadmined themself.")
 		deadmin()
 		verbs += /client/proc/readmin
 		deadmins += ckey
@@ -555,8 +560,8 @@ var/list/admin_verbs_hideable = list(
 		var/list/Lines = file2list("config/admins.txt")
 		for(var/line in Lines)
 			var/list/splitline = text2list(line, " = ")
-			if(splitline.len >= 2)
-				if(cmptext(splitline[1], src.ckey))
+			if(lowertext(splitline[1]) == ckey)
+				if(splitline.len >= 2)
 					rank = ckeyEx(splitline[2])
 				break
 			continue
@@ -581,8 +586,8 @@ var/list/admin_verbs_hideable = list(
 		D = new(rank_names[rank],ckey)
 		var/client/C = directory[ckey]
 		D.associate(C)
-		message_admins("[src] re-adminned themselves.")
-		log_admin("[src] re-adminned themselves.")
+		message_admins("[key_name_admin(src)] re-adminned themselves.")
+		log_admin("[key_name(src)] re-adminned themselves.")
 		deadmins -= ckey
 		feedback_add_details("admin_verb","RAS")
 		return

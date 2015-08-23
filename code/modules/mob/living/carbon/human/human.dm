@@ -22,9 +22,13 @@
 					 /obj/item/organ/limb/r_arm, /obj/item/organ/limb/r_leg, /obj/item/organ/limb/l_leg)
 	for(var/obj/item/organ/limb/O in organs)
 		O.owner = src
-	internal_organs += new /obj/item/organ/appendix
-	internal_organs += new /obj/item/organ/heart
-	internal_organs += new /obj/item/organ/brain
+	internal_organs += new /obj/item/organ/internal/appendix
+	internal_organs += new /obj/item/organ/internal/heart
+	internal_organs += new /obj/item/organ/internal/brain
+	internal_organs += new /obj/item/organ/butt //Could be argued to not actually be an internal organ
+
+	for(var/obj/item/organ/internal/I in internal_organs)
+		I.Insert(src)
 
 	// for spawned humans; overwritten by other code
 	ready_dna(src)
@@ -50,6 +54,7 @@
 /mob/living/carbon/human/Destroy()
 	for(var/atom/movable/organelle in organs)
 		qdel(organelle)
+	organs = list()
 	return ..()
 
 /mob/living/carbon/human/Stat()
@@ -281,7 +286,7 @@
 				return
 			var/time_taken = I.embedded_unsafe_removal_time*I.w_class
 			usr.visible_message("<span class='notice'>[usr] attempts to remove [I] from their [L.getDisplayName()]!</span>","<span class='notice'>You attempt to remove [I] from your [L.getDisplayName()], it will take [time_taken/10] seconds.</span>")
-			if(do_after(usr, time_taken, needhand = 1))
+			if(do_after(usr, time_taken, needhand = 1, target = usr))
 				L.embedded_objects -= I
 				L.take_damage(I.embedded_unsafe_removal_pain_multiplier*I.w_class)//It hurts to rip it out, get surgery you dingus.
 				I.loc = get_turf(src)
@@ -740,6 +745,33 @@
 
 			..()
 
+/mob/living/carbon/human/proc/do_cpr(mob/living/carbon/C)
+	if(C.stat == DEAD)
+		src << "<span class='warning'>[C.name] is dead!</span>"
+		return
+	if(is_mouth_covered())
+		src << "<span class='warning'>Remove your mask first!</span>"
+		return 0
+	if(C.is_mouth_covered())
+		src << "<span class='warning'>Remove their mask first!</span>"
+		return 0
+
+	if(C.cpr_time < world.time + 30)
+		add_logs(src, C, "CPRed")
+		visible_message("<span class='notice'>[src] is trying to perform CPR on [C.name]!</span>", \
+						"<span class='notice'>You try to perform CPR on [C.name]... Hold still!</span>")
+		if(!do_mob(src, C))
+			src << "<span class='warning'>You fail to perform CPR on [C]!</span>"
+			return 0
+
+		if(C.health <= config.health_threshold_crit)
+			C.cpr_time = world.time
+			var/suff = min(C.getOxyLoss(), 7)
+			C.adjustOxyLoss(-suff)
+			C.updatehealth()
+			src.visible_message("[src] performs CPR on [C.name]!", "<span class='notice'>You perform CPR on [C.name].</span>")
+			C << "<span class='unconscious'>You feel a breath of fresh air enter your lungs... It feels good...</span>"
+
 
 /mob/living/carbon/human/generateStaticOverlay()
 	var/image/staticOverlay = image(icon('icons/effects/effects.dmi', "static"), loc = src)
@@ -755,3 +787,10 @@
 	staticOverlays["letter"] = staticOverlay
 
 
+
+/mob/living/carbon/human/cuff_resist(obj/item/I)
+	if(dna && dna.check_mutation(HULK))
+		say(pick(";RAAAAAAAARGH!", ";HNNNNNNNNNGGGGGGH!", ";GWAAAAAAAARRRHHH!", "NNNNNNNNGGGGGGGGHH!", ";AAAAAAARRRGH!" ))
+		..(I, cuff_break = 1)
+	else
+		..()

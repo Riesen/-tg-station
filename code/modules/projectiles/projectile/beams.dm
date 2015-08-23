@@ -8,6 +8,9 @@
 	flag = "laser"
 	eyeblur = 2
 
+/obj/item/projectile/beam/experience_pressure_difference(pressure_difference, direction)
+	return	//Spacewind can't push beams
+
 /obj/item/projectile/beam/practice
 	name = "practice laser"
 	damage = 0
@@ -28,8 +31,9 @@
 /obj/item/projectile/beam/xray
 	name = "xray beam"
 	icon_state = "xray"
-	damage = 20
+	damage = 15
 	irradiate = 30
+	range = 15
 	forcedodge = 1
 
 /obj/item/projectile/beam/disabler
@@ -47,6 +51,7 @@
 	damage = 60
 
 /obj/item/projectile/beam/pulse/on_hit(var/atom/target, var/blocked = 0)
+	. = ..()
 	if(istype(target,/turf/)||istype(target,/obj/structure/))
 		target.ex_act(2)
 	..()
@@ -57,14 +62,13 @@
 /obj/item/projectile/beam/emitter
 	name = "emitter beam"
 	icon_state = "emitter"
-	damage = 50
+	damage = 30
 
 /obj/item/projectile/beam/emitter/singularity_pull()
 	return //don't want the emitters to miss
 
 obj/item/projectile/beam/emitter/Destroy()
-	PlaceInPool(src)
-	return 1 //cancels the GCing
+	return QDEL_HINT_PUTINPOOL
 
 /obj/item/projectile/lasertag
 	name = "laser tag beam"
@@ -77,12 +81,13 @@ obj/item/projectile/beam/emitter/Destroy()
 	var/suit_types = list(/obj/item/clothing/suit/redtag, /obj/item/clothing/suit/bluetag)
 
 /obj/item/projectile/lasertag/on_hit(var/atom/target, var/blocked = 0)
-	if(istype(target, /mob/living/carbon/human))
+	. = ..()
+	if(ishuman(target))
 		var/mob/living/carbon/human/M = target
 		if(istype(M.wear_suit))
 			if(M.wear_suit.type in suit_types)
 				M.adjustStaminaLoss(34)
-	return 1
+
 
 /obj/item/projectile/lasertag/redtag
 	icon_state = "laser"

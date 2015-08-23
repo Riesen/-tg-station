@@ -28,13 +28,13 @@
 	id = "lizard"
 	say_mod = "hisses"
 	default_color = "00FF00"
-	roundstart = 1
+	roundstart = 0
 	specflags = list(MUTCOLORS,EYECOLOR,LIPS)
 	mutant_bodyparts = list("tail", "snout")
 	attack_verb = "slash"
 	attack_sound = 'sound/weapons/slash.ogg'
 	miss_sound = 'sound/weapons/slashmiss.ogg'
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/lizard
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/lizard
 
 /datum/species/lizard/handle_speech(message)
 	// jesus christ why
@@ -58,7 +58,7 @@
 	miss_sound = 'sound/weapons/slashmiss.ogg'
 	burnmod = 1.25
 	heatmod = 1.5
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/plant
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/plant
 
 /datum/species/plant/handle_chemicals(datum/reagent/chem, mob/living/carbon/human/H)
 	if(chem.id == "plantbgone")
@@ -103,7 +103,7 @@
 		var/turf/T = H.loc
 		var/area/A = T.loc
 		if(A)
-			if(A.lighting_use_dynamic)	light_amount = min(10,T.lighting_lumcount) - 5
+			if(A.lighting_use_dynamic)	light_amount = min(10,T.get_lumcount() * 10) - 5
 			else						light_amount =  5
 		H.nutrition += light_amount
 		if(H.nutrition > NUTRITION_LEVEL_FULL)
@@ -127,8 +127,9 @@
 	darksight = 8
 	sexes = 0
 	ignored_by = list(/mob/living/simple_animal/hostile/faithless)
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/shadow
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/shadow
 	specflags = list(NOBREATH,NOBLOOD,RADIMMUNE)
+	dangerous_existence = 1
 
 /datum/species/shadow/spec_life(mob/living/carbon/human/H)
 	var/light_amount = 0
@@ -136,7 +137,7 @@
 		var/turf/T = H.loc
 		var/area/A = T.loc
 		if(A)
-			if(A.lighting_use_dynamic)	light_amount = T.lighting_lumcount
+			if(A.lighting_use_dynamic)	light_amount = T.get_lumcount() * 10
 			else						light_amount =  10
 		if(light_amount > 2) //if there's enough light, start dying
 			H.take_overall_damage(1,1)
@@ -158,7 +159,7 @@
 	hair_color = "mutcolor"
 	hair_alpha = 150
 	ignored_by = list(/mob/living/carbon/slime)
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/slime
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/slime
 	exotic_blood = /datum/reagent/toxin/slimejelly
 	var/recently_changed = 1
 
@@ -198,7 +199,7 @@
 	say_mod = "chirps"
 	eyes = "jelleyes"
 	specflags = list(MUTCOLORS,EYECOLOR,NOBLOOD)
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/slime
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/slime
 	exotic_blood = /datum/reagent/toxin/slimejelly
 	var/recently_changed = 1
 
@@ -239,7 +240,7 @@
 	punchmod = 5
 	no_equip = list(slot_wear_mask, slot_wear_suit, slot_gloves, slot_shoes, slot_head, slot_w_uniform)
 	nojumpsuit = 1
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/golem
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/golem
 
 
 /*
@@ -249,7 +250,7 @@
 /datum/species/golem/adamantine
 	name = "Adamantine Golem"
 	id = "adamantine"
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/golem/adamantine
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/golem/adamantine
 
 /*
  FLIES
@@ -260,7 +261,7 @@
 	name = "Human?"
 	id = "fly"
 	say_mod = "buzzes"
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/fly
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/fly
 
 /datum/species/fly/handle_chemicals(datum/reagent/chem, mob/living/carbon/human/H)
 	if(chem.id == "pestkiller")
@@ -281,7 +282,7 @@
 	id = "skeleton"
 	say_mod = "rattles"
 	sexes = 0
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/skeleton
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/skeleton
 	specflags = list(NOBREATH,HEATRES,COLDRES,NOBLOOD,RADIMMUNE)
 /*
  ZOMBIES
@@ -293,7 +294,7 @@
 	id = "zombie"
 	say_mod = "moans"
 	sexes = 0
-	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/human/mutant/zombie
+	meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/human/mutant/zombie
 	specflags = list(NOBREATH,HEATRES,COLDRES,NOBLOOD,RADIMMUNE)
 
 /datum/species/zombie/handle_speech(message)

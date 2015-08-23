@@ -58,6 +58,8 @@
 
 /obj/item/weapon/reagent_containers/food/drinks/afterattack(obj/target, mob/user , proximity)
 	if(!proximity) return
+	if(!reagents)
+		return
 	if(istype(target, /obj/structure/reagent_dispensers)) //A dispenser. Transfer FROM it TO us.
 
 		if(!target.reagents.total_volume)
@@ -285,3 +287,38 @@
 	desc = "A delicious mixture of 42 different flavors."
 	icon_state = "dr_gibb"
 	list_reagents = list("dr_gibb" = 30)
+
+////////////////////////////////////////////////////////////////////////////////
+/// SLURPIES!!!!!!!!!!!!!.
+////////////////////////////////////////////////////////////////////////////////
+
+/obj/item/weapon/reagent_containers/food/drinks/cuckacola
+	name = "CuckaCola"
+	desc = "Share it with a friend!"
+	icon_state = "cuckacola"
+	list_reagents = list("cuckacola" = 30)
+
+/obj/item/weapon/reagent_containers/food/drinks/firestation_red
+	name = "Firestation Red"
+	desc = "A discontinued SlurpSlurpy flavor consisting of all syrup with a chemically goodness that tastes like burn."
+	icon_state = "firestation_red"
+	list_reagents = list("firestation_red" = 30)
+
+/obj/item/weapon/reagent_containers/food/drinks/fruity_filtered
+	name = "Fruity Filtered"
+	desc = "Tastes like REDACTED"
+	icon_state = "fruity_filtered"
+	list_reagents = list("fruity_filtered" = 30)
+
+/obj/item/weapon/reagent_containers/food/drinks/lemeta_limeade
+	name = "LeMeta Limeade"
+	desc = "Somehow you know that it has a citrus flavor."
+	icon_state = "lemeta_limeade"
+	list_reagents = list("lemeta_limeade" = 30)
+
+/obj/item/weapon/reagent_containers/food/drinks/salty_strawberry
+	name = "Salty Strawberry"
+	desc = "All these flavors and you chose Salty Strawberry."
+	icon_state = "salty_strawberry"
+	list_reagents = list("salty_strawberry" = 30)
+

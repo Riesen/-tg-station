@@ -11,30 +11,16 @@ Sorry Giacom. Please don't be mad :(
 
 /mob/living/New()
 	. = ..()
-	if(!ismommi(src) && (src.client || src.ckey || (iscarbon(src) && (!ismonkey(src) && !isslime(src))) || issilicon(src)))	//Only for humans, silicons and other sentients now
-		generateStaticOverlay()
-		if(staticOverlays.len)
-			for(var/mob/living/silicon/robot/mommi/M in player_list)
-				if(M && M.keeper)
-					if(M.staticChoice in staticOverlays)
-						M.staticOverlays |= staticOverlays[M.staticChoice]
-						M.client.images |= staticOverlays[M.staticChoice]
-					else //no choice? force static
-						M.staticOverlays |= staticOverlays["static"]
-						M.client.images |= staticOverlays["static"]
+
+	if(unique_name)
+		name = "[name] ([rand(1, 1000)])"
+		real_name = name
 
 
 /mob/living/Destroy()
-	. = ..()
+	..()
 
-	for(var/mob/living/silicon/robot/mommi/M in player_list)
-		for(var/image/I in staticOverlays)
-			M.staticOverlays.Remove(I)
-			M.client.images.Remove(I)
-			del(I)
-	staticOverlays.len = 0
-
-	del(src)
+	return QDEL_HINT_HARDDEL_NOW
 
 
 /mob/living/proc/generateStaticOverlay()
@@ -90,6 +76,8 @@ Sorry Giacom. Please don't be mad :(
 	//switch our position with M
 	//BubbleWrap: people in handcuffs are always switched around as if they were on 'help' intent to prevent a person being pulled from being seperated from their puller
 	if((M.a_intent == "help" || M.restrained()) && (a_intent == "help" || restrained()) && M.canmove && canmove) // mutual brohugs all around!
+		if(loc && !loc.Adjacent(M.loc))
+			return 1
 		now_pushing = 1
 		//TODO: Make this use Move(). we're pretty much recreating it here.
 		//it could be done by setting one of the locs to null to make Move() work, then setting it back and Move() the other mob
@@ -178,7 +166,7 @@ Sorry Giacom. Please don't be mad :(
 
 /mob/living/ex_act(severity, target)
 	..()
-	if(client && !eye_blind)
+	if(client && !is_blind(src))
 		flick("flash", src.flash)
 
 /mob/living/proc/updatehealth()
@@ -429,6 +417,7 @@ Sorry Giacom. Please don't be mad :(
 	bodytemperature = 310
 	disabilities = 0
 	eye_blind = 0
+	eye_covered = 0
 	eye_blurry = 0
 	ear_deaf = 0
 	ear_damage = 0
@@ -618,7 +607,7 @@ Sorry Giacom. Please don't be mad :(
 		C.visible_message("<span class='warning'>[C] is trying to break [I]!</span>")
 		C << "<span class='notice'>You attempt to break [I]. (This will take around 5 seconds and you need to stand still.)</span>"
 		spawn(0)
-			if(do_after(C, 50))
+			if(do_after(C, 50, target = C))
 				if(!I || C.buckled)
 					return
 				cuff_break(I, C)
@@ -629,7 +618,7 @@ Sorry Giacom. Please don't be mad :(
 		C.visible_message("<span class='warning'>[C] attempts to remove [I]!</span>")
 		C << "<span class='notice'>You attempt to remove [I]. (This will take around [displaytime] minutes and you need to stand still.)</span>"
 		spawn(0)
-			if(do_after(C, breakouttime, 10))
+			if(do_after(C, breakouttime, 10, target = C))
 				if(!I || C.buckled)
 					return
 				C.visible_message("<span class='danger'>[C] manages to remove [I]!</span>")
@@ -649,15 +638,15 @@ Sorry Giacom. Please don't be mad :(
 			else
 				C << "<span class='warning'>You fail to remove [I]!</span>"
 
+
 /mob/living/verb/resist()
 	set name = "Resist"
 	set category = "IC"
 
-	if(!isliving(usr) || usr.next_move > world.time)
+	if(!isliving(src) || next_move > world.time)
 		return
-	usr.changeNext_move(CLICK_CD_RESIST)
 
-	var/mob/living/L = usr
+	changeNext_move(CLICK_CD_RESIST)
 
 	if(istype(src.loc,/mob/living/simple_animal/borer))
 		var/mob/living/simple_animal/borer/B = src.loc
@@ -681,99 +670,55 @@ Sorry Giacom. Please don't be mad :(
 			return
 
 	//resisting grabs (as if it helps anyone...)
-	if(!L.stat && L.canmove && !L.restrained())
+	if(!stat && canmove && !restrained())
 		var/resisting = 0
-		for(var/obj/O in L.requests)
+		for(var/obj/O in requests)
 			qdel(O)
 			resisting++
-		for(var/obj/item/weapon/grab/G in usr.grabbed_by)
+		for(var/obj/item/weapon/grab/G in grabbed_by)
 			resisting++
 			if(G.state == GRAB_PASSIVE)
 				qdel(G)
 			else
 				if(G.state == GRAB_AGGRESSIVE)
 					if(prob(25))
-						L.visible_message("<span class='warning'>[L] has broken free of [G.assailant]'s grip!</span>")
+						visible_message("<span class='warning'>[src] has broken free of [G.assailant]'s grip!</span>")
 						qdel(G)
 				else
 					if(G.state == GRAB_NECK)
 						if(prob(5))
-							L.visible_message("<span class='warning'>[L] has broken free of [G.assailant]'s headlock!</span>")
+							visible_message("<span class='warning'>[src] has broken free of [G.assailant]'s headlock!</span>")
 							qdel(G)
 		if(resisting)
-			L.visible_message("<span class='warning'>[L] resists!</span>")
+			visible_message("<span class='warning'>[src] resists!</span>")
 			return
 
 	//unbuckling yourself
-	if(L.buckled && L.last_special <= world.time)
-		if(iscarbon(L))
-			var/mob/living/carbon/C = L
-			if(C.handcuffed)
-				C.changeNext_move(CLICK_CD_BREAKOUT)
-				C.last_special = world.time + CLICK_CD_BREAKOUT
-				C.visible_message("<span class='warning'>[C] attempts to unbuckle themself!</span>", \
-							"<span class='notice'>You attempt to unbuckle yourself. (This will take around one minute and you need to stay still.)</span>")
-				spawn(0)
-					if(do_after(usr, 600))
-						if(!C.buckled)
-							return
-						C.visible_message("<span class='danger'>[C] manages to unbuckle themself!</span>", \
-											"<span class='notice'>You successfully unbuckle yourself.</span>")
-						C.buckled.user_unbuckle_mob(C,C)
-					else
-						C << "<span class='warning'>You fail to unbuckle yourself!</span>"
-			else
-				L.buckled.user_unbuckle_mob(L,L)
-		else
-			L.buckled.user_unbuckle_mob(L,L)
+	if(buckled && !stat && last_special <= world.time)
+		resist_buckle()
 
 	//Breaking out of a container (Locker, sleeper, cryo...)
 	else if(loc && istype(loc, /obj) && !isturf(loc))
-		if(L.stat == CONSCIOUS && !L.stunned && !L.weakened && !L.paralysis)
+		if(stat == CONSCIOUS && !stunned && !weakened && !paralysis)
 			var/obj/C = loc
-			C.container_resist(L)
+			C.container_resist(src)
 
-	//Stop drop and roll & Handcuffs
-	else if(iscarbon(L))
-		var/mob/living/carbon/CM = L
-		if(CM.on_fire && CM.canmove)
-			CM.fire_stacks -= 5
-			CM.Weaken(3,1)
-			CM.spin(32,2)
-			CM.visible_message("<span class='danger'>[CM] rolls on the floor, trying to put themselves out!</span>", \
-				"<span class='notice'>You stop, drop, and roll!</span>")
-			sleep(30)
-			if(fire_stacks <= 0)
-				CM.visible_message("<span class='danger'>[CM] has successfully extinguished themselves!</span>", \
-					"<span class='notice'>You extinguish yourself.</span>")
-				ExtinguishMob()
-			return
-		if(CM.canmove && (CM.last_special <= world.time))
-			if(CM.handcuffed || CM.legcuffed)
-				CM.changeNext_move(CLICK_CD_BREAKOUT)
-				CM.last_special = world.time + CLICK_CD_BREAKOUT
-				if(CM.handcuffed)
-					cuff_resist(CM.handcuffed, CM)
-				else
-					cuff_resist(CM.legcuffed, CM)
+	else if(canmove)
+		if(on_fire)
+			resist_fire() //stop, drop, and roll
+		else if(last_special <= world.time)
+			resist_restraints() //trying to remove cuffs.
 
-/mob/living/carbon/proc/spin(spintime, speed)
-	spawn()
-		var/D = dir
-		while(spintime >= speed)
-			sleep(speed)
-			switch(D)
-				if(NORTH)
-					D = EAST
-				if(SOUTH)
-					D = WEST
-				if(EAST)
-					D = SOUTH
-				if(WEST)
-					D = NORTH
-			dir = D
-			spintime -= speed
+
+/mob/living/proc/resist_buckle()
+	buckled.user_unbuckle_mob(src,src)
+
+/mob/living/proc/resist_fire()
 	return
+
+/mob/living/proc/resist_restraints()
+	return
+
 
 /mob/living/proc/get_visible_name()
 	return name
@@ -794,9 +739,15 @@ Sorry Giacom. Please don't be mad :(
 /mob/living/update_gravity(has_gravity)
 	if(!ticker)
 		return
+	if(has_gravity)
+		clear_alert("weightless")
+	else
+		throw_alert("weightless")
 	float(!has_gravity)
 
 /mob/living/proc/float(on)
+	if(throwing)
+		return
 	if(on && !floating)
 		animate(src, pixel_y = pixel_y + 2, time = 10, loop = -1)
 		floating = 1
@@ -913,3 +864,73 @@ Sorry Giacom. Please don't be mad :(
 	else
 		do_teleport(src, pick(endgame_safespawns)) //dead-on precision
 	return 1
+
+
+/mob/living/Stat()
+	..()
+	if(statpanel("Status"))
+		if(ticker)
+			if(ticker.mode)
+				for(var/datum/gang/G in ticker.mode.gangs)
+					if(isnum(G.dom_timer))
+						stat(null, "[G.name] Gang Takeover: [max(G.dom_timer, 0)]")
+
+/mob/living/cancel_camera()
+	..()
+	cameraFollow = null
+
+/mob/living/proc/get_standard_pixel_x_offset(lying = 0)
+	return initial(pixel_x)
+
+/mob/living/proc/get_standard_pixel_y_offset(lying = 0)
+	return initial(pixel_y)
+
+
+/mob/living/proc/can_track(mob/living/user)
+	//basic fast checks go first. When overriding this proc, I recommend calling ..() at the end.
+	var/turf/T = get_turf(src)
+	if(!T)
+		return 0
+	if(T.z == ZLEVEL_CENTCOM) //dont detect mobs on centcomm
+		return 0
+	if(T.z >= ZLEVEL_SPACEMAX)
+		return 0
+	if(src == user)
+		return 0
+	if(invisibility || alpha == 0)//cloaked
+		return 0
+	if(digitalcamo)
+		return 0
+
+	// Now, are they viewable by a camera? (This is last because it's the most intensive check)
+	if(!near_camera(src))
+		return 0
+
+	return 1
+
+/mob/living/proc/get_temperature(datum/gas_mixture/environment)
+	var/loc_temp = T0C
+	if(istype(loc, /obj/mecha))
+		var/obj/mecha/M = loc
+		loc_temp =  M.return_temperature()
+
+	else if(istype(loc, /obj/structure/transit_tube_pod))
+		loc_temp = environment.temperature
+
+	else if(istype(get_turf(src), /turf/space))
+		var/turf/heat_turf = get_turf(src)
+		loc_temp = heat_turf.temperature
+
+	else if(istype(loc, /obj/machinery/atmospherics/components/unary/cryo_cell))
+		var/obj/machinery/atmospherics/components/unary/cryo_cell/C = loc
+		var/datum/gas_mixture/C_air_contents = C.airs[1]
+
+		if(C_air_contents.total_moles() < 10)
+			loc_temp = environment.temperature
+		else
+			loc_temp = C_air_contents.temperature
+
+	else
+		loc_temp = environment.temperature
+
+	return loc_temp

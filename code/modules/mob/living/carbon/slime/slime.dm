@@ -3,10 +3,13 @@
 	icon = 'icons/mob/slimes.dmi'
 	icon_state = "grey baby slime"
 	pass_flags = PASSTABLE
-	say_message = "hums"
 	ventcrawler = 2
+	verb_ask = "telepathically asks"
+	verb_say = "telepathically chirps"
+	verb_exclaim = "telepathically cries"
 	var/is_adult = 0
 	var/docile = 0
+	has_limbs = 0
 	languages = SLIME | HUMAN
 	faction = list("slime")
 

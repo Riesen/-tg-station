@@ -17,6 +17,8 @@
 	mob_size = MOB_SIZE_LARGE
 
 	pixel_x = -16
+	emote_taunt = list("growls")
+	taunt_chance = 20
 
 	harm_intent_damage = 5
 	melee_damage_lower = 8
@@ -24,23 +26,14 @@
 	attacktext = "bites"
 	attack_sound = 'sound/weapons/bite.ogg'
 
-	//Space carp aren't affected by atmos.
-	min_oxy = 0
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 0
-	min_co2 = 0
-	max_co2 = 0
-	min_n2 = 0
-	max_n2 = 0
+	//Trees aren't affected by atmos.
+	atmos_requirements = list("min_oxy" = 0, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
 	minbodytemp = 0
 
 	faction = list("hostile")
 
-/mob/living/simple_animal/hostile/tree/FindTarget()
-	. = ..()
-	if(.)
-		emote("me", 1, "growls at [.].")
+	var/drop_type = /obj/item/stack/sheet/mineral/wood
+
 
 /mob/living/simple_animal/hostile/tree/AttackingTarget()
 	..()
@@ -51,10 +44,11 @@
 			C.visible_message("<span class='danger'>\The [src] knocks down \the [C]!</span>", \
 					"<span class='userdanger'>\The [src] knocks you down!</span>")
 
-/mob/living/simple_animal/hostile/tree/Die()
-	..()
-	visible_message("<span class='danger'><b>[src]</b> is hacked into pieces!</span>")
-	new /obj/item/stack/sheet/mineral/wood(loc)
+/mob/living/simple_animal/hostile/tree/death(gibbed)
+	..(1)
+	visible_message("<span class='danger'>[src] is hacked into pieces!</span>")
+	new drop_type(loc)
+	ghostize()
 	qdel(src)
 
 /mob/living/simple_animal/hostile/tree/festivus
@@ -64,9 +58,4 @@
 	icon_living = "festivus_pole"
 	icon_dead = "festivus_pole"
 	icon_gib = "festivus_pole"
-
-/mob/living/simple_animal/hostile/tree/festivus/Die()
-	..()
-	visible_message("<span class='danger'><b>[src]</b> is hacked into pieces!</span>")
-	new /obj/item/stack/rods(loc)
-	qdel(src)
+	drop_type = /obj/item/stack/rods

@@ -12,6 +12,7 @@
 	var/datum/gas_mixture/air_contents = return_air()
 	if(!air_contents)
 		return 0
+
 	if(active_hotspot)
 		if(soh)
 			if(air_contents.toxins > 0.5 && air_contents.oxygen > 0.5)
@@ -30,7 +31,7 @@
 		if(air_contents.oxygen < 0.5 || air_contents.toxins < 0.5)
 			return 0
 
-		active_hotspot = new(src)
+		active_hotspot = PoolOrNew(/obj/effect/hotspot, src)
 		active_hotspot.temperature = exposed_temperature
 		active_hotspot.volume = exposed_volume
 
@@ -47,7 +48,9 @@
 	icon = 'icons/effects/fire.dmi'
 	icon_state = "1"
 	layer = TURF_LAYER
-	luminosity = 3
+	light_range = 4
+	light_power = 2
+	light_color = LIGHT_COLOR_FIRE
 
 	var/volume = 125
 	var/temperature = FIRE_MINIMUM_TEMPERATURE_TO_EXIST
@@ -58,6 +61,10 @@
 	..()
 	SSair.hotspots += src
 	perform_exposure()
+	dir = pick(cardinal)
+	air_update_turf()
+	update_light()
+	return
 
 /obj/effect/hotspot/proc/perform_exposure()
 	var/turf/simulated/location = loc
@@ -71,6 +78,8 @@
 			volume = location.air.fuel_burnt*FIRE_GROWTH_RATE
 			temperature = location.air.temperature
 	else
+		if(!location || !location.air)
+			return
 		var/datum/gas_mixture/affected = location.air.remove_ratio(volume/location.air.volume)
 		affected.temperature = temperature
 		affected.react()
@@ -144,16 +153,23 @@
 // Garbage collect itself by nulling reference to it
 
 /obj/effect/hotspot/proc/Kill()
-	SSair.hotspots -= src
-	DestroyTurf()
-	qdel(src)
+	if(light) //This shit doesn't call ..() so it needs this copypasta
+		light.destroy()
+		light = null
+	PlaceInPool(src)
 
 /obj/effect/hotspot/Destroy()
+	SSair.hotspots -= src
+	DestroyTurf()
 	if(istype(loc, /turf/simulated))
 		var/turf/simulated/T = loc
 		if(T.active_hotspot == src)
 			T.active_hotspot = null
 	loc = null
+	if(light)
+		light.destroy()
+		light = null
+	return QDEL_HINT_PUTINPOOL
 
 /obj/effect/hotspot/proc/DestroyTurf()
 
@@ -171,11 +187,6 @@
 				T.to_be_destroyed = 0
 				T.max_fire_temperature_sustained = 0
 
-/obj/effect/hotspot/New()
-	..()
-	dir = pick(cardinal)
-	air_update_turf()
-	return
 
 /obj/effect/hotspot/Crossed(mob/living/L)
 	..()

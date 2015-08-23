@@ -211,16 +211,6 @@ var/global/list/obj/item/device/pda/PDAs = list()
 /*
  *	The Actual PDA
  */
-/obj/item/device/pda/pickup(mob/user)
-	if(fon)
-		SetLuminosity(0)
-		user.AddLuminosity(f_lum)
-
-/obj/item/device/pda/dropped(mob/user)
-	if(fon)
-		user.AddLuminosity(-f_lum)
-		SetLuminosity(f_lum)
-
 /obj/item/device/pda/New()
 	..()
 	PDAs += src
@@ -233,7 +223,7 @@ var/global/list/obj/item/device/pda/PDAs = list()
 
 /obj/item/device/pda/proc/can_use(mob/user)
 	if(user && ismob(user))
-		if(user.stat || user.restrained() || user.paralysis || user.stunned || user.weakened)
+		if(user.incapacitated())
 			return 0
 		if(loc == user)
 			return 1
@@ -547,12 +537,10 @@ var/global/list/obj/item/device/pda/PDAs = list()
 			if("Light")
 				if(fon)
 					fon = 0
-					if(src in U.contents)	U.AddLuminosity(-f_lum)
-					else					SetLuminosity(0)
+					set_light(0)
 				else
 					fon = 1
-					if(src in U.contents)	U.AddLuminosity(f_lum)
-					else					SetLuminosity(f_lum)
+					set_light(f_lum)
 			if("Medical Scan")
 				if(scanmode == 1)
 					scanmode = 0
@@ -792,7 +780,7 @@ var/global/list/obj/item/device/pda/PDAs = list()
 	if (last_text && world.time < last_text + 5)
 		return
 
-	if (isnull(P) || P.toff || !istype(P))
+	if (isnull(P) ||  !istype(P) || P.toff)
 		return
 
 	last_text = world.time
@@ -810,6 +798,8 @@ var/global/list/obj/item/device/pda/PDAs = list()
 		if(signal.data["done"])
 			useTC = 1
 			var/turf/pos = get_turf(P)
+			if(!pos)
+				return
 			if(pos.z in signal.data["level"])
 				useTC = 2
 				//Let's make this barely readable
@@ -1037,7 +1027,7 @@ var/global/list/obj/item/device/pda/PDAs = list()
 		note = replacetext(note, "<li>", "\[*\]")
 		note = replacetext(note, "<ul>", "\[list\]")
 		note = replacetext(note, "</ul>", "\[/list\]")
-		note = strip_html_properly(note)
+		note = html_encode(note)
 		notescanned = 1
 		user << "<span class='notice'>Paper scanned. Saved to PDA's notekeeper.</span>" //concept of scanning paper copyright brainoblivion 2009
 
@@ -1193,7 +1183,7 @@ var/global/list/obj/item/device/pda/PDAs = list()
 
 //ntrc handler proc
 /obj/item/device/pda/proc/msg_chat(channel as text, sender as text, message as text)
-	var/msg = "<b>[strip_html_properly(sender)]</b>| [strip_html_properly(message)]<br>"
+	var/msg = "<b>[html_encode(sender)]</b>| [html_encode(message)]<br>"
 	if(!channel)
 		for(var/C in ntrclog)
 			ntrclog[C] = msg + ntrclog[C]

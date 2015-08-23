@@ -11,6 +11,7 @@ In my current plan for it, 'solid' will be defined as anything with density == 1
 	name = "Immovable Rod"
 	typepath = /datum/round_event/immovable_rod
 	max_occurrences = 5
+	announcement = 1
 
 /datum/round_event/immovable_rod
 	announceWhen = 5
@@ -48,25 +49,19 @@ In my current plan for it, 'solid' will be defined as anything with density == 1
 	return ..()
 
 /obj/effect/immovablerod/Bump(atom/clong)
-	playsound(src, 'sound/effects/bang.ogg', 50, 1)
-	audible_message("CLANG")
+	if(prob(10))
+		playsound(src, 'sound/effects/bang.ogg', 50, 1)
+		audible_message("CLANG")
 
-	if(istype(clong, /turf/unsimulated) || istype(clong, /turf/simulated/shuttle)) //Unstoppable force meets immovable object
-		explosion(src.loc, 4, 5, 6, 7, 0)
-		if(src)
-			qdel(src)
-		return
-
-	if(clong && prob(25))
+	if(clong)
 		x = clong.x
 		y = clong.y
 
-	if (istype(clong, /turf) || istype(clong, /obj))
+	if (istype(clong))
 		if(clong.density)
 			clong.ex_act(2)
 
-	else if (istype(clong, /mob))
-		if(clong.density || prob(10))
-			clong.ex_act(2)
-	else
-		qdel(src)
+	return
+
+/obj/effect/immovablerod/ex_act()
+	return

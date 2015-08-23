@@ -25,8 +25,6 @@
 	return
 
 /obj/item/stack/Destroy()
-	if (is_cyborg)
-		return // Not supposed to be destroyed
 	if (usr && usr.machine==src)
 		usr << browse(null, "window=stack")
 	src.loc = null
@@ -123,7 +121,7 @@
 			return
 		if (R.time)
 			usr << "<span class='notice'>Building [R.title] ...</span>"
-			if (!do_after(usr, R.time))
+			if (!do_after(usr, R.time, target = usr))
 				return
 			if(!building_checks(R, multiplier))
 				return

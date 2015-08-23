@@ -40,7 +40,7 @@ datum/reagent/proc/reaction_mob(var/mob/M, var/method=TOUCH, var/volume, var/sho
 	var/datum/reagent/self = src
 	src = null										  //of the reagent to the mob on TOUCHING it.
 
-	if(!istype(self && self.holder && self.holder.my_atom, /obj/effect/effect/chem_smoke))
+	if(!istype(self && self.holder && self.holder.my_atom, /obj/effect/effect/smoke/chem))
 				// If the chemicals are in a smoke cloud, do not try to let the chemicals "penetrate" into the mob's system (balance station 13) -- Doohl
 
 		if(method == TOUCH)
@@ -81,6 +81,8 @@ datum/reagent/proc/on_mob_life(var/mob/living/M as mob)
 	current_cycle++
 	if(!istype(M, /mob/living))
 		return //Noticed runtime errors from pacid trying to damage ghosts, this should fix. --NEO
+	if(!holder)
+		return
 	holder.remove_reagent(src.id, metabolization_rate * M.metabolism_efficiency) //By default it slowly disappears.
 	return
 

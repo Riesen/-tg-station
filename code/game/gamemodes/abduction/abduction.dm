@@ -1,5 +1,8 @@
 /datum/game_mode
+	var/abductor_teams = 0
 	var/list/datum/mind/abductors = list()
+	var/list/datum/mind/abductees = list()
+
 
 /datum/game_mode/abduction
 	name = "Abduction"
@@ -13,6 +16,7 @@
 	var/list/datum/mind/agents = list()
 	var/list/datum/objective/team_objectives = list()
 	var/list/team_names = list()
+	var/finished = 0
 
 /datum/game_mode/abduction/announce()
 	world << "<B>The current game mode is - Abduction!</B>"
@@ -58,16 +62,17 @@
 
 	if(!preset_agent)
 		agent = pick(antag_candidates)
+		agent.objectives = list(team_objective)
 		antag_candidates -= agent
 	else
 		agent = preset_agent
 
 
-	scientist.assigned_role = "MODE"
+	scientist.assigned_role = "Abductor"
 	scientist.special_role = "Abductor"
 	log_game("[scientist.key] (ckey) has been selected as an abductor team [team_number] scientist.")
 
-	agent.assigned_role = "MODE"
+	agent.assigned_role = "Abductor"
 	agent.special_role = "Abductor"
 	log_game("[agent.key] (ckey) has been selected as an abductor team [team_number] agent.")
 
@@ -227,6 +232,9 @@
 	return console
 
 /datum/game_mode/abduction/proc/equip_agent(var/mob/living/carbon/human/agent,var/team_number)
+	if(!team_number)
+		var/datum/species/abductor/S = agent.dna.species
+		team_number = S.team
 	var/obj/machinery/abductor/console/console = get_team_console(team_number)
 	var/obj/item/clothing/suit/armor/abductor/vest/V = new /obj/item/clothing/suit/armor/abductor/vest(agent)
 	if(console!=null)
@@ -240,6 +248,9 @@
 
 
 /datum/game_mode/abduction/proc/equip_scientist(var/mob/living/carbon/human/scientist,var/team_number)
+	if(!team_number)
+		var/datum/species/abductor/S = scientist.dna.species
+		team_number = S.team
 	var/obj/machinery/abductor/console/console = get_team_console(team_number)
 	var/obj/item/device/abductor/gizmo/G = new /obj/item/device/abductor/gizmo(scientist)
 	if(console!=null)
@@ -248,29 +259,22 @@
 	scientist.equip_to_slot_or_del(G, slot_in_backpack)
 
 	var/obj/item/weapon/implant/abductor/beamplant = new /obj/item/weapon/implant/abductor(scientist)
-	beamplant.imp_in = scientist
-	beamplant.implanted = 1
-	beamplant.implanted(scientist)
-	beamplant.home = console.pad
+	beamplant.implant(scientist)
 
 
 /datum/game_mode/abduction/check_finished()
-	var/all_dead = 1
-	for(var/team_number=1,team_number<=teams,team_number++)
-		var/datum/mind/smind = scientists[team_number]
-		if(smind.current)
-			var/mob/living/M = smind.current
-			if(M.stat != DEAD)
-				all_dead = 0
-		var/obj/machinery/abductor/console/con = get_team_console(team_number)
-		var/datum/objective/objective = team_objectives[team_number]
-		if (con.experiment.points > objective.target_amount)
-			return 1
-	if(all_dead)
-		return 1
+	if(!finished)
+		for(var/team_number=1,team_number<=teams,team_number++)
+			var/obj/machinery/abductor/console/con = get_team_console(team_number)
+			var/datum/objective/objective = team_objectives[team_number]
+			if (con.experiment.points >= objective.target_amount)
+				SSshuttle.emergency.request(null, 0.5)
+				finished = 1
+				return ..()
 	return ..()
 
 /datum/game_mode/abduction/declare_completion()
+	world << "<br><font size=3><b>The Abductors were:</b></font>"
 	for(var/team_number=1,team_number<=teams,team_number++)
 		var/obj/machinery/abductor/console/console = get_team_console(team_number)
 		var/datum/objective/objective = team_objectives[team_number]
@@ -286,7 +290,7 @@
 			world << "<font size = 3 color='red'><b>[team_name] team failed its mission! </b></font>"
 			world << "<b>Team Members</b>: [agent.name]([agent.ckey])<br>[scientist.name]([scientist.ckey])"
 
-		world << "<b>Abductees:</b>"
+		world <<  "<br><font size=2><b>The Abductees were:</b></font>"
 		display_abductees(console)
 
 	..()
@@ -295,22 +299,26 @@
 /datum/game_mode/abduction/proc/display_abductees(var/obj/machinery/abductor/console/console)
 	var/list/mob/living/abductees = console.experiment.history
 	for(var/mob/living/abductee in abductees)
-		if(!abductee.mind)
+		if(!abductee || !abductee.mind)
 			continue
-		world << "[abductee.name]([abductee.ckey]))"
-		var/count = 1
-		for(var/datum/objective/objective in abductee.mind.objectives)
-			if(objective.check_completion())
-				world << "<br><b>Objective #[count]</b>: [objective.explanation_text] <font color='green'><b>Success!</b></font>"
-			else
-				world << "<br><b>Objective #[count]</b>: [objective.explanation_text] <span class='danger'>Fail.</span>"
-			count++
+		world << printplayer(abductee.mind)
+		world << printobjectives(abductee.mind)
 
 /datum/game_mode/proc/auto_declare_completion_abduction()
-	if(abductors.len)
-		world << "Abductors:"
+	if(abductors.len && ticker.mode.config_tag != "abduction") // no repeating for the gamemode5
+		world << "<br><font size=3><b>The Abductors were:</b></font>"
 		for(var/datum/mind/M in abductors)
 			world << "<font size = 2><b>Abductor [M.current ? M.current.name : "Abductor"]([M.key])</b></font>"
+			world << printobjectives(M)
+		world << "<br><font size=3><b>The Abductees were:</b></font>"
+		var/list/full_history = list()
+		for(var/obj/machinery/abductor/console/C in machines)
+			full_history |= C.experiment.history
+		for(var/mob/living/abductee in full_history)
+			if(!abductee.mind)
+				continue
+			world << printplayer(abductee.mind)
+			world << printobjectives(abductee.mind)
 	return
 
 //Landmarks
@@ -332,32 +340,45 @@
 
 
 // OBJECTIVES
-datum/objective/experiment
+/datum/objective/experiment
 	dangerrating = 10
 	target_amount = 6
 	var/team
 
-datum/objective/experiment/New()
+/datum/objective/experiment/New()
 	explanation_text = "Experiment on [target_amount] humans"
 
-datum/objective/experiment/check_completion()
+/datum/objective/experiment/check_completion()
+//	if(!owner || !owner.current || !ishuman(owner.current))
+//		return 0
+//	var/mob/living/carbon/human/H = owner.current
+//	if(!H.dna || !H.dna.species || !(H.dna.species.id == "abductor"))
+//		return 0
+//	var/datum/species/abductor/S = H.dna.species
+	var/ab_team = src.team
+	for(var/obj/machinery/abductor/experiment/E in machines)
+		if(E.team == ab_team)
+			if(E.abductee_minds.len >= target_amount)
+				return 1
+			else
+				return 0
 	return 0
 
-datum/objective/abductee
+/datum/objective/abductee
 	dangerrating = 5
 	completed = 1
 
-datum/objective/abductee/steal
+/datum/objective/abductee/steal
 	explanation_text = "Steal all"
 
-datum/objective/abductee/steal/New()
+/datum/objective/abductee/steal/New()
 	var/target = pick(list("Pets","Lights","Monkeys","Fruits","Shoes","Soap Bars"))
-	explanation_text+=" [target]"
+	explanation_text += " [target]"
 
-datum/objective/abductee/capture
+/datum/objective/abductee/capture
 	explanation_text = "Capture"
 
-datum/objective/abductee/capture/New()
+/datum/objective/abductee/capture/New()
 	var/list/jobs = SSjob.occupations
 	for(var/datum/job/J in jobs)
 		if(J.current_positions < 1)
@@ -368,8 +389,8 @@ datum/objective/abductee/capture/New()
 	else
 		explanation_text += " someone."
 
-datum/objective/abductee/shuttle
+/datum/objective/abductee/shuttle
 	explanation_text = "You must escape the station! Get the shuttle called!"
 
-datum/objective/abductee/noclone
+/datum/objective/abductee/noclone
 	explanation_text = "Don't allow anyone to be cloned."

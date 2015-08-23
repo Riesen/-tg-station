@@ -4,8 +4,10 @@
 	var/throwforce_on = 20
 	var/icon_state_on = "axe1"
 	var/attack_verb_on = list("attacked", "slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
+	var/attack_verb_off = null // This is hacked in, but it's as sound as the code it replaces.
 	w_class = 2
 	var/w_class_on = 4
+
 
 /obj/item/weapon/melee/energy/suicide_act(mob/user)
 	user.visible_message(pick("<span class='suicide'>[user] is slitting \his stomach open with the [src.name]! It looks like \he's trying to commit seppuku.</span>", \
@@ -31,7 +33,12 @@
 	flags = CONDUCT | NOSHIELD
 	origin_tech = "combat=3"
 	attack_verb = list("attacked", "chopped", "cleaved", "torn", "cut")
+	attack_verb_off = null
 	attack_verb_on = null
+
+/obj/item/weapon/melee/energy/axe/New()
+	attack_verb_off = attack_verb
+	attack_verb_on = attack_verb
 
 /obj/item/weapon/melee/energy/axe/suicide_act(mob/user)
 	user.visible_message("<span class='suicide'>[user] swings the [src.name] towards /his head! It looks like \he's trying to commit suicide.</span>")
@@ -48,6 +55,8 @@
 	throw_range = 5
 	flags = NOSHIELD
 	attack_verb = null
+	attack_verb_off = null
+	block_chance = 50
 	origin_tech = "magnets=3;syndicate=4"
 	var/hacked = 0
 
@@ -82,7 +91,7 @@
 		force = initial(force)
 		throwforce = initial(throwforce)
 		hitsound = initial(hitsound)
-		attack_verb = initial(attack_verb)
+		attack_verb = attack_verb_off
 		icon_state = initial(icon_state)
 		w_class = initial(w_class)
 		playsound(user, 'sound/weapons/saberoff.ogg', 35, 1)  //changed it from 50% volume to 35% because deafness
@@ -185,8 +194,6 @@
 /obj/item/weapon/melee/energy/blade/dropped()
 	qdel(src)
 
-/obj/item/weapon/melee/energy/blade/proc/throw()
-	qdel(src)
 
 /obj/item/weapon/melee/energy/blade/attack_self(mob/user)
 	return

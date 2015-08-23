@@ -15,7 +15,7 @@
 	throw_range = 1
 	throw_speed = 1
 	layer = 3
-	pressure_resistance = 1
+	pressure_resistance = 0
 	slot_flags = SLOT_HEAD
 	body_parts_covered = HEAD
 
@@ -81,7 +81,7 @@
 
 /obj/item/weapon/paper/attack_self(mob/user)
 	user.examinate(src)
-	if(rigged && (SSevent.holiday == "April Fool's Day"))
+	if(rigged && (SSevent.holidays && SSevent.holidays[APRIL_FOOLS]))
 		if(spam_flag == 0)
 			spam_flag = 1
 			playsound(loc, 'sound/items/bikehorn.ogg', 50, 1)

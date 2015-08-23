@@ -26,7 +26,7 @@ field_generator power level display
 	var/Varpower = 0
 	var/active = 0
 	var/power = 20  // Current amount of power
-	var/state = 0
+//	var/state = 0
 	var/warming_up = 0
 	var/list/obj/machinery/field/containment/fields
 	var/list/obj/machinery/field/generator/connected_gens
@@ -129,7 +129,7 @@ field_generator power level display
 					user.visible_message("[user.name] starts to weld the [src.name] to the floor.", \
 						"You start to weld \the [src] to the floor.", \
 						"You hear welding")
-					if (do_after(user,20))
+					if (do_after(user,20, target = src))
 						if(!src || !WT.isOn()) return
 						state = 2
 						user << "You weld the field generator to the floor."
@@ -141,7 +141,7 @@ field_generator power level display
 					user.visible_message("[user.name] starts to cut the [src.name] free from the floor.", \
 						"You start to cut \the [src] free from the floor.", \
 						"You hear welding")
-					if (do_after(user,20))
+					if (do_after(user,20, target = src))
 						if(!src || !WT.isOn()) return
 						state = 1
 						user << "You cut \the [src] free from the floor."
@@ -271,7 +271,7 @@ field_generator power level display
 		return
 	for(var/dist = 0, dist <= 9, dist += 1) // checks out to 8 tiles away for another generator
 		T = get_step(T, NSEW)
-		if(T.density)//We cant shoot a field though this
+		if(T && T.density)//We cant shoot a field though this
 			return 0
 		for(var/atom/A in T.contents)
 			if(ismob(A))

@@ -27,6 +27,10 @@
 /obj/item/projectile/bullet/pellet/weak
 	damage = 3
 
+/obj/item/projectile/bullet/pellet/random/New()
+	damage = rand(10)
+
+
 /obj/item/projectile/bullet/midbullet
 	damage = 25
 	stamina = 65 //two round bursts from the c20r knocks people down
@@ -45,8 +49,8 @@
 /obj/item/projectile/bullet/stunshot //taser slugs for shotguns, nothing special
 	name = "stunshot"
 	damage = 5
-	stun = 5
-	weaken = 5
+	stun = 2
+	weaken = 2
 	stutter = 5
 	jitter = 20
 	range = 7
@@ -70,7 +74,8 @@
 	var/turf/location = get_turf(src)
 	if(!location)
 		return
-	new/obj/effect/hotspot(location)
+
+	PoolOrNew(/obj/effect/hotspot, location)
 	location.hotspot_expose(700, 50, 1)
 
 /obj/item/projectile/bullet/incendiary/shell/dragonsbreath
@@ -113,30 +118,36 @@
 	icon_state = "cbbolt"
 	damage = 6
 
-	New()
-		..()
-		flags |= NOREACT
-		create_reagents(50)
+/obj/item/projectile/bullet/dart/New()
+	..()
+	flags |= NOREACT
+	create_reagents(50)
 
-	on_hit(var/atom/target, var/blocked = 0, var/hit_zone)
-		if(istype(target, /mob/living/carbon))
-			var/mob/living/carbon/M = target
-			if(M.can_inject(null,0,hit_zone)) // Pass the hit zone to see if it can inject by whether it hit the head or the body.
-				reagents.trans_to(M, reagents.total_volume)
-				return 1
-			else
-				target.visible_message("<span class='danger'>The [name] was deflected!</span>", \
-									   "<span class='userdanger'>You were protected against the [name]!</span>")
-		flags &= ~NOREACT
-		reagents.handle_reactions()
-		return 1
+/obj/item/projectile/bullet/dart/on_hit(var/atom/target, var/blocked = 0, var/hit_zone)
+	var/deflect = 0
+	if(iscarbon(target))
+		var/mob/living/carbon/M = target
+		if(M.can_inject(null,0,hit_zone)) // Pass the hit zone to see if it can inject by whether it hit the head or the body.
+			..()
+			reagents.trans_to(M, reagents.total_volume)
+			return 1
+		else
+			deflect = 1
+			target.visible_message("<span class='danger'>The [name] was deflected!</span>", \
+								   "<span class='userdanger'>You were protected against the [name]!</span>")
+	if(!deflect)
+		..()
+	flags &= ~NOREACT
+	reagents.handle_reactions()
+	return 1
 
 /obj/item/projectile/bullet/dart/metalfoam
 	New()
 		..()
 		reagents.add_reagent("aluminium", 15)
 		reagents.add_reagent("foaming_agent", 5)
-		reagents.add_reagent("pacid", 5)
+		reagents.add_reagent("facid", 5)
+
 
 //This one is for future syringe guns update
 /obj/item/projectile/bullet/dart/syringe
@@ -154,4 +165,4 @@
 /obj/item/projectile/bullet/neurotoxin/on_hit(var/atom/target, var/blocked = 0)
 	if(isalien(target))
 		return 0
-	..() // Execute the rest of the code.
+	. = ..() // Execute the rest of the code.

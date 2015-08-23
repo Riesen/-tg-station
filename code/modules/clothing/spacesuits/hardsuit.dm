@@ -5,11 +5,12 @@
 	icon_state = "hardsuit0-engineering"
 	item_state = "eng_helm"
 	armor = list(melee = 10, bullet = 5, laser = 10, energy = 5, bomb = 10, bio = 100, rad = 75)
-	var/brightness_on = 4 //luminosity when on
+	var/brightness_on = 6 //luminosity when on
+	light_power = 2
 	var/on = 0
 	item_color = "engineering" //Determines used sprites: hardsuit[on]-[color] and hardsuit[on]-[color]2 (lying down sprite)
 	action_button_name = "Toggle Helmet Light"
-	flags = HEADCOVERSEYES | BLOCKHAIR | HEADCOVERSMOUTH | STOPSPRESSUREDMAGE | THICKMATERIAL | NODROP
+	flags =  BLOCKHAIR | STOPSPRESSUREDMAGE | THICKMATERIAL | NODROP
 
 /obj/item/clothing/head/helmet/space/hardsuit/attack_self(mob/user)
 	if(!isturf(user.loc))
@@ -19,19 +20,8 @@
 	icon_state = "hardsuit[on]-[item_color]"
 	user.update_inv_head()	//so our mob-overlays update
 
-	if(on)	user.AddLuminosity(brightness_on)
-	else	user.AddLuminosity(-brightness_on)
-
-
-/obj/item/clothing/head/helmet/space/hardsuit/pickup(mob/user)
-	if(on)
-		user.AddLuminosity(brightness_on)
-		SetLuminosity(0)
-
-/obj/item/clothing/head/helmet/space/hardsuit/dropped(mob/user)
-	if(on)
-		user.AddLuminosity(-brightness_on)
-		SetLuminosity(brightness_on)
+	if(on)	set_light(brightness_on)
+	else	set_light(0)
 
 
 /obj/item/clothing/suit/space/hardsuit
@@ -98,7 +88,7 @@
 	item_state = "mining_helm"
 	item_color = "mining"
 	armor = list(melee = 40, bullet = 5, laser = 10, energy = 5, bomb = 50, bio = 100, rad = 50)
-	brightness_on = 7
+	brightness_on = 9
 
 /obj/item/clothing/suit/space/hardsuit/mining
 	icon_state = "hardsuit-mining"
@@ -123,7 +113,7 @@
 	on = 0
 	var/obj/item/clothing/suit/space/hardsuit/syndi/linkedsuit = null
 	action_button_name = "Toggle Helmet Mode"
-	flags = HEADCOVERSEYES | BLOCKHAIR | HEADCOVERSMOUTH | STOPSPRESSUREDMAGE | THICKMATERIAL | NODROP
+	flags = BLOCKHAIR | STOPSPRESSUREDMAGE | THICKMATERIAL | NODROP
 
 /obj/item/clothing/head/helmet/space/hardsuit/syndi/update_icon()
 	icon_state = "hardsuit[on]-[item_color]"
@@ -142,16 +132,18 @@
 		user << "<span class='notice'>You switch your hardsuit to travel mode.</span>"
 		name = initial(name)
 		desc = initial(desc)
-		user.AddLuminosity(brightness_on)
-		flags |= HEADCOVERSEYES | HEADCOVERSMOUTH | STOPSPRESSUREDMAGE | THICKMATERIAL
+		set_light(brightness_on)
+		body_parts_covered |= EYES|MOUTH
+		flags |= STOPSPRESSUREDMAGE
 		flags_inv |= HIDEMASK|HIDEEYES|HIDEFACE
 		cold_protection |= HEAD
 	else
 		user << "<span class='notice'>You switch your hardsuit to combat mode.</span>"
 		name += " (combat)"
 		desc = alt_desc
-		user.AddLuminosity(-brightness_on)
-		flags &= ~(HEADCOVERSEYES| HEADCOVERSMOUTH | STOPSPRESSUREDMAGE | THICKMATERIAL)
+		set_light(0)
+		body_parts_covered &= ~(MOUTH|EYES)
+		flags &= ~(STOPSPRESSUREDMAGE)
 		flags_inv &= ~(HIDEMASK|HIDEEYES|HIDEFACE)
 		cold_protection &= ~HEAD
 	update_icon()
@@ -194,9 +186,6 @@
 	allowed = list(/obj/item/weapon/gun,/obj/item/ammo_box,/obj/item/ammo_casing,/obj/item/weapon/melee/baton,/obj/item/weapon/melee/energy/sword/saber,/obj/item/weapon/restraints/handcuffs,/obj/item/weapon/tank/internals)
 	helmettype = /obj/item/clothing/head/helmet/space/hardsuit/syndi
 
-/obj/item/clothing/suit/space/hardsuit/syndi/ToggleHelmet()
-	..()
-	flags ^= NODROP
 
 
 //The Owl Hardsuit

@@ -9,20 +9,20 @@
 	anchored = 1
 	use_power = 1
 	idle_power_usage = 0
-	var/obj/item/device/radio/beacon/Beacon
+	var/obj/item/device/beacon/Beacon
 
 /obj/machinery/bluespace_beacon/New()
 	..()
 	var/turf/T = loc
-	Beacon = new /obj/item/device/radio/beacon
+	Beacon = new(src)
 	Beacon.invisibility = INVISIBILITY_MAXIMUM
-	Beacon.loc = T
 
 	hide(T.intact)
 
 /obj/machinery/bluespace_beacon/Destroy()
 	if(Beacon)
 		qdel(Beacon)
+	Beacon = null
 	..()
 
 // update the invisibility and icon
@@ -43,7 +43,7 @@
 /obj/machinery/bluespace_beacon/process()
 	if(!Beacon)
 		var/turf/T = loc
-		Beacon = new /obj/item/device/radio/beacon
+		Beacon = new /obj/item/device/beacon
 		Beacon.invisibility = INVISIBILITY_MAXIMUM
 		Beacon.loc = T
 	if(Beacon)

@@ -59,7 +59,6 @@ var/list/image/ghost_darkness_images = list() //this is a list of images for thi
 	real_name = name
 
 	if(!fun_verbs)
-		verbs -= /mob/dead/observer/verb/boo
 		verbs -= /mob/dead/observer/verb/possess
 
 	animate(src, pixel_y = 2, time = 10, loop = -1)
@@ -144,6 +143,10 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 					//world << "DEBUG: malf mode ticker test"
 					if(malf.malf_mode_declared && (malf.apcs > 0))
 						stat(null, "Time left: [max(malf.AI_win_timeleft/malf.apcs, 0)]")
+
+				for(var/datum/gang/G in ticker.mode.gangs)
+					if(isnum(G.dom_timer))
+						stat(null, "[G.name] Gang Takeover: [max(G.dom_timer, 0)]")
 
 /mob/dead/observer/verb/reenter_corpse()
 	set category = "Ghost"

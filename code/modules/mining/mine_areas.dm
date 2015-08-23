@@ -4,29 +4,26 @@
 	icon_state = "mining"
 	has_gravity = 1
 
-/area/mine/explored
+
+/area/space/mine
+	has_gravity = 1
+
+/area/space/mine/explored
 	name = "Mine"
 	icon_state = "explored"
 	music = null
-	always_unpowered = 1
-	requires_power = 1
-	poweralm = 0
-	power_environ = 0
-	power_equip = 0
-	power_light = 0
+	has_gravity = 1
 	ambientsounds = list('sound/ambience/ambimine.ogg')
 
-/area/mine/unexplored
+
+
+/area/space/mine/unexplored
 	name = "Mine"
 	icon_state = "unexplored"
 	music = null
-	always_unpowered = 1
-	requires_power = 1
-	poweralm = 0
-	power_environ = 0
-	power_equip = 0
-	power_light = 0
+	has_gravity = 1
 	ambientsounds = list('sound/ambience/ambimine.ogg')
+
 
 /area/mine/lobby
 	name = "Mining station"

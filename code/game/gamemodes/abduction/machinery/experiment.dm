@@ -7,7 +7,8 @@
 	anchored = 1
 	state_open = 1
 	var/points = 0
-	var/list/history = new
+	var/list/history = list()
+	var/list/abductee_minds = list()
 	var/flash = " - || - "
 	var/obj/machinery/abductor/console/console
 
@@ -139,12 +140,13 @@
 	if(H.stat == DEAD)
 		say("Specimen deceased - please provide fresh sample.")
 		return "<span class='bad'>Specimen Deceased</span>"
-	var/obj/item/gland/GlandTest = locate() in H
+	var/obj/item/organ/internal/gland/GlandTest = locate() in H.internal_organs
 	if(!GlandTest)
 		say("Experimental dissection not detected!")
 		return "<span class='bad'>No glands detected!</span>"
 	if(H.mind != null && H.ckey != null)
 		history += H
+		abductee_minds += H.mind
 		say("Processing Specimen...")
 		sleep(5)
 		switch(text2num(type))
@@ -165,7 +167,7 @@
 			H << "<B>Objective #[obj_count]</B>: [objective.explanation_text]"
 			obj_count++
 
-		for(var/obj/item/gland/G in H)
+		for(var/obj/item/organ/internal/gland/G in H.internal_organs)
 			G.Start()
 			point_reward++
 		if(point_reward > 0)
@@ -201,6 +203,3 @@
 		icon_state = "experiment-open"
 	else
 		icon_state = "experiment"
-
-/obj/machinery/abductor/experiment/say_quote(text)
-	return "beeps, \"[text]\""

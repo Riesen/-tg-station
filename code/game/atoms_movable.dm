@@ -7,8 +7,13 @@
 	var/throw_range = 7
 	var/mob/pulledby = null
 	var/languages = 0 //For say() and Hear()
+	var/verb_say = "says"
+	var/verb_ask = "asks"
+	var/verb_exclaim = "exclaims"
+	var/verb_yell = "yells"
 	var/inertia_dir = 0
 	var/pass_flags = 0
+	var/paused = FALSE //for suspending the projectile midair
 	glide_size = 8
 
 /atom/movable/Move(atom/newloc, direct = 0)
@@ -71,6 +76,10 @@
 	tag = null
 	loc = null
 	invisibility = 101
+	if (pulledby)
+		if (pulledby.pulling == src)
+			pulledby.pulling = null
+		pulledby = null
 	// Do not call ..()
 
 // Previously known as HasEntered()
@@ -136,25 +145,24 @@
 /atom/movable/proc/checkpass(passflag)
 	return pass_flags&passflag
 
-/atom/movable/proc/hit_check() // todo: this is partly obsolete due to passflags already, add throwing stuff to mob CanPass and finish it
-	if(src.throwing)
-		for(var/atom/A in get_turf(src))
-			if(A == src) continue
-			if(istype(A,/mob/living))
-				if(A:lying) continue
-				src.throw_impact(A)
-				if(src.throwing == 1)
-					src.throwing = 0
-			if(isobj(A))
-				if(A.density && !A.throwpass)	// **TODO: Better behaviour for windows which are dense, but shouldn't always stop movement
-					src.throw_impact(A)
-					src.throwing = 0
+/atom/movable/proc/hitcheck()
+	for(var/atom/movable/AM in get_turf(src))
+		if(AM == src)
+			continue
+		if(AM.density && !(AM.pass_flags & LETPASSTHROW) && !(AM.flags & ON_BORDER))
+			throwing = 0
+			throw_impact(AM)
+			return 1
 
-/atom/movable/proc/throw_at(atom/target, range, speed)
+
+/atom/movable/proc/throw_at(atom/target, range, speed, mob/thrower, var/spin = 1)
 	if(!target || !src || (flags & NODROP))	return 0
 	//use a modified version of Bresenham's algorithm to get from the atom's current position to that of the target
 
 	src.throwing = 1
+
+	if(spin) // turns out 1000+ spinning objects being thrown at the singularity creates lag - Iamgoofball
+		SpinAnimation(5, 1)
 
 	var/dist_x = abs(target.x - src.x)
 	var/dist_y = abs(target.y - src.y)
@@ -179,15 +187,20 @@
 		// only stop when we've gone the whole distance (or max throw range) and are on a non-space tile, or hit something, or hit the end of the map, or someone picks it up
 		if(!src.throwing) break
 		if(!istype(src.loc, /turf)) break
+		if(paused)
+			sleep(1)
+			continue
 
 		var/atom/step = get_step(src, (error < 0) ? tdy : tdx)
 		if(!step) // going off the edge of the map makes get_step return null, don't let things go off the edge
 			break
 		src.Move(step, get_dir(loc, step))
-		hit_check()
+		hitcheck()
 		error += (error < 0) ? tdist_x : -tdist_y;
 		dist_travelled++
 		dist_since_sleep++
+		if(dist_travelled > 600) //safety to prevent infinite while loop.
+			break
 		if(dist_since_sleep >= speed)
 			dist_since_sleep = 0
 			sleep(1)

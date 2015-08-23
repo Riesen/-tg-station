@@ -6,6 +6,24 @@
 		log_admin("[key_name(usr)] tried to use the admin panel without authorization.")
 		return
 
+	if(href_list["rejectadminhelp"])
+		if(!check_rights(R_ADMIN))
+			return
+		var/client/C = locate(href_list["rejectadminhelp"])
+		if(!C)
+			return
+		if (deltimer(C.adminhelptimerid))
+			C.giveadminhelpverb()
+
+		C << 'sound/effects/adminhelp.ogg'
+
+		C << "<font color='red' size='4'><b>- AdminHelp Rejected! -</b></font>"
+		C << "<font color='red'><b>Your admin help was rejected.</b> The adminhelp verb has been returned to you so that you may try again</font>"
+		C << "Please try to be calm, clear, and descriptive in admin helps, do not assume the admin has seen any related events, and clearly state the names of anybody you are reporting."
+
+		message_admins("[key_name_admin(usr)] Rejected [C.key]'s admin help. [C.key]'s Adminhelp verb has been returned to them")
+		log_admin("[key_name(usr)] Rejected [C.key]'s admin help")
+
 	if(href_list["makeAntag"])
 		switch(href_list["makeAntag"])
 			if("1")
@@ -34,10 +52,13 @@
 				if(!src.makeMalfAImode())
 					usr << "<span class='danger'>Unfortunatly there were no candidates available.</span>"
 			if("6")
-				message_admins("[key_name(usr)] created a wizard.")
-				log_admin("[key_name(usr)] created a wizard.")
-				if(!src.makeWizard())
-					usr << "<span class='danger'>Unfortunatly there were no candidates available.</span>"
+				message_admins("[key_name(usr)] is creating a wizard...")
+				if(src.makeWizard())
+					message_admins("[key_name(usr)] created a wizard.")
+					log_admin("[key_name(usr)] created a wizard.")
+				else
+					message_admins("[key_name_admin(usr)] tried to create a wizard. Unfortunately, there were no candidates available.")
+					log_admin("[key_name(usr)] failed to create a wizard.")
 			if("7")
 				message_admins("[key_name(usr)] created a nuke team.")
 				log_admin("[key_name(usr)] created a nuke team.")
@@ -52,10 +73,13 @@
 				log_admin("[key_name(usr)] started an alien infestation.")
 				src.makeAliens()
 			if("10")
-				message_admins("[key_name(usr)] created a death squad.")
-				log_admin("[key_name(usr)] created a death squad.")
-				if(!src.makeDeathsquad())
-					usr << "<span class='danger'>Unfortunatly there were not enough candidates available.</span>"
+				message_admins("[key_name(usr)] is creating a death squad...")
+				if(src.makeDeathsquad())
+					message_admins("[key_name(usr)] created a death squad.")
+					log_admin("[key_name(usr)] created a death squad.")
+				else
+					message_admins("[key_name_admin(usr)] tried to create a death squad. Unfortunately, there were not enough candidates available.")
+					log_admin("[key_name(usr)] failed to create a death squad.")
 			if("11")
 				var/strength = input("Set Blob Strength (1=Weak, 2=Strong, 3=Full)","Set Strength",1) as num
 				message_admins("[key_name(usr)] spawned a blob with strength [strength].")
@@ -67,10 +91,13 @@
 				if(!src.makeGangsters())
 					usr << "<span class='danger'>Unfortunatly there were not enough candidates available.</span>"
 			if("13")
-				message_admins("[key_name(usr)] created a emergency response team.")
-				log_admin("[key_name(usr)] created a emergency response team.")
-				if(!src.makeEmergencyresponseteam())
-					usr << "<span class='danger'>Unfortunatly there were not enough candidates available.</span>"
+				message_admins("[key_name(usr)] is creating a Centcom response team...")
+				if(src.makeEmergencyresponseteam())
+					message_admins("[key_name(usr)] created a Centcom response team.")
+					log_admin("[key_name(usr)] created a Centcom response team.")
+				else
+					message_admins("[key_name_admin(usr)] tried to create a Centcom response team. Unfortunately, there were not enough candidates available.")
+					log_admin("[key_name(usr)] failed to create a Centcom response team.")
 			if("14")
 				message_admins("[key_name(usr)] is creating an abductor team...")
 				if(src.makeAbductorTeam())
@@ -241,6 +268,59 @@
 		minor_announce("The emergency shuttle will reach its destination in [round(SSshuttle.emergency.timeLeft(600))] minutes.")
 		message_admins("<span class='adminnotice'>[key_name_admin(usr)] edited the Emergency Shuttle's timeleft to [timer] seconds</span>")
 		href_list["secretsadmin"] = "check_antagonist"
+
+	else if(href_list["toggle_continuous"])
+		if(!check_rights(R_ADMIN))	return
+
+		if(!config.continuous[ticker.mode.config_tag])
+			config.continuous[ticker.mode.config_tag] = 1
+		else
+			config.continuous[ticker.mode.config_tag] = 0
+
+		message_admins("<span class='adminnotice'>[key_name_admin(usr)] toggled the round to [config.continuous[ticker.mode.config_tag] ? "continue if all antagonists die" : "end with the antagonists"].</span>")
+		check_antagonists()
+
+	else if(href_list["toggle_midround_antag"])
+		if(!check_rights(R_ADMIN))	return
+
+		if(!config.midround_antag[ticker.mode.config_tag])
+			config.midround_antag[ticker.mode.config_tag] = 1
+		else
+			config.midround_antag[ticker.mode.config_tag] = 0
+
+		message_admins("<span class='adminnotice'>[key_name_admin(usr)] toggled the round to [config.midround_antag[ticker.mode.config_tag] ? "use" : "skip"] the midround antag system.</span>")
+		check_antagonists()
+
+	else if(href_list["alter_midround_time_limit"])
+		if(!check_rights(R_ADMIN))	return
+
+		var/timer = input("Enter new maximum time",, config.midround_antag_time_check ) as num
+		if(timer)
+			config.midround_antag_time_check = timer
+
+		message_admins("<span class='adminnotice'>[key_name_admin(usr)] edited the maximum midround antagonist time to [timer] minutes.</span>")
+		check_antagonists()
+
+	else if(href_list["alter_midround_life_limit"])
+		if(!check_rights(R_ADMIN))	return
+
+		var/ratio = input("Enter new life ratio",, config.midround_antag_life_check*100) as num
+		if(ratio)
+			config.midround_antag_life_check = ratio/100
+
+		message_admins("<span class='adminnotice'>[key_name_admin(usr)] edited the midround antagonist living crew ratio to [ratio]% alive.</span>")
+		check_antagonists()
+
+	else if(href_list["toggle_noncontinuous_behavior"])
+		if(!check_rights(R_ADMIN))	return
+
+		if(!ticker.mode.round_ends_with_antag_death)
+			ticker.mode.round_ends_with_antag_death = 1
+		else
+			ticker.mode.round_ends_with_antag_death = 0
+
+		message_admins("<span class='adminnotice'>[key_name_admin(usr)] edited the midround antagonist system to [ticker.mode.round_ends_with_antag_death ? "end the round" : "continue as extended"] upon failure.")
+		check_antagonists()
 
 	else if(href_list["delay_round_end"])
 		if(!check_rights(R_SERVER))	return
@@ -634,7 +714,7 @@
 			jobs += "<td width='20%'><a href='?src=\ref[src];jobban3=posibrain;jobban4=\ref[M]'><font color=red>[replacetext("Posibrain", " ", "&nbsp")]</font></a></td>"
 		else
 			jobs += "<td width='20%'><a href='?src=\ref[src];jobban3=posibrain;jobban4=\ref[M]'>[replacetext("Posibrain", " ", "&nbsp")]</a></td>"
-/* Soon
+
 
 		//Deathsquad
 		if(jobban_isbanned(M, "deathsquad"))
@@ -643,7 +723,7 @@
 			jobs += "<td width='20%'><a href='?src=\ref[src];jobban3=deathsquad;jobban4=\ref[M]'>[replacetext("Deathsquad", " ", "&nbsp")]</a></td>"
 
 		jobs += "</tr></table>"
-*/
+
 
 	//Antagonist (Orange)
 		var/isbanned_dept = jobban_isbanned(M, "Syndicate")
@@ -992,6 +1072,65 @@
 			else
 				alert(usr,"This ban has already been lifted / does not exist.","Error","Ok")
 				unjobbanpanel()
+
+	//Watchlist
+	else if(href_list["watchlist"])
+		if(!check_rights(R_ADMIN))	return
+		var/mob/M = locate(href_list["watchlist"])
+		if(!dbcon.IsConnected())
+			usr << "<span class='danger'>Failed to establish database connection.</span>"
+			return
+		if(!ismob(M))
+			usr << "This can only be used on instances of type /mob"
+			return
+		if(!M.ckey)
+			usr << "This mob has no ckey"
+			return
+		var/sql_ckey = sanitizeSQL(M.ckey)
+		var/DBQuery/query = dbcon.NewQuery("SELECT ckey FROM [format_table_name("watch")] WHERE (ckey = '[sql_ckey]')")
+		query.Execute()
+		if(query.NextRow())
+			switch(alert(usr, "Ckey already flagged", "[sql_ckey] is already on the watchlist, do you want to:", "Remove", "Edit reason", "Cancel"))
+				if("Cancel")
+					return
+				if("Remove")
+					var/DBQuery/query_watchdel = dbcon.NewQuery("DELETE FROM [format_table_name("watch")] WHERE ckey = '[sql_ckey]'")
+					if(!query_watchdel.Execute())
+						var/err = query_watchdel.ErrorMsg()
+						log_game("SQL ERROR during removing watch entry. Error : \[[err]\]\n")
+						return
+					log_admin("[key_name_admin(usr)] has removed [key_name_admin(M)] from the watchlist")
+					message_admins("[key_name_admin(usr)] has removed [key_name_admin(M)] from the watchlist", 1)
+				if("Edit reason")
+					var/DBQuery/query_reason = dbcon.NewQuery("SELECT ckey, reason FROM [format_table_name("watch")] WHERE (ckey = '[sql_ckey]')")
+					query_reason.Execute()
+					if(query_reason.NextRow())
+						var/watch_reason = query_reason.item[2]
+						var/new_reason = input("Insert new reason", "New Reason", "[watch_reason]", null) as null|text
+						new_reason = sanitizeSQL(new_reason)
+						if(!new_reason)
+							return
+						var/DBQuery/update_query = dbcon.NewQuery("UPDATE [format_table_name("watch")] SET reason = '[new_reason]', edits = CONCAT(edits,'- [usr] changed watchlist reason from <cite><b>\\\"[watch_reason]\\\"</b></cite> to <cite><b>\\\"[new_reason]\\\"</b></cite><BR>') WHERE (ckey = '[sql_ckey]')")
+						if(!update_query.Execute())
+							var/err = update_query.ErrorMsg()
+							log_game("SQL ERROR during edit watch entry reason. Error : \[[err]\]\n")
+							return
+						log_admin("[key_name_admin(usr)] has edited [sql_ckey]'s reason from [watch_reason] to [new_reason]",1)
+						message_admins("[key_name_admin(usr)] has edited [sql_ckey]'s reason from [watch_reason] to [new_reason]",1)
+		else
+			var/reason = input(usr,"Reason?","reason","Metagaming") as text|null
+			if(!reason)
+				return
+			reason = sanitizeSQL(reason)
+			var/DBQuery/query_watchadd = dbcon.NewQuery("INSERT INTO [format_table_name("watch")] (ckey, reason) VALUES ('[sql_ckey]', '[reason]')")
+			if(!query_watchadd.Execute())
+				var/err = query_watchadd.ErrorMsg()
+				log_game("SQL ERROR during adding new watch entry. Error : \[[err]\]\n")
+				return
+			log_admin("[key_name_admin(usr)] has added [key_name_admin(M)] to the watchlist - Reason: [reason]")
+			message_admins("[key_name_admin(usr)] has added [key_name_admin(M)] to the watchlist - Reason: [reason]", 1)
+
+
 
 	else if(href_list["mute"])
 		if(!check_rights(R_ADMIN))	return
@@ -1343,57 +1482,30 @@
 
 		usr.client.cmd_admin_animalize(M)
 
-/***************** BEFORE**************
-
-	if (href_list["l_players"])
-		var/dat = "<B>Name/Real Name/Key/IP:</B><HR>"
-		for(var/mob/M in world)
-			var/foo = ""
-			if (ismob(M) && M.client)
-				if(!M.client.authenticated && !M.client.authenticating)
-					foo += text("\[ <A HREF='?src=\ref[];adminauth=\ref[]'>Authorize</A> | ", src, M)
-				else
-					foo += text("\[ <B>Authorized</B> | ")
-				if(M.start)
-					if(!istype(M, /mob/living/carbon/monkey))
-						foo += text("<A HREF='?src=\ref[];monkeyone=\ref[]'>Monkeyize</A> | ", src, M)
-					else
-						foo += text("<B>Monkeyized</B> | ")
-					if(istype(M, /mob/living/silicon/ai))
-						foo += text("<B>Is an AI</B> | ")
-					else
-						foo += text("<A HREF='?src=\ref[];makeai=\ref[]'>Make AI</A> | ", src, M)
-					if(M.z != 2)
-						foo += text("<A HREF='?src=\ref[];sendtoprison=\ref[]'>Prison</A> | ", src, M)
-						foo += text("<A HREF='?src=\ref[];sendtomaze=\ref[]'>Maze</A> | ", src, M)
-					else
-						foo += text("<B>On Z = 2</B> | ")
-				else
-					foo += text("<B>Hasn't Entered Game</B> | ")
-				foo += text("<A HREF='?src=\ref[];revive=\ref[]'>Heal/Revive</A> | ", src, M)
-
-				foo += text("<A HREF='?src=\ref[];forcespeech=\ref[]'>Say</A> \]", src, M)
-			dat += text("N: [] R: [] (K: []) (IP: []) []<BR>", M.name, M.real_name, (M.client ? M.client : "No client"), M.lastKnownIP, foo)
-
-		usr << browse(dat, "window=players;size=900x480")
-
-*****************AFTER******************/
-
-// Now isn't that much better? IT IS NOW A PROC, i.e. kinda like a big panel like unstable
+	else if(href_list["gangpoints"])
+		var/datum/gang/G = locate(href_list["gangpoints"]) in ticker.mode.gangs
+		if(G)
+			var/newpoints = input("Set [G.name ] Gang's influence.","Set Influence",G.points) as null|num
+			if(newpoints)
+				message_admins("[key_name_admin(usr)] changed the [G.name] Gang's influence from [G.points] to [newpoints]</span>")
+				log_admin("[key_name(usr)] changed the [G.name] Gang's influence from [G.points] to [newpoints]</span>")
+				G.points = newpoints
+				G.message_gangtools("Your gang now has [G.points] influence.")
 
 	else if(href_list["adminplayeropts"])
 		var/mob/M = locate(href_list["adminplayeropts"])
 		show_player_panel(M)
 
-	else if(href_list["adminplayerobservejump"])
+	else if(href_list["adminplayerobservefollow"])
 		if(!isobserver(usr) && !check_rights(R_ADMIN))	return
 
-		var/mob/M = locate(href_list["adminplayerobservejump"])
+		var/mob/M = locate(href_list["adminplayerobservefollow"])
 
 		var/client/C = usr.client
 		if(!isobserver(usr))	C.admin_ghost()
+		var/mob/dead/observer/A = C.mob
 		sleep(2)
-		C.jumptomob(M)
+		A.ManualFollow(M)
 
 	else if(href_list["adminplayerobservecoodjump"])
 		if(!isobserver(usr) && !check_rights(R_ADMIN))	return
@@ -1458,8 +1570,7 @@
 		src.owner << "Name = <b>[M.name]</b>; Real_name = [M.real_name]; Mind_name = [M.mind?"[M.mind.name]":""]; Key = <b>[M.key]</b>;"
 		src.owner << "Location = [location_description];"
 		src.owner << "[special_role_description]"
-		src.owner << "(<a href='?priv_msg=[M.ckey]'>PM</a>) (<A HREF='?src=\ref[src];adminplayeropts=\ref[M]'>PP</A>) (<A HREF='?_src_=vars;Vars=\ref[M]'>VV</A>) (<A HREF='?src=\ref[src];subtlemessage=\ref[M]'>SM</A>) (<A HREF='?src=\ref[src];adminplayerobservejump=\ref[M]'>JMP</A>) (<A HREF='?src=\ref[src];secretsadmin=check_antagonist'>CA</A>)"
-
+		src.owner << "(<a href='?priv_msg=[M.ckey]'>PM</a>) (<A HREF='?src=\ref[src];adminplayeropts=\ref[M]'>PP</A>) (<A HREF='?_src_=vars;Vars=\ref[M]'>VV</A>) (<A HREF='?src=\ref[src];subtlemessage=\ref[M]'>SM</A>) (<A HREF='?src=\ref[src];adminplayerobservefollow=\ref[M]'>FLW</A>) (<A HREF='?src=\ref[src];secretsadmin=check_antagonist'>CA</A>)"
 	else if(href_list["addjobslot"])
 		if(!check_rights(R_ADMIN))	return
 
@@ -1675,28 +1786,9 @@
 			dirty_paths = href_list["object_list"]
 
 		var/paths = list()
-		var/removed_paths = list()
 
 		for(var/dirty_path in dirty_paths)
 			var/path = text2path(dirty_path)
-			if(!path)
-				removed_paths += dirty_path
-				continue
-			else if(!ispath(path, /obj) && !ispath(path, /turf) && !ispath(path, /mob))
-				removed_paths += dirty_path
-				continue
-			else if(ispath(path, /obj/item/weapon/gun/energy/pulse))
-				if(!check_rights(R_FUN,0))
-					removed_paths += dirty_path
-					continue
-			else if(ispath(path, /obj/item/weapon/melee/energy/blade))//Not an item one should be able to spawn./N
-				if(!check_rights(R_FUN,0))
-					removed_paths += dirty_path
-					continue
-			else if(ispath(path, /obj/effect/anomaly/bhole))
-				if(!check_rights(R_FUN,0))
-					removed_paths += dirty_path
-					continue
 			paths += path
 
 		if(!paths)
@@ -1705,8 +1797,6 @@
 		if(length(paths) > 5)
 			alert("Select fewer object types, (max 5)")
 			return
-		else if(length(removed_paths))
-			alert("Removed:\n" + list2text(removed_paths, "\n"))
 
 		var/list/offset = text2list(href_list["offset"],",")
 		var/number = dd_range(1, 100, text2num(href_list["object_count"]))
@@ -1926,6 +2016,8 @@
 						MAX_EX_LIGHT_RANGE = 14
 						MAX_EX_HEAVY_RANGE = 7
 						MAX_EX_DEVESTATION_RANGE = 3
+					else // In case MAX_EX_LIGHT_RANGE is anything else
+						MAX_EX_LIGHT_RANGE = 14
 				message_admins("<span class='userdanger'>[key_name_admin(usr)] changed the bomb cap to [MAX_EX_DEVESTATION_RANGE], [MAX_EX_HEAVY_RANGE], [MAX_EX_LIGHT_RANGE]</span>")
 				log_admin("[key_name(usr)] changed the bomb cap to [MAX_EX_DEVESTATION_RANGE], [MAX_EX_HEAVY_RANGE], [MAX_EX_LIGHT_RANGE]")
 
@@ -2061,7 +2153,7 @@
 				if(choice == "NO TIME TO EXPLAIN")
 					message_admins("[key_name_admin(usr)] has managed to destroy the universe with a supermatter cascade. Good job, [key_name_admin(usr)]")
 					explosion(get_turf(usr), 8, 16, 24, 32, 1)
-					new /turf/unsimulated/wall/supermatter(get_turf(usr))
+					new /turf/simulated/supermatter(get_turf(usr))
 					SetUniversalState(/datum/universal_state/supermatter_cascade)
 
 			if("guns")

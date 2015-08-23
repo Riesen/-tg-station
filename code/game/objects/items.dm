@@ -13,7 +13,7 @@
 	var/w_class = 3.0
 	var/slot_flags = 0		//This is used to determine on which slots an item can fit.
 	pass_flags = PASSTABLE
-	pressure_resistance = 5
+	pressure_resistance = 3
 	var/obj/item/master = null
 
 	var/heat_protection = 0 //flags which determine which body parts are protected from heat. Use the HEAD, CHEST, GROIN, etc. flags. See setup.dm
@@ -36,12 +36,12 @@
 	var/siemens_coefficient = 1 // for electrical admittance/conductance (electrocution checks and shit)
 	var/slowdown = 0 // How much clothing is slowing you down. Negative values speeds you up
 	var/list/armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 0, rad = 0)
+	var/armour_penetration = 0 //percentage of armour effectiveness to remove
 	var/list/allowed = null //suit storage stuff.
 	var/obj/item/device/uplink/hidden/hidden_uplink = null // All items can have an uplink hidden inside, just remember to add the triggers.
 	var/strip_delay = 40
 	var/put_on_delay = 20
-	var/m_amt = 0	// metal
-	var/g_amt = 0	// glass
+	var/list/materials = list()
 	var/reliability = 100	//Used by SOME devices to determine how reliable they are.
 	var/origin_tech = null	//Used by R&D to determine what research bonuses it grants.
 
@@ -51,6 +51,7 @@
 	var/suittoggled = 0
 	var/hooded = 0
 	var/sharp = 0 //Not sharp/Sharp/Very sharp
+	var/needs_permit = 0			//Used by security bots to determine if this item is safe for public use.
 
 	//So items can have custom embedd values
 	//Because customisation is king
@@ -62,6 +63,7 @@
 	var/embedded_impact_pain_multiplier = EMBEDDED_IMPACT_PAIN_MULTIPLIER //The coefficient of multiplication for the damage this item does when first embedded (this*w_class)
 	var/embedded_unsafe_removal_pain_multiplier = EMBEDDED_UNSAFE_REMOVAL_PAIN_MULTIPLIER //The coefficient of multiplication for the damage removing this without surgery causes (this*w_class)
 	var/embedded_unsafe_removal_time = EMBEDDED_UNSAFE_REMOVAL_TIME //A time in ticks, multiplied by the w_class.
+	var/block_chance = 0
 
 	var/list/can_be_placed_into = list(
 		/obj/structure/table,
@@ -201,7 +203,7 @@
 		return
 	attack_paw(A)
 
-/obj/item/attack_ai(mob/user as mob)
+/obj/item/attack_ai(mob/user)
 	if (istype(src.loc, /obj/item/weapon/robot_module))
 		//If the item is part of a cyborg module, equip it
 		if(!isrobot(user)) return
@@ -211,7 +213,7 @@
 
 // Due to storage type consolidation this should get used more now.
 // I have cleaned it up a little, but it could probably use more.  -Sayu
-/obj/item/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
+/obj/item/attackby(obj/item/weapon/W , mob/user, params)
 	if(istype(W,/obj/item/weapon/storage))
 		var/obj/item/weapon/storage/S = W
 		if(S.use_to_pickup)
@@ -252,7 +254,7 @@
 
 // afterattack() and attack() prototypes moved to _onclick/item_attack.dm for consistency
 
-/obj/item/proc/talk_into(mob/M as mob, text)
+/obj/item/proc/talk_into(mob/M, input, channel, spans)
 	return
 
 /obj/item/proc/dropped(mob/user as mob)
@@ -330,16 +332,14 @@
 	if(ishuman(M))
 		is_human_victim = 1
 		var/mob/living/carbon/human/H = M
-		if((H.head && H.head.flags & HEADCOVERSEYES) || \
-			(H.wear_mask && H.wear_mask.flags & MASKCOVERSEYES) || \
-			(H.glasses && H.glasses.flags & GLASSESCOVERSEYES))
+		if(H.check_part_covered("eyes"))
 			// you can't stab someone in the eyes wearing a mask!
 			user << "<span class='danger'>You're going to need to remove that mask/helmet/glasses first!</span>"
 			return
 
 	if(ismonkey(M))
 		var/mob/living/carbon/monkey/Mo = M
-		if(Mo.wear_mask && Mo.wear_mask.flags & MASKCOVERSEYES)
+		if(Mo.check_part_covered("eyes"))
 			// you can't stab someone in the eyes wearing a mask!
 			user << "<span class='danger'>You're going to need to remove that mask/helmet/glasses first!</span>"
 			return
@@ -355,6 +355,8 @@
 	add_logs(user, M, "attacked", object="[src.name]", addition="(INTENT: [uppertext(user.a_intent)])")
 
 	src.add_fingerprint(user)
+
+	playsound(loc, src.hitsound, 30, 1, -1)
 
 	if(M != user)
 		M.visible_message("<span class='danger'>[user] has stabbed [M] in the eye with [src]!</span>", \
@@ -377,9 +379,11 @@
 	M.eye_stat += rand(2,4)
 	if (M.eye_stat >= 10)
 		M.eye_blurry += 15+(0.1*M.eye_blurry)
-		M.disabilities |= NEARSIGHT
 		if(M.stat != 2)
 			M << "<span class='danger'>Your eyes start to bleed profusely!</span>"
+		if (!(M.disabilities & (NEARSIGHT | BLIND)))
+			M.disabilities |= NEARSIGHT
+			M << "<span class='danger'>You become nearsighted!</span>"
 		if(prob(50))
 			if(M.stat != 2)
 				M << "<span class='danger'>You drop what you're holding and clutch at your eyes!</span>"
@@ -387,7 +391,7 @@
 			M.eye_blurry += 10
 			M.Paralyse(1)
 			M.Weaken(2)
-		if (prob(M.eye_stat - 10 + 1))
+		if (prob(M.eye_stat - 10 + 1) && !(M.disabilities & BLIND))
 			if(M.stat != 2)
 				M << "<span class='danger'>You go blind!</span>"
 			M.disabilities |= BLIND

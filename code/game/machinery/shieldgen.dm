@@ -142,6 +142,7 @@
 /obj/machinery/shieldgen/Destroy()
 	for(var/obj/machinery/shield/shield_tile in deployed_shields)
 		qdel(shield_tile)
+	deployed_shields = null
 	..()
 
 
@@ -247,7 +248,7 @@
 			user << "You need one length of cable to repair [src]."
 			return
 		user << "<span class='notice'>You begin to replace the wires.</span>"
-		if(do_after(user, 30))
+		if(do_after(user, 30, target = src))
 			if(coil.get_amount() < 1)
 				return
 			coil.use(1)
@@ -518,7 +519,7 @@
 		anchored = 1
 		density = 1
 		unacidable = 1
-		luminosity = 3
+		light_range = 3
 		var/needs_power = 0
 		var/active = 1
 //		var/power = 10

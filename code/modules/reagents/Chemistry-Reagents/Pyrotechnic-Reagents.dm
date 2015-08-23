@@ -59,6 +59,8 @@ datum/reagent/nitroglycerin
 		else if(prob(volume))
 			F.burn_tile()
 		if(istype(F, /turf/simulated/floor/))
+
+
 			PoolOrNew(/obj/effect/hotspot, F)
 	if(istype(T, /turf/simulated/wall/))
 		var/turf/simulated/wall/W = T
@@ -69,6 +71,7 @@ datum/reagent/nitroglycerin
 	if(method == TOUCH && isliving(M))
 		M.adjust_fire_stacks(5)
 		M.IgniteMob()
+
 		PoolOrNew(/obj/effect/hotspot, M.loc)
 
 /datum/reagent/sorium

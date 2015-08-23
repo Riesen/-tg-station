@@ -23,6 +23,8 @@
 	var/stealth_armor = list(melee = 15, bullet = 15, laser = 15, energy = 15, bomb = 15, bio = 15, rad = 15)
 	var/combat_armor = list(melee = 50, bullet = 50, laser = 50, energy = 50, bomb = 50, bio = 50, rad = 50)
 
+
+
 /obj/item/clothing/suit/armor/abductor/vest/proc/flip_mode()
 	switch(mode)
 		if(VEST_STEALTH)
@@ -211,7 +213,7 @@
 		user << "<span class='warning'>You need to be next to the specimen to prepare it for transport.</span>"
 		return
 	user << "<span class='notice'>You start preparing the specimen for transport </span>"
-	if(do_after(user, 100))
+	if(do_after(user, 100, target = target))
 		marked = target
 		user << "<span class='notice'>You finish preparing the specimen for transport </span>"
 
@@ -263,6 +265,7 @@
 	desc = "Gets you back on the ship."
 	icon = 'icons/obj/abductor.dmi'
 	icon_state = "implant"
+	origin_tech = "materials=2;biotech=3;magnets=4;bluespace=7"
 	activated = 1
 	var/obj/machinery/abductor/pad/home
 	var/cooldown = 30
@@ -281,6 +284,30 @@
 		cooldown++
 		if(cooldown == initial(cooldown))
 			SSobj.processing.Remove(src)
+
+/obj/item/weapon/implant/abductor/implant(var/mob/source, var/mob/user)
+	if(..())
+		var/obj/machinery/abductor/console/console
+		if(ishuman(source))
+			var/mob/living/carbon/human/H = source
+			if(H.dna && istype(H.dna.species, /datum/species/abductor))
+				var/datum/species/abductor/S = H.dna.species
+				console = get_team_console(S.team)
+				home = console.pad
+
+		if(!home)
+			console = get_team_console(pick(1, 2, 3, 4))
+			home = console.pad
+		return 1
+
+/obj/item/weapon/implant/abductor/proc/get_team_console(var/team)
+	var/obj/machinery/abductor/console/console
+	for(var/obj/machinery/abductor/console/c in machines)
+		if(c.team == team)
+			console = c
+			break
+	return console
+
 
 
 /obj/item/device/firing_pin/alien
@@ -555,7 +582,9 @@ Congratulations! You are now trained for xenobiology research!"}
 /obj/structure/table/abductor
 	name = "alien table"
 	desc = "Advanced flat surface technology at work!"
-	icon_state = "alientable"
+	icon = 'icons/obj/smooth_structures/alien_table.dmi'
+	icon_state = "alien_table"
+	canSmoothWith = null
 
 /obj/structure/closet/abductor
 	name = "alien locker"

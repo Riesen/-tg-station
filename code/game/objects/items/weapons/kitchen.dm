@@ -50,7 +50,7 @@
 	desc = "Pointy."
 	icon_state = "fork"
 
-/obj/item/weapon/kitchen/utensil/fork/attack(mob/living/carbon/M as mob, mob/living/carbon/user as mob)
+/obj/item/weapon/kitchen/utensil/fork/attack(mob/living/carbon/M, mob/living/carbon/user)
 	if(!istype(M))
 		return ..()
 
@@ -109,7 +109,7 @@
 	throwforce = 10.0
 	throw_speed = 3
 	throw_range = 6
-	m_amt = 12000
+	materials = list(MAT_METAL=12000)
 	sharp = 1
 	origin_tech = "materials=1"
 	attack_verb = list("slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
@@ -140,7 +140,7 @@
 	throwforce = 8.0
 	throw_speed = 3
 	throw_range = 6
-	m_amt = 12000
+	materials = list(MAT_METAL=12000)
 	sharp = 1
 	origin_tech = "materials=1"
 	hitsound = 'sound/weapons/bladeslice.ogg'
@@ -181,7 +181,7 @@
 	origin_tech = "materials=3"
 
 
-/obj/item/weapon/kitchen/whetstone/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/item/weapon/kitchen/whetstone/attackby(obj/item/weapon/W, mob/user)
 	if(isSharpenable(W))
 		sharpen(W, src, user)
 	else
@@ -207,7 +207,7 @@
 	if(!user)
 		return 0
 	user << "You start sharpening the [O]"
-	if(do_after(user, 30))
+	if(do_after(user, 30, target = O))
 		user.visible_message("[src] sharpens the [O]","You sharpen \the [O]", "You hear grinding")
 		O.sharp++
 		O.force += 9
@@ -216,3 +216,47 @@
 		qdel(W)
 		return 1
 	return 0
+
+/obj/item/weapon/hatchet
+	name = "hatchet"
+	desc = "A very sharp axe blade upon a short fibremetal handle. It has a long history of chopping things, but now it is used for chopping wood."
+	icon = 'icons/obj/weapons.dmi'
+	icon_state = "hatchet"
+	flags = CONDUCT
+	force = 12.0
+	w_class = 1.0
+	throwforce = 15.0
+	throw_speed = 3
+	throw_range = 4
+	materials = list(MAT_METAL=15000)
+	sharp = 1
+	origin_tech = "materials=2;combat=1"
+	attack_verb = list("chopped", "torn", "cut")
+	hitsound = 'sound/weapons/bladeslice.ogg'
+
+/obj/item/weapon/hatchet/suicide_act(mob/user)
+	user.visible_message("<span class='suicide'>[user] is chopping at \himself with the [src.name]! It looks like \he's trying to commit suicide.</span>")
+	playsound(loc, 'sound/weapons/bladeslice.ogg', 50, 1, -1)
+	return (BRUTELOSS)
+
+
+/obj/item/weapon/scythe
+	icon_state = "scythe0"
+	name = "scythe"
+	desc = "A sharp and curved blade on a long fibremetal handle, this tool makes it easy to reap what you sow."
+	force = 13.0
+	throwforce = 5.0
+	throw_speed = 2
+	throw_range = 3
+	w_class = 4.0
+	sharp = 1
+	flags = CONDUCT | NOSHIELD
+	slot_flags = SLOT_BACK
+	origin_tech = "materials=2;combat=2"
+	attack_verb = list("chopped", "sliced", "cut", "reaped")
+	hitsound = 'sound/weapons/bladeslice.ogg'
+
+/obj/item/weapon/scythe/suicide_act(mob/user)  // maybe later i'll actually figure out how to make it behead them
+	user.visible_message("<span class='suicide'>[user] is beheading \himself with the [src.name]! It looks like \he's trying to commit suicide.</span>")
+	playsound(loc, 'sound/weapons/bladeslice.ogg', 50, 1, -1)
+	return (BRUTELOSS)

@@ -684,7 +684,7 @@ Turf and target are seperate in case you want to teleport some distance from a t
 
 	else return get_step(ref, base_dir)
 
-/proc/do_mob(var/mob/user , var/mob/target, var/time = 30, numticks = 5) //This is quite an ugly solution but i refuse to use the old request system.
+/proc/do_mob(var/mob/user , var/mob/target, var/time = 30, numticks = 5, var/stealth = 0) //This is quite an ugly solution but i refuse to use the old request system.
 	if(!user || !target)
 		return 0
 	if(numticks == 0)
@@ -693,14 +693,33 @@ Turf and target are seperate in case you want to teleport some distance from a t
 	var/target_loc = target.loc
 	var/holding = user.get_active_hand()
 	var/timefraction = round(time/numticks)
-	for(var/i = 0, i<numticks, i++)
+	var/image/progbar
+	for(var/i = 1 to numticks)
+		if(user.client)
+			progbar = make_progress_bar(i, numticks, target)
+			user.client.images |= progbar
 		sleep(timefraction)
 		if(!user || !target)
+			if(user && user.client)
+				user.client.images -= progbar
 			return 0
 		if ( user.loc != user_loc || target.loc != target_loc || user.get_active_hand() != holding || user.incapacitated() || user.lying )
+			if(user && user.client)
+				user.client.images -= progbar
 			return 0
-
+		if(user && user.client)
+			user.client.images -= progbar
+	if(user && user.client)
+		user.client.images -= progbar
 	return 1
+
+/proc/make_progress_bar(var/current_number, var/goal_number, var/atom/target)
+	if(current_number && goal_number && target)
+		var/image/progbar
+		progbar = image("icon" = 'icons/effects/doafter_icon.dmi', "loc" = target, "icon_state" = "prog_bar_0")
+		progbar.icon_state = "prog_bar_[round(((current_number / goal_number) * 100), 10)]"
+		progbar.pixel_y = 32
+		return progbar
 
 /proc/do_after(mob/user, delay, numticks = 5, needhand = 1, atom/target = null)
 	if(!user)
@@ -719,13 +738,21 @@ Turf and target are seperate in case you want to teleport some distance from a t
 	var/holdingnull = 1 //User is not holding anything
 	if(holding)
 		holdingnull = 0 //User is holding a tool of some kind
-
-	for(var/i = 0, i<numticks, i++)
+	var/image/progbar
+	for (var/i = 1 to numticks)
+		if(user.client)
+			progbar = make_progress_bar(i, numticks, target)
+			if(progbar)
+				user.client.images |= progbar
 		sleep(delayfraction)
 		if(!user || user.stat || user.weakened || user.stunned  || !(user.loc == Uloc))
+			if(user && user.client && progbar)
+				user.client.images -= progbar
 			return 0
 
 		if(Tloc && (!target || Tloc != target.loc)) //Tloc not set when we don't want to track target
+			if(user && user.client && progbar)
+				user.client.images -= progbar
 			return 0 // Target no longer exists or has moved
 
 		if(needhand)
@@ -733,10 +760,19 @@ Turf and target are seperate in case you want to teleport some distance from a t
 			//i.e the hand is used to insert some item/tool into the construction
 			if(!holdingnull)
 				if(!holding)
+					if(user && user.client && progbar)
+						user.client.images -= progbar
 					return 0
 			if(user.get_active_hand() != holding)
+				if(user && user.client && progbar)
+					user.client.images -= progbar
 				return 0
-
+			if(user && user.client && progbar)
+				user.client.images -= progbar
+		if(user && user.client && progbar)
+			user.client.images -= progbar
+	if(user && user.client && progbar)
+		user.client.images -= progbar
 	return 1
 
 
@@ -750,8 +786,6 @@ Turf and target are seperate in case you want to teleport some distance from a t
 //else populates the list first before returning it
 /proc/SortAreas()
 	for(var/area/A in world)
-		if(A.lighting_subarea)
-			continue
 		sortedAreas.Add(A)
 
 	sortTim(sortedAreas, /proc/cmp_name_asc)
@@ -1145,25 +1179,8 @@ Turf and target are seperate in case you want to teleport some distance from a t
 /proc/get_turf(atom/A)
 	if (!istype(A))
 		return
-	if (isturf(A))
-		return A
-
-	var/list/atom/checked_turf_candidates = list() //prevent recursion from badmins being dumbasses
-	var/atom/turf_candidate = A.loc
-
-	while (!isturf(turf_candidate))
-		if (!turf_candidate || turf_candidate in checked_turf_candidates)
-			return
-		checked_turf_candidates += turf_candidate
-
-		//SO I BET YOU MIGHT BE WONDERING WHY I'M CHECKING THIS AGAIN.
-		//I'LL FUCKING TELL YOU WAY, ITS BECAUSE FOR SOME GOD DAMN REASON, WHEN THIS IS CALLED
-		//IN AN OBJECT'S NEW() PROC, THE FIRST CHECK WILL FUCKING PASS, BUT FUCKING RUNTIME HERE
-		//BITCHING ABOUT HOW IT CAN'T READ NULL.LOC, SO FUCK IT, WE CHECK THIS TWICE.
-		if (!turf_candidate)
-			return
-		turf_candidate = turf_candidate.loc
-	return turf_candidate
+	for(A, A && !isturf(A), A=A.loc); //semicolon is for the empty statement
+	return A
 
 //Gets the turf this atom's *ICON* appears to inhabit
 //Uses half the width/height respectively to work out
@@ -1275,7 +1292,7 @@ var/global/list/common_tools = list(
 			return 1000
 		else
 			return 0
-	if(istype(W, /obj/item/weapon/pickaxe/plasmacutter))
+	if(istype(W, /obj/item/weapon/gun/energy/plasmacutter))
 		return 3800
 	if(istype(W, /obj/item/weapon/melee/energy))
 		var/obj/item/weapon/melee/energy/O = W
@@ -1394,16 +1411,22 @@ var/list/WALLITEMS = list(
 		var/n2_concentration = air_contents.nitrogen/total_moles
 		var/co2_concentration = air_contents.carbon_dioxide/total_moles
 		var/plasma_concentration = air_contents.toxins/total_moles
+		var/o2_moles = air_contents.oxygen
+		var/n2_moles = air_contents.nitrogen
+		var/co2_moles = air_contents.carbon_dioxide
+		var/plasma_moles = air_contents.toxins
 
+		var/unknown_moles = total_moles-(o2_moles+n2_moles+co2_moles+plasma_moles)
 		var/unknown_concentration =  1-(o2_concentration+n2_concentration+co2_concentration+plasma_concentration)
 
 		user << "<span class='notice'>Pressure: [round(pressure,0.1)] kPa</span>"
-		user << "<span class='notice'>Nitrogen: [round(n2_concentration*100,0.1)]</span>%"
-		user << "<span class='notice'>Oxygen: [round(o2_concentration*100,0.1)]%</span>"
-		user << "<span class='notice'>CO2: [round(co2_concentration*100,0.1)]%</span>"
-		user << "<span class='notice'>Plasma: [round(plasma_concentration*100,0.1)]%</span>"
+		user << "<span class='notice'>Total Moles: [round(total_moles,0.01)] mol</span>"
+		user << "<span class='notice'>Nitrogen: [round(n2_concentration*100,0.1)]% [round(n2_moles,0.01)] mol</span>"
+		user << "<span class='notice'>Oxygen: [round(o2_concentration*100,0.1)]% [round(o2_moles,0.01)] mol</span>"
+		user << "<span class='notice'>CO2: [round(co2_concentration*100,0.1)]% [round(co2_moles,0.01)] mol</span>"
+		user << "<span class='notice'>Plasma: [round(plasma_concentration*100,0.1)]% [round(plasma_moles,0.01)] mol</span>"
 		if(unknown_concentration>0.01)
-			user << "<span class='danger'>Unknown: [round(unknown_concentration*100,0.1)]%</span>"
+			user << "<span class='danger'>Unknown: [round(unknown_concentration*100,0.1)]% [round(unknown_moles,0.01)] mol</span>"
 		user << "<span class='notice'>Temperature: [round(air_contents.temperature-T0C,0.1)]&deg;C</span>"
 	else
 		user << "<span class='notice'>[target] is empty!</span>"
@@ -1457,3 +1480,44 @@ proc/find_holder_of_type(var/atom/reference,var/typepath) //Returns the first ob
 			return location
 		location = location.loc
 	return 0
+
+//Version of view() which ignores darkness, because BYOND doesn't have it (I actually suggested it but it was tagged redundant, BUT HEARERS IS A T- /rant).
+/proc/dview(var/range = world.view, var/center, var/invis_flags = 0)
+	if(!center)
+		return
+
+	var/mob/dview/DV = PoolOrNew(/mob/dview, center) //Yes, pooling, honk
+	DV.see_in_dark = range
+	DV.see_invisible = invis_flags
+
+	. = view(range, DV)
+	qdel(DV)
+
+/mob/dview
+	invisibility = 101
+	density = 0
+
+
+#define islightingoverlay(A) (istype(A, /atom/movable/lighting_overlay))
+
+
+
+/proc/IsValidSrc(var/A)
+	if(istype(A, /datum))
+		var/datum/B = A
+		return !B.gc_destroyed
+	if(istype(A, /client))
+		return 1
+	return 0
+
+
+/proc/screen_loc2turf(scr_loc, turf/origin)
+	var/tX = text2list(scr_loc, ",")
+	var/tY = text2list(tX[2], ":")
+	var/tZ = origin.z
+	tY = tY[1]
+	tX = text2list(tX[1], ":")
+	tX = tX[1]
+	tX = max(1, min(world.maxx, origin.x + (text2num(tX) - (world.view + 1))))
+	tY = max(1, min(world.maxy, origin.y + (text2num(tY) - (world.view + 1))))
+	return locate(tX, tY, tZ)

@@ -34,7 +34,7 @@
 /obj/item/weapon/storage/secure/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if(locked)
 		if (istype(W, /obj/item/weapon/screwdriver))
-			if (do_after(user, 20))
+			if (do_after(user, 20, target = W))
 				src.open =! src.open
 				user.show_message(text("<span class='notice'>You [] the service panel.</span>", (src.open ? "open" : "close")))
 			return
@@ -75,7 +75,8 @@
 /obj/item/weapon/storage/secure/MouseDrop(over_object, src_location, over_location)
 	if (locked)
 		src.add_fingerprint(usr)
-		return
+		usr << "<span class='warning'>It's locked!</span>"
+		return 0
 	..()
 
 
@@ -127,6 +128,12 @@
 				src.attack_self(M)
 			return
 	return
+
+/obj/item/weapon/storage/secure/storage_contents_dump_act(obj/item/weapon/storage/src_object, mob/user)
+	if(locked)
+		user << "<span class='warning'>It's locked!</span>"
+		return 0
+	return ..()
 
 /obj/item/weapon/storage/secure/can_be_inserted(obj/item/W, stop_messages = 0)
 	if(locked)

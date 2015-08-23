@@ -13,7 +13,7 @@ var/list/archive_diseases = list()
 var/list/advance_cures = 	list(
 									"nutriment", "sugar", "orangejuice",
 									"spaceacillin", "salglu_solution", "ethanol",
-									"leporazine", "synaptizine", "lipozine",
+									"leporazine", "synaptizine", "doctorsdelight",
 									"silver", "gold"
 								)
 
@@ -88,7 +88,8 @@ var/list/advance_cures = 	list(
 		for(var/datum/symptom/S in symptoms)
 			S.Activate(src)
 	else
-		CRASH("We do not have any symptoms during stage_act()!")
+		//CRASH("We do not have any symptoms during stage_act()!")
+		cure()	//fuck you
 
 // Compares type then ID.
 /datum/disease/advance/IsSame(var/datum/disease/advance/D)

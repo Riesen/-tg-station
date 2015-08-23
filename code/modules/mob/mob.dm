@@ -161,7 +161,13 @@ var/next_mob_id = 0
 	if(hearing_distance)
 		range = hearing_distance
 	var/msg = message
+
 	for(var/mob/M in get_hearers_in_view(range, src))
+		if(M.client && M.blind)
+			var/image/I = image('icons/effects/sound.dmi', get_turf(src))
+			I.layer = (M.blind.layer  > 0) ? (M.blind.layer + 1) : 1
+			I.mouse_opacity = 0
+			M.client.show_image(I,10)
 		if(self_message && M==src)
 			msg = self_message
 		M.show_message( msg, 2, deaf_message, 1)
@@ -177,6 +183,11 @@ var/next_mob_id = 0
 	if(hearing_distance)
 		range = hearing_distance
 	for(var/mob/M in get_hearers_in_view(range, src))
+		if(M.client)
+			var/image/I = image('icons/effects/sound.dmi', get_turf(src))
+			I.layer = (M.blind.layer  > 0) ? (M.blind.layer + 1) : 1
+			I.mouse_opacity = 0
+			M.client.show_image(I,10)
 		M.show_message( message, 2, deaf_message, 1)
 
 /mob/proc/movement_delay()
@@ -380,7 +391,7 @@ var/list/slot_equipment_priority = list( \
 
 //this and stop_pulling really ought to be /mob/living procs
 /mob/proc/start_pulling(var/atom/movable/AM)
-	if ( !AM || !src || src==AM || !isturf(src.loc) )	//if there's no person pulling OR the person is pulling themself OR the object being pulled is inside something: abort!
+	if ( !AM || !src || src==AM || !isturf(AM.loc) )	//if there's no person pulling OR the person is pulling themself OR the object being pulled is inside something: abort!
 		return
 	if (!( AM.anchored ))
 		AM.add_fingerprint(src)
@@ -496,6 +507,7 @@ var/list/slot_equipment_priority = list( \
 		log_game("[usr.key] AM failed due to disconnect.")
 		return
 	client.screen.Cut()
+	client.screen += client.void
 	if(!client)
 		log_game("[usr.key] AM failed due to disconnect.")
 		return
@@ -734,6 +746,7 @@ var/list/slot_equipment_priority = list( \
 
 			if(master_controller)
 				stat("MasterController:","[round(master_controller.cost,0.001)]ds (Interval:[master_controller.processing_interval] | Iteration:[master_controller.iteration])")
+				stat("Subsystem cost per second:","[round(master_controller.SSCostPerSecond,0.001)]ds")
 				for(var/datum/subsystem/SS in master_controller.subsystems)
 					if(SS.can_fire)
 						SS.stat_entry()

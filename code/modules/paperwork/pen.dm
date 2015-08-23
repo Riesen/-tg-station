@@ -20,9 +20,14 @@
 	w_class = 1.0
 	throw_speed = 3
 	throw_range = 7
-	m_amt = 10
+	materials = list(MAT_METAL=10)
 	pressure_resistance = 2
 	var/colour = "black"	//what colour the ink is!
+
+/obj/item/weapon/pen/suicide_act(mob/user)
+	user.visible_message("<span class='suicide'>[user] is scribbling numbers all over themself with [src]! It looks like they're trying to commit sudoku!</span>")
+	return(BRUTELOSS)
+
 
 
 /obj/item/weapon/pen/blue
@@ -73,3 +78,5 @@
 	reagents.add_reagent("zombiepowder", 5)
 	reagents.add_reagent("mutetoxin", 15)
 	..()
+
+

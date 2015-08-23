@@ -9,11 +9,11 @@
 	w_class = 3
 	origin_tech = "combat=2"
 	attack_verb = list("beaten")
-	var/stunforce = 7
+	var/stunforce = 3
 	var/status = 0
 	var/obj/item/weapon/stock_parts/cell/high/bcell = null
 	var/hitcost = 1000
-	var/losspertick = 5
+	var/losspertick = 0
 
 /obj/item/weapon/melee/baton/suicide_act(mob/user)
 	user.visible_message("<span class='suicide'>[user] is putting the live [name] in \his mouth! It looks like \he's trying to commit suicide.</span>")
@@ -157,7 +157,7 @@
 
 	L.Stun(stunforce)
 	L.Weaken(stunforce)
-	L.apply_effect(STUTTER, stunforce)
+	L.apply_effect(stunforce, STUTTER)
 
 	L.visible_message("<span class='danger'>[user] has stunned [L] with [src]!</span>", \
 							"<span class='userdanger'>[user] has stunned you with [src]!</span>")
@@ -191,6 +191,7 @@
 	item_state = "prod"
 	force = 3
 	throwforce = 5
-	stunforce = 5
+	stunforce = 2
 	hitcost = 2500
+	losspertick = 5
 	slot_flags = null

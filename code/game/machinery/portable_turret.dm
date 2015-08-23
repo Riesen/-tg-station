@@ -143,6 +143,7 @@
 /obj/machinery/porta_turret/Destroy()
 	//deletes its own cover with it
 	qdel(cover)
+	cover = null
 	..()
 
 
@@ -475,7 +476,8 @@
 	flick("popup", cover)
 	sleep(10)
 	raising = 0
-	cover.icon_state = "openTurretCover"
+	if(cover)
+		cover.icon_state = "openTurretCover"
 	raised = 1
 	layer = 4
 
@@ -679,7 +681,7 @@
 					return
 
 				playsound(loc, pick('sound/items/Welder.ogg', 'sound/items/Welder2.ogg'), 50, 1)
-				if(do_after(user, 20))
+				if(do_after(user, 20, target = src))
 					if(!src || !WT.remove_fuel(5, user)) return
 					build_step = 1
 					user << "You remove the turret's interior metal armor."
@@ -754,7 +756,7 @@
 					user << "<span class='notice'>You need more fuel to complete this task.</span>"
 
 				playsound(loc, pick('sound/items/Welder.ogg', 'sound/items/Welder2.ogg'), 50, 1)
-				if(do_after(user, 30))
+				if(do_after(user, 30, target = src))
 					if(!src || !WT.remove_fuel(5, user))
 						return
 					build_step = 8
@@ -1028,9 +1030,7 @@ Status: []<BR>"},
 	..()
 	if(!control_area)
 		var/area/CA = get_area(src)
-		if(CA.master && CA.master != CA)
-			control_area = CA.master
-		else
+		if(CA)
 			control_area = CA
 	else if(istext(control_area))
 		for(var/area/A in world)

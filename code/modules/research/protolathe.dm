@@ -75,21 +75,21 @@ Note: Must be placed west/left of and R&D console to function.
 /obj/machinery/r_n_d/protolathe/proc/check_mat(datum/design/being_built, var/M)	// now returns how many times the item can be built with the material
 	var/A = 0
 	switch(M)
-		if("$metal")
+		if(MAT_METAL)
 			A = m_amount
-		if("$glass")
+		if(MAT_GLASS)
 			A = g_amount
-		if("$gold")
+		if(MAT_GOLD)
 			A = gold_amount
-		if("$silver")
+		if(MAT_SILVER)
 			A = silver_amount
-		if("$plasma")
+		if(MAT_PLASMA)
 			A = plasma_amount
-		if("$uranium")
+		if(MAT_URANIUM)
 			A = uranium_amount
-		if("$diamond")
+		if(MAT_DIAMOND)
 			A = diamond_amount
-		if("$bananium")
+		if(MAT_BANANIUM)
 			A = clown_amount
 		else
 			A = reagents.get_reagent_amount(M)
@@ -109,6 +109,8 @@ Note: Must be placed west/left of and R&D console to function.
 		return
 
 	if (panel_open)
+		if(istype(O, /obj/item/device/multitool) || istype(O,/obj/item/weapon/wirecutters))
+			attack_hand(user)
 		if(istype(O, /obj/item/weapon/crowbar))
 			for(var/obj/item/weapon/reagent_containers/glass/G in component_parts)
 				reagents.trans_to(G, G.reagents.maximum_volume)
@@ -201,3 +203,7 @@ Note: Must be placed west/left of and R&D console to function.
 	src.overlays -= "protolathe_[stack.name]"
 
 	return
+
+
+/obj/machinery/r_n_d/protolathe/proc/get_resource_cost_w_coeff(datum/design/D, resource, roundto = 1)
+	return round(D.materials[resource]*efficiency_coeff, roundto)
