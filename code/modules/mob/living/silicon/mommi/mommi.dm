@@ -9,8 +9,8 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 	real_name = "Mobile MMI"
 	icon = 'icons/mob/robots.dmi'//
 	icon_state = "mommi"
-	maxHealth = 45
-	health = 45
+	maxHealth = 30
+	health = 30
 	pass_flags = PASSTABLE | PASSMOB
 	var/keeper = 0 // 0 = No, 1 = Yes (Disables speech and common radio.)
 	var/picked = 0
@@ -344,6 +344,7 @@ They can only use one tool at a time, they can't choose modules, and they have 1
 		user << "<span class='warning'>The fuck are you doing? Are you retarded? Stop trying to get around your laws and be productive, you little shit.</span>" //copying this verbatim from /vg/
 		message_admins("[key_name(src)] is a smartass MoMMI that's trying to emag itself.")
 		return
+	layer = MOB_LAYER
 	if(!opened)//Cover is closed
 		if(locked)
 			if(prob(90))

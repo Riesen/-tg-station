@@ -18,6 +18,8 @@
 	var/mob/living/silicon/robot/mommi/R = src
 	if(!R.canmove)
 		return
+	if(R.emagged)
+		return
 
 	if (layer != TURF_LAYER+0.2)
 		layer = TURF_LAYER+0.2
