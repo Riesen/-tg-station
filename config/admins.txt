@@ -8,5 +8,5 @@
 # NOTE: syntax was changed to allow hyphenation of ranknames, since spaces are stripped.      #
 ###############################################################################################
 Negroid Remover = Host
-VixG = Badmin
+VixG = Admin
 
