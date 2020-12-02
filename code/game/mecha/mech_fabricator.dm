@@ -14,14 +14,14 @@
 	var/time_coeff_tech = 1
 	var/resource_coeff_tech = 1
 	var/list/resources = list(
-								"$metal"=0,
-								"$glass"=0,
-								"$bananium"=0,
-								"$diamond"=0,
-								"$gold"=0,
-								"$plasma"=0,
-								"$silver"=0,
-								"$uranium"=0
+								MAT_METAL=0,
+								MAT_GLASS=0,
+								MAT_BANANIUM=0,
+								MAT_DIAMOND=0,
+								MAT_GOLD=0,
+								MAT_PLASMA=0,
+								MAT_SILVER=0,
+								MAT_URANIUM=0
 								)
 	var/res_max_amount = 200000
 	var/datum/research/files
@@ -179,8 +179,14 @@
 
 	var/obj/item/I = new D.build_path(get_step(src,SOUTH))
 	I.loc = get_step(src,SOUTH)
-	I.m_amt = get_resource_cost_w_coeff(D,"$metal")
-	I.g_amt = get_resource_cost_w_coeff(D,"$glass")
+	I.reliability = D.reliability
+	I.materials[MAT_METAL] = get_resource_cost_w_coeff(D,MAT_METAL)
+	I.materials[MAT_GLASS] = get_resource_cost_w_coeff(D,MAT_GLASS)
+	I.materials[MAT_GOLD] = get_resource_cost_w_coeff(D,MAT_GOLD)
+	I.materials[MAT_SILVER] = get_resource_cost_w_coeff(D,MAT_SILVER)
+	I.materials[MAT_DIAMOND] = get_resource_cost_w_coeff(D,MAT_DIAMOND)
+	I.materials[MAT_URANIUM] = get_resource_cost_w_coeff(D,MAT_URANIUM)
+	I.materials[MAT_BANANIUM] = get_resource_cost_w_coeff(D,MAT_BANANIUM)
 	visible_message("\icon[src] <b>\The [src]</b> beeps, \"\The [I] is complete.\"")
 	being_built = null
 
@@ -279,7 +285,7 @@
 	updateUsrDialog()
 	sleep(30) //only sleep if called by user
 
-	for(var/obj/machinery/computer/rdconsole/RDC in area_contents(get_area(src)))
+	for(var/obj/machinery/computer/rdconsole/RDC in oview(7,src)) //Must be within one screen to sync
 		if(!RDC.sync)
 			continue
 		for(var/datum/tech/T in RDC.files.known_tech)
@@ -372,9 +378,9 @@
 /obj/machinery/mecha_part_fabricator/Topic(href, href_list)
 	if(..())
 		return
-	var/datum/topic_input/filter = new /datum/topic_input(href,href_list)
+	var/datum/topic_input/entry = new /datum/topic_input(href,href_list)
 	if(href_list["part_set"])
-		var/tpart_set = filter.getStr("part_set")
+		var/tpart_set = entry.getStr("part_set")
 		if(tpart_set)
 			if(tpart_set=="clear")
 				part_set = null
@@ -382,7 +388,7 @@
 				part_set = tpart_set
 				screen = "parts"
 	if(href_list["part"])
-		var/T = filter.getStr("part")
+		var/T = entry.getStr("part")
 		for(var/datum/design/D in files.known_designs)
 			if(D.build_type & MECHFAB)
 				if(D.id == T)
@@ -392,7 +398,7 @@
 						add_to_queue(D)
 					break
 	if(href_list["add_to_queue"])
-		var/T = filter.getStr("add_to_queue")
+		var/T = entry.getStr("add_to_queue")
 		for(var/datum/design/D in files.known_designs)
 			if(D.build_type & MECHFAB)
 				if(D.id == T)
@@ -400,10 +406,10 @@
 					break
 		return update_queue_on_page()
 	if(href_list["remove_from_queue"])
-		remove_from_queue(filter.getNum("remove_from_queue"))
+		remove_from_queue(entry.getNum("remove_from_queue"))
 		return update_queue_on_page()
 	if(href_list["partset_to_queue"])
-		add_part_set_to_queue(filter.get("partset_to_queue"))
+		add_part_set_to_queue(entry.get("partset_to_queue"))
 		return update_queue_on_page()
 	if(href_list["process_queue"])
 		spawn(-1)
@@ -417,8 +423,8 @@
 	if(href_list["screen"])
 		screen = href_list["screen"]
 	if(href_list["queue_move"] && href_list["index"])
-		var/index = filter.getNum("index")
-		var/new_index = index + filter.getNum("queue_move")
+		var/index = entry.getNum("index")
+		var/new_index = index + entry.getNum("queue_move")
 		if(isnum(index) && isnum(new_index))
 			if(IsInRange(new_index,1,queue.len))
 				queue.Swap(index,new_index)
@@ -429,7 +435,7 @@
 	if(href_list["sync"])
 		sync()
 	if(href_list["part_desc"])
-		var/T = filter.getStr("part_desc")
+		var/T = entry.getStr("part_desc")
 		for(var/datum/design/D in files.known_designs)
 			if(D.build_type & MECHFAB)
 				if(D.id == T)
@@ -461,21 +467,21 @@
 		return -1
 	var/type
 	switch(mat_string)
-		if("$metal")
+		if(MAT_METAL)
 			type = /obj/item/stack/sheet/metal
-		if("$glass")
+		if(MAT_GLASS)
 			type = /obj/item/stack/sheet/glass
-		if("$gold")
+		if(MAT_GOLD)
 			type = /obj/item/stack/sheet/mineral/gold
-		if("$silver")
+		if(MAT_SILVER)
 			type = /obj/item/stack/sheet/mineral/silver
-		if("$diamond")
+		if(MAT_DIAMOND)
 			type = /obj/item/stack/sheet/mineral/diamond
-		if("$plasma")
+		if(MAT_PLASMA)
 			type = /obj/item/stack/sheet/mineral/plasma
-		if("$uranium")
+		if(MAT_URANIUM)
 			type = /obj/item/stack/sheet/mineral/uranium
-		if("$bananium")
+		if(MAT_BANANIUM)
 			type = /obj/item/stack/sheet/mineral/bananium
 		else
 			return 0
@@ -517,21 +523,21 @@
 		var/material
 		switch(W.type)
 			if(/obj/item/stack/sheet/mineral/gold)
-				material = "$gold"
+				material = MAT_GOLD
 			if(/obj/item/stack/sheet/mineral/silver)
-				material = "$silver"
+				material = MAT_SILVER
 			if(/obj/item/stack/sheet/mineral/diamond)
-				material = "$diamond"
+				material = MAT_DIAMOND
 			if(/obj/item/stack/sheet/mineral/plasma)
-				material = "$plasma"
+				material = MAT_PLASMA
 			if(/obj/item/stack/sheet/metal)
-				material = "$metal"
+				material = MAT_METAL
 			if(/obj/item/stack/sheet/glass)
-				material = "$glass"
+				material = MAT_GLASS
 			if(/obj/item/stack/sheet/mineral/bananium)
-				material = "$bananium"
+				material = MAT_BANANIUM
 			if(/obj/item/stack/sheet/mineral/uranium)
-				material = "$uranium"
+				material = MAT_URANIUM
 			else
 				return ..()
 

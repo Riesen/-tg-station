@@ -11,13 +11,11 @@
 	return 0
 
 /datum/universal_state/supermatter_cascade/OnTurfChange(var/turf/T)
-	if(T.name == "space")
+	if(istype(T, /turf/space))
 		T.overlays += "end01"
 		T.underlays -= "end01"
 	else
 		T.overlays -= "end01"
-		if(!T.color_lighting_lumcount)
-			T.update_lumcount(1, 160, 255, 0, 0)
 
 /datum/universal_state/supermatter_cascade/DecayTurf(var/turf/T)
 	if(istype(T,/turf/simulated/wall))
@@ -88,23 +86,11 @@ The access requirements on the Asteroid Shuttles' consoles have now been revoked
 		sleep(5 * 10 * 60) // 5 minutes
 		if(!ticker.mode.check_finished())
 			ticker.station_explosion_cinematic(0,null) // TODO: Custom cinematic
-
-			world << "<B>Resetting in 30 seconds!</B>"
-
-			feedback_set_details("end_error","Universe ended")
-
-			if(blackbox)
-				blackbox.save_all_data_to_sql()
-			sleep(300)
-			log_game("Rebooting due to universal collapse")
-
-
-			world.Reboot()
+			world.Reboot("Rebooting due to universal collapse", "end_error","Universe ended")
 			return
 
 /datum/universal_state/supermatter_cascade/proc/AreaSet()
-	for(var/area/ca in areas)
-		var/area/A=get_area_master(ca)
+	for(var/area/A in areas)
 		if(!istype(A,/area) || A.name=="Space")
 			continue
 
@@ -138,14 +124,20 @@ The access requirements on the Asteroid Shuttles' consoles have now been revoked
 		if(istype(T, /turf/space))
 			T.overlays += "end01"
 		else
-			if(T.z != ZLEVEL_CENTCOM)
+			if(T.z != 8)
 				T.underlays += "end01"
-				T.update_lumcount(1, 160, 255, 0, 0)
+	for(var/atom/movable/lighting_overlay/L in all_lighting_overlays)
+		if(L.z != 8)
+			L.update_lumcount(0.15, 0.5, 0)
 
 /datum/universal_state/supermatter_cascade/proc/MiscSet()
 	for (var/obj/machinery/firealarm/alm in machines)
+		if (istype(alm, /obj/machinery/firealarm/partyalarm))
+			continue
 		if (!(alm.stat & BROKEN))
 			alm.ex_act(2)
+	for (var/obj/machinery/computer/teleporter/T in machines)
+		T.stat |= BROKEN
 
 /datum/universal_state/supermatter_cascade/proc/APCSet()
 	for (var/obj/machinery/power/apc/APC in machines)
@@ -154,6 +146,7 @@ The access requirements on the Asteroid Shuttles' consoles have now been revoked
 			if(APC.cell)
 				APC.cell.charge = 0
 			APC.emagged = 1
+			APC.locked = 0
 			APC.queue_icon_update()
 
 /datum/universal_state/supermatter_cascade/proc/PlayerSet()

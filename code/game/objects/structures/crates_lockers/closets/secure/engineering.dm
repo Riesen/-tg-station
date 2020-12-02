@@ -6,6 +6,7 @@
 
 /obj/structure/closet/secure_closet/engineering_chief/New()
 	..()
+	new /obj/item/clothing/cloak/ce(src)
 	new /obj/item/clothing/suit/hooded/wintercoat/engineering(src)
 	new /obj/item/clothing/suit/hooded/wintercoat/engineering/atmos(src)
 	if(prob(50))
@@ -23,7 +24,6 @@
 	new /obj/item/weapon/storage/toolbox/mechanical(src)
 	new /obj/item/clothing/suit/hazardvest(src)
 	new /obj/item/weapon/storage/box/permits(src)
-	new /obj/item/areaeditor/blueprints(src)
 	new /obj/item/weapon/airlock_painter(src)
 	new /obj/item/tapeproj/engineering(src)
 	new /obj/item/clothing/mask/gas(src)

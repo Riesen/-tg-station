@@ -39,7 +39,7 @@ var/global/floorIsLava = 0
 	body += "<a href='?_src_=holder;traitor=\ref[M]'>TP</a> - "
 	body += "<a href='?priv_msg=[M.ckey]'>PM</a> - "
 	body += "<a href='?_src_=holder;subtlemessage=\ref[M]'>SM</a> - "
-	body += "<a href='?_src_=holder;adminplayerobservejump=\ref[M]'>JMP</a>\] </b><br>"
+	body += "<a href='?_src_=holder;adminplayerobservefollow=\ref[M]'>FLW</a>\] </b><br>"
 
 	body += "<b>Mob type</b> = [M.type]<br><br>"
 
@@ -47,7 +47,8 @@ var/global/floorIsLava = 0
 	body += "<A href='?_src_=holder;newban=\ref[M]'>Ban</A> | "
 	body += "<A href='?_src_=holder;jobban2=\ref[M]'>Jobban</A> | "
 	body += "<A href='?_src_=holder;appearanceban=\ref[M]'>Identity Ban</A> | "
-	body += "<A href='?_src_=holder;notes=show;ckey=[M.ckey]'>Notes</A> "
+	body += "<A href='?_src_=holder;notes=show;ckey=[M.ckey]'>Notes</A> | "
+	body += "<A href='?_src_=holder;watchlist=\ref[M]'>Watchlist Flag</A> "
 
 	if(M.client)
 		body += "| <A href='?_src_=holder;sendtoprison=\ref[M]'>Prison</A> | "
@@ -499,24 +500,21 @@ var/global/floorIsLava = 0
 /datum/admins/proc/restart()
 	set category = "Server"
 	set name = "Restart"
-	set desc="Restarts the world"
+	set desc="Restarts the world immediately"
 	if (!usr.client.holder)
 		return
 	var/confirm = alert("Restart the game world?", "Restart", "Yes", "Cancel")
 	if(confirm == "Cancel")
 		return
 	if(confirm == "Yes")
-		world << "<span class='userdanger'>Restarting world!</span> <span class='adminnotice'> Initiated by [usr.client.holder.fakekey ? "Admin" : usr.key]!</span>"
 		log_admin("[key_name(usr)] initiated a reboot.")
+		ticker.delay_end = 0
 
-		feedback_set_details("end_error","admin reboot - by [usr.key] [usr.client.holder.fakekey ? "(stealth)" : ""]")
 		feedback_add_details("admin_verb","R") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-		if(blackbox)
-			blackbox.save_all_data_to_sql()
+		world.Reboot("Initiated by [usr.client.holder.fakekey ? "Admin" : usr.key].", "end_error", "admin reboot - by [usr.key] [usr.client.holder.fakekey ? "(stealth)" : ""]", 10)
 
-		sleep(50)
-		world.Reboot()
+
 
 
 /datum/admins/proc/announce()
@@ -589,7 +587,7 @@ var/global/floorIsLava = 0
 	set name="Start Now"
 	if(ticker.current_state == GAME_STATE_PREGAME)
 		ticker.can_fire = 1
-		ticker.current_state = GAME_STATE_SETTING_UP
+		ticker.timeLeft = 0
 		log_admin("[usr.key] has started the game.")
 		message_admins("<font color='blue'>[usr.key] has started the game.</font>")
 		feedback_add_details("admin_verb","SN") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
@@ -654,23 +652,6 @@ var/global/floorIsLava = 0
 		log_admin("[key_name(usr)] removed the delay.")
 	feedback_add_details("admin_verb","DELAY") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-/datum/admins/proc/immreboot()
-	set category = "Server"
-	set desc="Reboots the server post haste"
-	set name="Immediate Reboot"
-	if(!usr.client.holder)	return
-	if( alert("Reboot server?",,"Yes","No") == "No")
-		return
-	world << "<span class='userdanger'>Rebooting world!</span> <span class='adminnotice'>Initiated by [usr.client.holder.fakekey ? "Admin" : usr.key]!</span>"
-	log_admin("[key_name(usr)] initiated an immediate reboot.")
-
-	feedback_set_details("end_error","immediate admin reboot - by [usr.key] [usr.client.holder.fakekey ? "(stealth)" : ""]")
-	feedback_add_details("admin_verb","IR") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-
-	if(blackbox)
-		blackbox.save_all_data_to_sql()
-
-	world.Reboot()
 
 /datum/admins/proc/unprison(var/mob/M in mob_list)
 	set category = "Admin"

@@ -2,7 +2,7 @@
 	name = "mousetrap"
 	desc = "A handy little spring-loaded trap for catching pesty rodents."
 	icon_state = "mousetrap"
-	m_amt = 100
+	materials = list(MAT_METAL=100)
 	origin_tech = "combat=1"
 	var/armed = 0
 
@@ -39,7 +39,7 @@
 /obj/item/device/assembly/mousetrap/proc/triggered(mob/target as mob, var/type = "feet")
 	if(!armed)
 		return
-	var/obj/item/organ/limb/affecting = null
+	var/datum/organ/limb/L = null
 	if(ishuman(target))
 		var/mob/living/carbon/human/H = target
 		switch(type)
@@ -51,16 +51,18 @@
 					pulse(0)
 					return 0
 				if(!H.shoes)
-					affecting = H.get_organ(pick("l_leg", "r_leg"))
+					L = H.get_organdatum(pick("l_leg", "r_leg"))
 					H.Weaken(3)
 			if("l_hand", "r_hand")
-				if(!H.gloves)
-					affecting = H.get_organ(type)
-					H.Stun(3)
-		if(affecting)
-			if(affecting.take_damage(1, 0))
-				H.update_damage_overlays(0)
-			H.updatehealth()
+				L = H.get_organdatum(type)
+				H.Stun(3)
+				H.apply_damage(5,BRUTE,(type))
+		if(L && L.exists())
+			var/obj/item/organ/limb/affecting = L.organitem
+			if(affecting)
+				if(affecting.take_damage(5, 0))
+					H.update_damage_overlays(0)
+				H.updatehealth()
 	else if(ismouse(target))
 		var/mob/living/simple_animal/mouse/M = target
 		visible_message("<span class='userdanger'>SPLAT!</span>")
@@ -122,7 +124,7 @@
 		finder.visible_message("<span class='warning'>[finder] accidentally sets off [src], breaking their fingers.</span>", \
 							   "<span class='warning'>You accidentally trigger [src]!</span>")
 		triggered(finder, finder.hand ? "l_hand" : "r_hand")
-		return 1	//end the search!
+		//return 1	//end the search!
 	return 0
 
 

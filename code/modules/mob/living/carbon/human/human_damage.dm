@@ -6,11 +6,15 @@
 		return
 	var/total_burn	= 0
 	var/total_brute	= 0
-	for(var/obj/item/organ/limb/O in organs)	//hardcoded to streamline things a bit
-		total_brute	+= O.brute_dam
-		total_burn	+= O.burn_dam
+	for(var/datum/organ/limb/O in get_limbs())
+		if(O.status & (ORGAN_DESTROYED | ORGAN_NOBLEED))
+			total_brute += O.destroyed_dam
+		else if(O.counts_for_damage())
+			var/obj/item/organ/limb/L = O.organitem
+			total_brute += L.brute_dam
+			total_burn += L.burn_dam
 	health = maxHealth - getOxyLoss() - getToxLoss() - getCloneLoss() - total_burn - total_brute
-	//TODO: fix husking
+	//TODO: fix husking //fuck you leatherman
 	if( ((maxHealth - total_burn) < config.health_threshold_dead) && stat == DEAD )
 		ChangeToHusk()
 	med_hud_set_health()
@@ -21,14 +25,23 @@
 //These procs fetch a cumulative total damage from all organs
 /mob/living/carbon/human/getBruteLoss()
 	var/amount = 0
-	for(var/obj/item/organ/limb/O in organs)
-		amount += O.brute_dam
+	for(var/datum/organ/limb/O in get_limbs())
+		if(O.status & ORGAN_DESTROYED)
+			amount += O.destroyed_dam //A destroyed limb is basically a severe brute wound, right?
+		else if(O.exists() && O.counts_for_damage())
+			var/obj/item/organ/limb/L = O.organitem
+			amount += L.brute_dam
+		//Else the organ is either ORGAN_REMOVED or something weird happened.
 	return amount
 
 /mob/living/carbon/human/getFireLoss()
 	var/amount = 0
-	for(var/obj/item/organ/limb/O in organs)
-		amount += O.burn_dam
+	for(var/datum/organ/limb/O in get_limbs())
+		if(O.status &  ORGAN_NOBLEED)
+			amount += O.destroyed_dam //Count it as burnt for purposes of damage
+		else if(O.exists() && O.counts_for_damage())
+			var/obj/item/organ/limb/L = O.organitem
+			amount += L.burn_dam
 	return amount
 
 
@@ -44,13 +57,13 @@
 	else
 		heal_overall_damage(0, -amount)
 
-mob/living/carbon/human/proc/hat_fall_prob()
+/mob/living/carbon/human/proc/hat_fall_prob()
 	var/multiplier = 1
 	var/obj/item/clothing/head/H = head
 	var/loose = 40
 	if(stat || (status_flags & FAKEDEATH))
 		multiplier = 2
-	if(H.flags & (HEADCOVERSEYES | HEADCOVERSMOUTH) || H.flags_inv & (HIDEEYES | HIDEFACE))
+	if(H.body_parts_covered & (EYES | MOUTH) || H.flags_inv & (HIDEEYES | HIDEFACE))
 		loose = 0
 	return loose * multiplier
 
@@ -59,17 +72,21 @@ mob/living/carbon/human/proc/hat_fall_prob()
 //Returns a list of damaged organs
 /mob/living/carbon/human/proc/get_damaged_organs(var/brute, var/burn)
 	var/list/obj/item/organ/limb/parts = list()
-	for(var/obj/item/organ/limb/O in organs)
-		if((brute && O.brute_dam) || (burn && O.burn_dam))
-			parts += O
+	for(var/datum/organ/limb/O in get_limbs())
+		if(O.counts_for_damage())
+			var/obj/item/organ/limb/L = O.organitem
+			if((brute && L.brute_dam) || (burn && L.burn_dam))
+				parts += L
 	return parts
 
 //Returns a list of damageable organs
 /mob/living/carbon/human/proc/get_damageable_organs()
 	var/list/obj/item/organ/limb/parts = list()
-	for(var/obj/item/organ/limb/O in organs)
-		if(O.brute_dam + O.burn_dam < O.max_damage)
-			parts += O
+	for(var/datum/organ/limb/O in get_limbs())
+		if(O.counts_for_damage())
+			var/obj/item/organ/limb/L = O.organitem
+			if(L.brute_dam + L.burn_dam < L.max_damage)
+				parts += L
 	return parts
 
 //Heals ONE external organ, organ gets randomly selected from damaged ones.
@@ -147,15 +164,6 @@ mob/living/carbon/human/proc/hat_fall_prob()
 
 ////////////////////////////////////////////
 
-
-/mob/living/carbon/human/proc/get_organ(var/zone)
-	if(!zone)	zone = "chest"
-	for(var/obj/item/organ/limb/O in organs)
-		if(O.name == zone)
-			return O
-	return null
-
-
 /mob/living/carbon/human/apply_damage(var/damage = 0,var/damagetype = BRUTE, var/def_zone = null, var/blocked = 0)
 	if(dna)	// if you have a species, it will run the apply_damage code there instead
 		dna.species.apply_damage(damage, damagetype, def_zone, blocked, src)
@@ -169,12 +177,12 @@ mob/living/carbon/human/proc/hat_fall_prob()
 			if(blocked <= 0)	return 0
 
 			var/obj/item/organ/limb/organ = null
-			if(isorgan(def_zone))
-				organ = def_zone
-			else
-				if(!def_zone)	def_zone = ran_zone(def_zone)
-				organ = get_organ(check_zone(def_zone))
-			if(!organ)	return 0
+			if(!def_zone)
+				def_zone = ran_zone(def_zone)
+			def_zone = check_zone(def_zone)
+			organ = get_organitem(def_zone)
+			if(!organ)
+				return 0
 
 			damage = (damage * blocked)
 

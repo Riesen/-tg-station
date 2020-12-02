@@ -36,6 +36,8 @@ By design, d1 is the smallest direction and d2 is the highest
 	var/cable_color = "red"
 	var/obj/item/stack/cable_coil/stored
 
+	var/breaker_box = 0
+
 /obj/structure/cable/yellow
 	cable_color = "yellow"
 	icon = 'icons/obj/power_cond/power_cond_yellow.dmi'
@@ -133,6 +135,11 @@ By design, d1 is the smallest direction and d2 is the highest
 	if(T.intact)
 		return
 	if(istype(W, /obj/item/weapon/wirecutters))
+
+		if(breaker_box)
+			user << "\red This cable is connected to nearby breaker box. Use breaker box to interact with it."
+			return
+
 		if (shock(user, 50))
 			return
 		visible_message("<span class='warning'>[user] cuts the cable.</span>")
@@ -218,21 +225,21 @@ By design, d1 is the smallest direction and d2 is the highest
 // Power related
 ///////////////////////////////////////////
 
-obj/structure/cable/proc/add_avail(var/amount)
+/obj/structure/cable/proc/add_avail(var/amount)
 	if(powernet)
 		powernet.newavail += amount
 
-obj/structure/cable/proc/add_load(var/amount)
+/obj/structure/cable/proc/add_load(var/amount)
 	if(powernet)
 		powernet.load += amount
 
-obj/structure/cable/proc/surplus()
+/obj/structure/cable/proc/surplus()
 	if(powernet)
 		return powernet.avail-powernet.load
 	else
 		return 0
 
-obj/structure/cable/proc/avail()
+/obj/structure/cable/proc/avail()
 	if(powernet)
 		return powernet.avail
 	else
@@ -471,17 +478,16 @@ obj/structure/cable/proc/avail()
 	w_class = 2.0
 	throw_speed = 3
 	throw_range = 5
-	m_amt = 50
-	g_amt = 20
+	materials = list(MAT_METAL=10, MAT_GLASS=5)
 	flags = CONDUCT
 	slot_flags = SLOT_BELT
 	attack_verb = list("whipped", "lashed", "disciplined", "flogged")
 	singular_name = "cable piece"
+	var/self_delay = 50
 
 /obj/item/stack/cable_coil/cyborg
 	is_cyborg = 1
-	m_amt = 0
-	g_amt = 0
+	materials = list()
 	cost = 1
 
 /obj/item/stack/cable_coil/cyborg/attack_self(mob/user)
@@ -514,8 +520,19 @@ obj/structure/cable/proc/avail()
 	if(!istype(H))
 		return ..()
 
-	var/obj/item/organ/limb/affecting = H.get_organ(check_zone(user.zone_sel.selecting))
-	if(affecting.status == ORGAN_ROBOTIC)
+	var/datum/organ/limb/limbdata = H.get_organdatum(check_zone(user.zone_sel.selecting))
+	var/obj/item/organ/limb/affecting = limbdata.organitem
+
+	if(user && affecting.organtype == ORGAN_ROBOTIC)
+		if(H == user)
+			var/t_himself = "itself"
+			if(user.gender == MALE)
+				t_himself = "himself"
+			else if(user.gender == FEMALE)
+				t_himself = "herself"
+			user.visible_message("<span class='notice'>[user] starts to fix burnt wires on [t_himself]...</span>", "<span class='notice'>You begin fixing burnt wires with [src] on yourself...</span>")
+			if(!do_mob(user, H, self_delay))
+				return
 		item_heal_robotic(H, user, 0, 30)
 		src.use(1)
 		return

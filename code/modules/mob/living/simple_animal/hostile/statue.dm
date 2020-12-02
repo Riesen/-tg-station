@@ -23,14 +23,7 @@
 	attacktext = "claws"
 	attack_sound = 'sound/hallucinations/growl1.ogg'
 
-	min_oxy = 0
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 0
-	min_co2 = 0
-	max_co2 = 0
-	min_n2 = 0
-	max_n2 = 0
+	atmos_requirements = list("min_oxy" = 0, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
 	minbodytemp = 0
 
 	faction = list("statue")
@@ -110,7 +103,7 @@
 	var/turf/T = get_turf(loc)
 	if(T && destination)
 		// Don't check it twice if our destination is the tile we are on or we can't even get to our destination
-		if(T.lighting_lumcount<1 && destination.lighting_lumcount<1) // No one can see us in the darkness, right?
+		if((T.get_lumcount() * 10) < 1 && destination.get_lumcount() * 10 < 1) // No one can see us in the darkness, right?
 			return null
 		if(T == destination)
 			destination = null
@@ -125,11 +118,11 @@
 	for(var/atom/check in check_list)
 		for(var/mob/living/M in viewers(world.view + 1, check) - src)
 			if(M.client && CanAttack(M) && !issilicon(M))
-				if(!M.eye_blind)
+				if(!is_blind(M))
 					return M
 		for(var/obj/mecha/M in view(world.view + 1, check)) //assuming if you can see them they can see you
 			if(M.occupant && M.occupant.client)
-				if(!M.occupant.eye_blind)
+				if(!is_blind(M.occupant))
 					return M.occupant
 	return null
 

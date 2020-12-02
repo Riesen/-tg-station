@@ -1,7 +1,8 @@
 /obj/machinery/computer/camera_advanced
 	name = "advanced camera console"
 	desc = "Used to access the various cameras on the station."
-	icon_state = "cameras"
+	icon_screen = "cameras"
+	icon_keyboard = "security_key"
 	//circuit = /obj/item/weapon/circuitboard/security
 	var/mob/camera/aiEye/remote/eyeobj
 	var/mob/living/carbon/human/current_user = null
@@ -20,7 +21,7 @@
 	jump_action.Grant(user)
 
 /obj/machinery/computer/camera_advanced/check_eye(var/mob/user as mob)
-	if (get_dist(user, src) > 1 || user.eye_blind)
+	if (get_dist(user, src) > 1 || is_blind(user))
 		off_action.Activate()
 		return 0
 	return 1

@@ -9,7 +9,7 @@
 	id = "safeguard_module"
 	req_tech = list("programming" = 3, "materials" = 4)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$gold" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_GOLD = 100)
 	build_path = /obj/item/weapon/aiModule/supplied/safeguard
 	category = list("AI Modules")
 
@@ -19,7 +19,7 @@
 	id = "onehuman_module"
 	req_tech = list("programming" = 4, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$diamond" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
 	build_path = /obj/item/weapon/aiModule/zeroth/oneHuman
 	category = list("AI Modules")
 
@@ -29,7 +29,7 @@
 	id = "protectstation_module"
 	req_tech = list("programming" = 3, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$gold" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_GOLD = 100)
 	build_path = /obj/item/weapon/aiModule/supplied/protectStation
 	category = list("AI Modules")
 
@@ -39,7 +39,7 @@
 	id = "quarantine_module"
 	req_tech = list("programming" = 3, "biotech" = 2, "materials" = 4)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$gold" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_GOLD = 100)
 	build_path = /obj/item/weapon/aiModule/supplied/quarantine
 	category = list("AI Modules")
 
@@ -50,7 +50,7 @@
 	id = "oxygen_module"
 	req_tech = list("programming" = 3, "biotech" = 2, "materials" = 4)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$gold" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_GOLD = 100)
 	build_path = /obj/item/weapon/aiModule/supplied/oxygen
 	category = list("AI Modules")
 
@@ -60,7 +60,7 @@
 	id = "freeform_module"
 	req_tech = list("programming" = 4, "materials" = 4)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$gold" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_GOLD = 100)
 	build_path = /obj/item/weapon/aiModule/supplied/freeform
 	category = list("AI Modules")
 
@@ -70,7 +70,7 @@
 	id = "reset_module"
 	req_tech = list("programming" = 3, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$gold" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_GOLD = 100)
 	build_path = /obj/item/weapon/aiModule/reset
 	category = list("AI Modules")
 
@@ -80,7 +80,7 @@
 	id = "purge_module"
 	req_tech = list("programming" = 4, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$diamond" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
 	build_path = /obj/item/weapon/aiModule/reset/purge
 	category = list("AI Modules")
 
@@ -90,7 +90,7 @@
 	id = "freeformcore_module"
 	req_tech = list("programming" = 4, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$diamond" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
 	build_path = /obj/item/weapon/aiModule/core/freeformcore
 	category = list("AI Modules")
 
@@ -100,8 +100,19 @@
 	id = "asimov_module"
 	req_tech = list("programming" = 3, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$diamond" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
 	build_path = /obj/item/weapon/aiModule/core/full/asimov
+	category = list("AI Modules")
+
+
+/datum/design/kawaii
+	name = "Core Module Design (Kawaii)"
+	desc = "Allows for the construction of a Kawaii AI Core Module."
+	id = "asimov_module"
+	req_tech = list("programming" = 4, "materials" = 6)
+	build_type = IMPRINTER
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
+	build_path = /obj/item/weapon/aiModule/core/full/kawaii
 	category = list("AI Modules")
 
 /datum/design/paladin_module
@@ -110,7 +121,7 @@
 	id = "paladin_module"
 	req_tech = list("programming" = 4, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$diamond" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
 	build_path = /obj/item/weapon/aiModule/core/full/paladin
 	category = list("AI Modules")
 
@@ -120,7 +131,7 @@
 	id = "tyrant_module"
 	req_tech = list("programming" = 4, "syndicate" = 2, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$diamond" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
 	build_path = /obj/item/weapon/aiModule/core/full/tyrant
 	category = list("AI Modules")
 
@@ -130,7 +141,7 @@
 	id = "corporate_module"
 	req_tech = list("programming" = 4, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$diamond" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
 	build_path = /obj/item/weapon/aiModule/core/full/corp
 	category = list("AI Modules")
 
@@ -140,6 +151,6 @@
 	id = "custom_module"
 	req_tech = list("programming" = 4, "materials" = 6)
 	build_type = IMPRINTER
-	materials = list("$glass" = 1000, "sacid" = 20, "$diamond" = 100)
+	materials = list(MAT_GLASS = 1000, "sacid" = 20, MAT_DIAMOND = 100)
 	build_path = /obj/item/weapon/aiModule/core/full/custom
 	category = list("AI Modules")

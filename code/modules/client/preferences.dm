@@ -22,7 +22,7 @@ var/global/list/special_roles = list( //keep synced with the defines BE_* in set
 )
 
 
-datum/preferences
+/datum/preferences
 	//doohickeys for savefiles
 	var/path
 	var/default_slot = 1				//Holder so it doesn't default to slot 1, rather the last one used
@@ -41,8 +41,6 @@ datum/preferences
 	var/toggles = TOGGLES_DEFAULT
 	var/chat_toggles = TOGGLES_DEFAULT_CHAT
 	var/ghost_form = "ghost"
-	var/allow_midround_antag = 1
-
 	//character preferences
 	var/real_name						//our character's name
 	var/be_random_name = 0				//whether we'll have a random name every round
@@ -867,11 +865,10 @@ datum/preferences
 		if(character.dna)
 			character.dna.real_name = character.real_name
 			if(pref_species != /datum/species/human && config.mutant_races)
-				hardset_dna(character, null, null, null, null, pref_species.type)
+				hardset_dna(character, null, null, null, null, pref_species.type, mutant_color)
 			else
-				hardset_dna(character, null, null, null, null, /datum/species/human)
-			character.dna.mutant_color = mutant_color
-			character.update_mutcolor()
+				hardset_dna(character, null, null, null, null, /datum/species/human, mutant_color)
+			character.update_body_parts()
 
 		character.gender = gender
 		character.age = age
@@ -881,7 +878,7 @@ datum/preferences
 		character.hair_color = hair_color
 		character.facial_hair_color = facial_hair_color
 
-		character.skin_tone = skin_tone
+		character.set_skin_tone(skin_tone)
 		character.hair_style = hair_style
 		character.facial_hair_style = facial_hair_style
 		character.underwear = underwear

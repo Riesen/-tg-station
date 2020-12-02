@@ -15,6 +15,7 @@
 	list_reagents = list("nutriment" = 1)
 	cooked_type = /obj/item/weapon/reagent_containers/food/snacks/boiledegg
 	filling_color = "#F0E68C"
+	grind_reagents = list("eggyolk" = -5)
 
 /obj/item/weapon/reagent_containers/food/snacks/egg/throw_impact(atom/hit_atom)
 	..()

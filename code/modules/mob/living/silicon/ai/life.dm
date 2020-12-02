@@ -1,3 +1,9 @@
+
+/mob/living/silicon/ai/proc/lacks_power()
+	var/turf/T = get_turf(src)
+	var/area/A = get_area(src)
+	return !T || !A || ((!A.power_equip || istype(T, /turf/space)) && !is_type_in_list(src.loc, list(/obj/item, /obj/mecha)))
+
 /mob/living/silicon/ai/Life()
 	if (src.stat == 2)
 		return
@@ -47,15 +53,12 @@
 			loc = T.loc
 			if (istype(loc, /area))
 				//stage = 4
-				if (!loc.master.power_equip && !istype(src.loc,/obj/item))
+				if (!loc.power_equip && !istype(src.loc,/obj/item))
 					//stage = 5
 					blindness = 1
 
 		if (!blindness)
 			//stage = 4.5
-			if(src.blind)
-				if (src.blind.layer != 0)
-					src.blind.layer = 0
 			src.sight |= SEE_TURFS
 			src.sight |= SEE_MOBS
 			src.sight |= SEE_OBJS
@@ -82,16 +85,15 @@
 		else
 
 			//stage = 6
-			src.blind.screen_loc = "1,1 to 15,15"
-			if (src.blind.layer!=18)
-				src.blind.layer = 18
-			src.sight = src.sight&~SEE_TURFS
-			src.sight = src.sight&~SEE_MOBS
-			src.sight = src.sight&~SEE_OBJS
-			src.see_in_dark = 0
-			src.see_invisible = SEE_INVISIBLE_LIVING
+			sight = src.sight&~SEE_TURFS
+			sight = src.sight&~SEE_MOBS
+			sight = src.sight&~SEE_OBJS
+			see_in_dark = 0
+			see_invisible = SEE_INVISIBLE_LIVING
 
-			if (((!loc.master.power_equip) || istype(T, /turf/space)) && !istype(src.loc,/obj/item))
+			overlay_fullscreen("blind", /obj/screen/fullscreen/blind)
+
+			if(lacks_power())
 				if (src:aiRestorePowerRoutine==0)
 					src:aiRestorePowerRoutine = 1
 
@@ -105,11 +107,11 @@
 					spawn(20)
 						src << "Backup battery online. Scanners, camera, and radio interface offline. Beginning fault-detection."
 						sleep(50)
-						if (loc.master.power_equip)
+						if (loc.power_equip)
 							if (!istype(T, /turf/space))
 								src << "Alert cancelled. Power has been restored without our assistance."
 								src.aiRestorePowerRoutine = 0
-								src.blind.layer = 0
+								clear_fullscreen("blind")
 								return
 						src << "Fault confirmed: missing external power. Shutting down main control system to save power."
 						sleep(20)
@@ -132,22 +134,21 @@
 						var/PRP //like ERP with the code, at least this stuff is no more 4x sametext
 						for (PRP=1, PRP<=4, PRP++)
 							var/area/AIarea = get_area(src)
-							for(var/area/A in AIarea.master.related)
-								for (var/obj/machinery/power/apc/APC in A)
-									if (!(APC.stat & BROKEN))
-										theAPC = APC
-										break
+							for (var/obj/machinery/power/apc/APC in AIarea)
+								if (!(APC.stat & BROKEN))
+									theAPC = APC
+									break
 							if (!theAPC)
 								switch(PRP)
 									if (1) src << "Unable to locate APC!"
 									else src << "Lost connection with the APC!"
 								src:aiRestorePowerRoutine = 2
 								return
-							if (loc.master.power_equip)
+							if (loc.power_equip)
 								if (!istype(T, /turf/space))
 									src << "Alert cancelled. Power has been restored without our assistance."
 									src:aiRestorePowerRoutine = 0
-									src.blind.layer = 0 //This, too, is a fix to issue 603
+									clear_fullscreen("blind")
 									return
 							switch(PRP)
 								if (1) src << "APC located. Optimizing route to APC to avoid needless power waste."

@@ -61,11 +61,11 @@ using metal and glass, it uses glass and reagents (usually sulfuric acis).
 
 /obj/machinery/r_n_d/circuit_imprinter/proc/check_mat(datum/design/being_built, var/M)
 	switch(M)
-		if("$glass")
+		if(MAT_GLASS)
 			return (g_amount - (being_built.materials[M]/efficiency_coeff) >= 0)
-		if("$gold")
+		if(MAT_GOLD)
 			return (gold_amount - (being_built.materials[M]/efficiency_coeff) >= 0)
-		if("$diamond")
+		if(MAT_DIAMOND)
 			return (diamond_amount - (being_built.materials[M]/efficiency_coeff) >= 0)
 		else
 			return (reagents.has_reagent(M, (being_built.materials[M]/efficiency_coeff)) != 0)
@@ -87,6 +87,8 @@ using metal and glass, it uses glass and reagents (usually sulfuric acis).
 		return
 
 	if (panel_open)
+		if(istype(O, /obj/item/device/multitool) || istype(O,/obj/item/weapon/wirecutters))
+			attack_hand(user)
 		if(istype(O, /obj/item/weapon/crowbar))
 			for(var/obj/item/weapon/reagent_containers/glass/G in component_parts)
 				reagents.trans_to(G, G.reagents.maximum_volume)

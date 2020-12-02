@@ -60,7 +60,7 @@
 	if(istype(W, /obj/item/weapon/crowbar))
 		playsound(src.loc, 'sound/machines/click.ogg', 50, 1)
 		user.visible_message("<span class='notice'>[user] begins to take the glass off the solar panel.</span>")
-		if(do_after(user, 50))
+		if(do_after(user, 50, target = src))
 			var/obj/item/solar_assembly/S = locate() in src
 			if(S)
 				S.loc = src.loc
@@ -119,12 +119,15 @@
 
 	sunfrac = cos(p_angle) ** 2
 	//isn't the power recieved from the incoming light proportionnal to cos(p_angle) (Lambert's cosine law) rather than cos(p_angle)^2 ?
+	//The above isn't correct. This is because it's an area, not a single axis, so it's squared //Koriath
+
 
 /obj/machinery/power/solar/process()//TODO: remove/add this from machines to save on processing as needed ~Carn PRIORITY
 	if(stat & BROKEN)
 		return
 	if(!control) //if there's no sun or the panel is not linked to a solar control computer, no need to proceed
 		return
+
 
 	if(powernet)
 		if(powernet == control.powernet)//check if the panel is still connected to the computer
@@ -274,11 +277,13 @@
 	name = "solar panel control"
 	desc = "A controller for solar panel arrays."
 	icon = 'icons/obj/computer.dmi'
-	icon_state = "solar"
+	icon_state = "computer"
 	anchored = 1
 	density = 1
 	use_power = 1
 	idle_power_usage = 250
+	var/icon_screen = "solar"
+	var/icon_keyboard = "power_key"
 	var/id = 0
 	var/cdir = 0
 	var/targetdir = 0		// target angle in manual tracking (since it updates every game minute)
@@ -351,19 +356,17 @@
 	set_panels(cdir)
 
 /obj/machinery/power/solar_control/update_icon()
-	if(stat & BROKEN)
-		icon_state = "broken"
-		overlays.Cut()
-		return
-	if(stat & NOPOWER)
-		icon_state = "c_unpowered"
-		overlays.Cut()
-		return
-	icon_state = "solar"
 	overlays.Cut()
-	if(cdir > -1)
+	if(stat & NOPOWER)
+		overlays += "[icon_keyboard]_off"
+		return
+	overlays += icon_keyboard
+	if(stat & BROKEN)
+		overlays += "[icon_state]_broken"
+	else
+		overlays += icon_screen
+	if(cdir > -1 && !stat)
 		overlays += image('icons/obj/computer.dmi', "solcon-o", FLY_LAYER, angle2dir(cdir))
-	return
 
 /obj/machinery/power/solar_control/attack_hand(mob/user)
 	if(!..())
@@ -392,7 +395,7 @@
 /obj/machinery/power/solar_control/attackby(I as obj, user as mob, params)
 	if(istype(I, /obj/item/weapon/screwdriver))
 		playsound(src.loc, 'sound/items/Screwdriver.ogg', 50, 1)
-		if(do_after(user, 20))
+		if(do_after(user, 20, target = src))
 			if (src.stat & BROKEN)
 				user << "<span class='notice'>The broken glass falls out.</span>"
 				var/obj/structure/computerframe/A = new /obj/structure/computerframe( src.loc )
@@ -439,7 +442,6 @@
 /obj/machinery/power/solar_control/Topic(href, href_list)
 	if(..())
 		return
-
 	if(href_list["rate_control"])
 		if(href_list["cdir"])
 			src.cdir = dd_range(0,359,(360+src.cdir+text2num(href_list["cdir"]))%360)

@@ -91,8 +91,7 @@ var/list/obj/machinery/newscaster/allCasters = list() //Global list that will co
 	desc = "Used to build newscasters, just secure to the wall."
 	icon_state = "newscaster"
 	item_state = "syringe_kit"
-	m_amt = 14000
-	g_amt = 8000
+	materials = list(MAT_METAL=14000, MAT_GLASS=8000)
 
 /obj/item/newscaster_frame/proc/try_build(turf/on_wall)
 	if (get_dist(on_wall,usr)>1)
@@ -163,8 +162,11 @@ var/list/obj/machinery/newscaster/allCasters = list() //Global list that will co
 	var/hitstaken = 0      //Death at 3 hits from an item with force>=15
 	var/datum/feed_channel/viewing_channel = null
 	var/allow_comments = 1
-	luminosity = 0
+	light_range = 0
 	anchored = 1
+	verb_say = "beeps"
+	verb_ask = "beeps"
+	verb_yell = "beeps"
 
 
 /obj/machinery/newscaster/security_unit                   //Security unit
@@ -181,6 +183,8 @@ var/list/obj/machinery/newscaster/allCasters = list() //Global list that will co
 
 /obj/machinery/newscaster/Destroy()
 	allCasters -= src
+	viewing_channel = null
+	photo = null
 	..()
 
 /obj/machinery/newscaster/update_icon()
@@ -792,7 +796,7 @@ var/list/obj/machinery/newscaster/allCasters = list() //Global list that will co
 	if(istype(I, /obj/item/weapon/wrench))
 		user << "<span class='notice'>Now [anchored ? "un" : ""]securing [name]</span>"
 		playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
-		if(do_after(user, 60))
+		if(do_after(user, 60, target = src))
 			new /obj/item/newscaster_frame(loc)
 			playsound(src.loc, 'sound/items/Deconstruct.ogg', 50, 1)
 			qdel(src)
@@ -899,7 +903,7 @@ var/list/obj/machinery/newscaster/allCasters = list() //Global list that will co
 	..()
 	world << "derp"*/
 
-obj/item/weapon/newspaper/attack_self(mob/user as mob)
+/obj/item/weapon/newspaper/attack_self(mob/user as mob)
 	if(ishuman(user))
 		var/mob/living/carbon/human/human_user = user
 		var/dat
@@ -979,7 +983,7 @@ obj/item/weapon/newspaper/attack_self(mob/user as mob)
 		user << "The paper is full of intelligible symbols!"
 
 
-obj/item/weapon/newspaper/Topic(href, href_list)
+/obj/item/weapon/newspaper/Topic(href, href_list)
 	var/mob/living/U = usr
 	..()
 	if ((src in U.contents) || ( istype(loc, /turf) && in_range(src, U) ))
@@ -1011,7 +1015,7 @@ obj/item/weapon/newspaper/Topic(href, href_list)
 			src.attack_self(src.loc)
 
 
-obj/item/weapon/newspaper/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
+/obj/item/weapon/newspaper/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if(istype(W, /obj/item/weapon/pen))
 		if(src.scribble_page == src.curr_page)
 			user << "<span class='notice'>There's already a scribble in this page... You wouldn't want to make things too cluttered, would you?</span>"
@@ -1027,6 +1031,9 @@ obj/item/weapon/newspaper/attackby(obj/item/weapon/W as obj, mob/user as mob, pa
 		return
 
 
+/obj/item/weapon/newspaper/suicide_act(mob/user)
+	user.visible_message("<span class='suicide'>[user] is focusing intently on [src]! It looks like they're trying to commit sudoku.</span>")
+	return(OXYLOSS)
 ////////////////////////////////////helper procs
 
 
@@ -1082,6 +1089,3 @@ obj/item/weapon/newspaper/attackby(obj/item/weapon/W as obj, mob/user as mob, pa
 		say("Attention! Wanted issue distributed!")
 		playsound(src.loc, 'sound/machines/warning-buzzer.ogg', 75, 1)
 	return
-
-/obj/machinery/newscaster/say_quote(text)
-	return "beeps, \"[text]\""

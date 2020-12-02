@@ -13,7 +13,10 @@
 	density = 1
 	icon = 'icons/obj/cloning.dmi'
 	icon_state = "pod_0"
+	icon_open = "pod_0_maintenance"
+	icon_closed = "pod_0"
 	req_access = list(access_genetics) //For premature unlocking.
+	machine_flags = CROWDESTROY | REPLACEPARTS | EMAGGABLE
 	var/heal_level = 90 //The clone is released once its health reaches this level.
 	var/locked = 0
 	var/obj/machinery/computer/cloning/connected = null //So we remember the connected clone machine.
@@ -43,7 +46,7 @@
 		efficiency += S.rating
 	for(var/obj/item/weapon/stock_parts/manipulator/P in component_parts)
 		speed_coeff += P.rating
-	heal_level = (efficiency * 15) + 10
+	heal_level = min((efficiency * 15) + 10, 100)
 
 //The return of data disks?? Just for transferring between genetics machine/cloning machine.
 //TO-DO: Make the genetics machine accept them.
@@ -51,10 +54,23 @@
 	name = "cloning data disk"
 	icon = 'icons/obj/cloning.dmi'
 	icon_state = "datadisk0" //Gosh I hope syndies don't mistake them for the nuke disk.
-	item_state = "card-id"
-	w_class = 1.0
 	var/list/fields = list()
 	var/read_only = 0 //Well,it's still a floppy disk
+
+//Disk stuff.
+/obj/item/weapon/disk/data/New()
+	..()
+	icon_state = "datadisk[rand(0,6)]"
+	overlays += "datadisk_gene"
+
+
+/obj/item/weapon/disk/data/attack_self(mob/user)
+	read_only = !read_only
+	user << "<span class='notice'>You flip the write-protect tab to [src.read_only ? "protected" : "unprotected"].</span>"
+
+/obj/item/weapon/disk/data/examine(mob/user)
+	..()
+	user << "The write-protect tab is set to [src.read_only ? "protected" : "unprotected"]."
 
 
 //Find a dead mob with a brain and client.
@@ -68,7 +84,7 @@
 		if ((M.stat != 2) || (!M.client))
 			continue
 		//They need a brain!
-		if (ishuman(M) && !M.getorgan(/obj/item/organ/brain))
+		if (M.exists("brain"))
 			continue
 
 		if (M.ckey == find_key)
@@ -152,6 +168,8 @@
 		src.eject_wait = 0
 
 	var/mob/living/carbon/human/H = new /mob/living/carbon/human(src)
+	if(H && H.dna)
+		H.dna.remove_all_mutations()
 
 	if(efficiency > 2)
 		for(var/A in bad_se_blocks)
@@ -223,7 +241,7 @@
 			use_power(7500) //This might need tweaking.
 			return
 
-		else if((src.occupant.cloneloss <= (100 - src.heal_level)) && (!src.eject_wait))
+		else if((src.occupant.cloneloss <= (100 - src.heal_level)) && (!src.eject_wait || src.occupant.health >= 100))
 			src.connected_message("Cloning Process Complete.")
 			src.locked = 0
 			src.go_out()
@@ -243,13 +261,8 @@
 //Let's unlock this early I guess.  Might be too early, needs tweaking.
 /obj/machinery/clonepod/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if(!(occupant || mess || locked))
-		if(default_deconstruction_screwdriver(user, "[icon_state]_maintenance", "[initial(icon_state)]",W))
+		if(default_deconstruction_screwdriver(user, icon_open, icon_closed ,W))
 			return
-
-	if(exchange_parts(user, W))
-		return
-
-	default_deconstruction_crowbar(W)
 
 	if (istype(W, /obj/item/weapon/card/id)||istype(W, /obj/item/device/pda))
 		if (!src.check_access(W))

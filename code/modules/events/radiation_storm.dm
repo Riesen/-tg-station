@@ -2,6 +2,7 @@
 	name = "Radiation Storm"
 	typepath = /datum/round_event/radiation_storm
 	max_occurrences = 1
+	announcement = 1
 
 /datum/round_event/radiation_storm
 	var/list/protected_areas = list(/area/maintenance, /area/turret_protected/ai_upload, /area/turret_protected/ai_upload_foyer, /area/turret_protected/ai)
@@ -13,7 +14,7 @@
 	announceWhen	= 1
 
 /datum/round_event/radiation_storm/announce()
-	priority_announce("High levels of radiation detected near the station. Maintenance is best shielded from radiation.", "Anomaly Alert", 'sound/AI/radiation.ogg')
+	priority_announce("High levels of radiation detected near the station. GET TO THE MAINTENANCE TUNNELS OR YOU WILL FUCKING DIE.", "Anomaly Alert", 'sound/AI/radiation.ogg')
 	//sound not longer matches the text, but an audible warning is probably good
 
 
@@ -36,7 +37,8 @@
 
 		if(istype(C, /mob/living/carbon/human))
 			var/mob/living/carbon/human/H = C
-			H.apply_effect((75), IRRADIATE, 0) // Let the bodies hit the floor
+			H.apply_effect((100), IRRADIATE, 0) // Let the bodies hit the floor
+			H.apply_damage(80, TOX) // haha FUCK YOU
 			if(prob(5))
 				H.apply_effect((rand(100, 150)), IRRADIATE, 0)
 			if(prob(50))

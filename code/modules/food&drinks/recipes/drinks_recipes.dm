@@ -206,7 +206,8 @@
 	name = "Hooch"
 	id = "hooch"
 	result = "hooch"
-	required_reagents = list ("sugar" = 1, "ethanol" = 2, "fuel" = 1)
+	required_reagents = list ("ethanol" = 2, "fuel" = 1) // sugar+ethanol+fuel = napalm
+	required_catalysts = list("enzyme" = 5)
 	result_amount = 3
 
 /datum/chemical_reaction/irish_coffee
@@ -557,8 +558,15 @@
 	result_amount = 15
 
 /datum/chemical_reaction/triple_citrus
-	name = "triple_citrus"
+	name = "Triple Citrus"
 	id = "triple_citrus"
 	result = "triple_citrus"
 	required_reagents = list("lemonjuice" = 1, "limejuice" = 1, "orangejuice" = 1)
+	result_amount = 5
+
+/datum/chemical_reaction/purple_drank
+	name = "Purple Drank"
+	id = "purple_drank"
+	result = "purple_drank"
+	required_reagents = list("morphine" = 2, "synaptizine" = 2, "spacemountainwind" = 1)
 	result_amount = 5

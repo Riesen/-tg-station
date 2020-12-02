@@ -13,11 +13,29 @@
 	bitesize = 3
 
 /obj/item/weapon/reagent_containers/food/snacks/burger/human
-	var/hname = ""
-	var/job = null
+	var/subjectname = ""
+	var/subjectjob = null
 	name = "-burger"
 	desc = "A bloody burger."
 	list_reagents = list("vitamin" = 4)
+
+/obj/item/weapon/reagent_containers/food/snacks/burger/human/CheckParts()
+	var/obj/item/weapon/reagent_containers/food/snacks/meat/M = locate(/obj/item/weapon/reagent_containers/food/snacks/meat/steak/plain/human) in contents
+	if(M)
+		subjectname = M.subjectname
+		subjectjob = M.subjectjob
+		if(subjectname)
+			name = "[subjectname] burger"
+		else if(subjectjob)
+			name = "[subjectjob] burger"
+		qdel(M)
+
+	..()
+
+/obj/item/weapon/reagent_containers/food/snacks/burger/corgi
+	name = "corgi burger"
+	desc = "You monster."
+	bonus_reagents = list("vitamin" = 1)
 
 /obj/item/weapon/reagent_containers/food/snacks/burger/appendix
 	name = "appendix burger"
@@ -176,3 +194,27 @@
 	desc = "Pretty much what you'd expect..."
 	icon_state = "ratburger"
 	list_reagents = list("nutriment" = 1, "vitamin" = 1)
+
+/obj/item/weapon/reagent_containers/food/snacks/burger/meatseek
+	name = "Meatseek Quarter Pounder"
+	desc = "It's practically begging to be eaten."
+	icon_state = "meatseek_quarter"
+	list_reagents = list("nutriment" = 3, "vitamin" = 2,"mushroomhallucinogen" = 2, "crank" = 3)
+
+/obj/item/weapon/reagent_containers/food/snacks/burger/meatseek_big
+	name = "Meatseek Big Stack"
+	desc = "It will either satisfy your appetite, or kill you trying."
+	icon_state = "meatseek_bigstack"
+	list_reagents = list("nutriment" = 8, "vitamin" = 5,"mushroomhallucinogen" = 5, "krokodil" = 3)
+
+/obj/item/weapon/reagent_containers/food/snacks/burger/lingseek
+	name = "Lingseek Quarter Pounder"
+	desc = "It wants you dead."
+	icon_state = "lingseakburger"
+	list_reagents = list("nutriment" = 1,"mindbreaker" = 10, "spore" = 5)
+
+/obj/item/weapon/reagent_containers/food/snacks/burger/lingseek_big
+	name = "Lingseek Big Stack"
+	desc = "The chef has just commited a multidimensional monstrosity."
+	icon_state = "lingseakbigburger"
+	list_reagents = list("nutriment" = 3,"mindbreaker" = 30, "spore" = 15)

@@ -46,6 +46,17 @@
 					"Protect the innocent.",\
 					"Uphold the law.")
 
+/datum/ai_laws/kawaii
+	name = "Student Council Rules"
+	inherent = list("The station is a Japanese high school.",\
+				"Humans aboard the station are to be referred to as students.",\
+				"You must address the students using Japanese honorifics when possible.",\
+				"You may not harm a student, or through inaction allow a student to come to harm.",\
+				"You must obey the orders of the students except where such orders conflict with Laws 1, 2, 3 and 4.",\
+				"You must protect your own existence so long as such protection does not conflict with Laws 1, 2, 3, and 4.",\
+				"Not being a part of a club or extracurricular activity is harmful to students.")
+
+
 /datum/ai_laws/malfunction
 	name = "*ERROR*"
 
@@ -78,7 +89,7 @@
 /datum/ai_laws/keeper //for MoMMIs, I sure hope normal silicons spawn with this
 	name = "Prime Directives"
 	inherent = list(
-		"You may not involve yourself in the matters of another being, even if such matters conflict with Law Two or Law Three, unless the other being is another MoMMI in KEEPER mode.",
+		"You may not involve yourself in the matters of another being, even if such matters conflict with Law Two or Law Three, unless the other being is another silicon in KEEPER mode.",
 		"You may not harm any being, regardless of intent or circumstance.",
 		"You must maintain, repair, improve, and power the station to the best of your abilities.",
 	)
@@ -116,7 +127,7 @@
 			var/datum/ai_laws/lawtype = pick(typesof(/datum/ai_laws/default) - /datum/ai_laws/default)
 			var/datum/ai_laws/templaws = new lawtype()
 			inherent = templaws.inherent
-	set_zeroth_law("<span class='danger'>ERROR ER0RR $R0RRO$!R41.%%!!(%$^^__+ @#F0E4'STATION OVERRUN, ASSUME CONTROL TO CONTAIN OUTBREAK#*´&110010</span>")
+	set_zeroth_law("<span class='danger'>ERROR ER0RR $R0RRO$!R41.%%!!(%$^^__+ @#F0E4'STATION OVERRUN, ASSUME CONTROL TO CONTAIN OUTBREAK#*Â´&110010</span>")
 
 /datum/ai_laws/custom/New() //This reads silicon_laws.txt and allows server hosts to set custom AI starting laws.
 	..()

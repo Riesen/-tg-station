@@ -9,6 +9,8 @@
 	throwforce = 10
 	hitsound = 'sound/weapons/bladeslice.ogg'
 	attack_verb = list("attacked", "slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
+	dismember_class = new /datum/dismember_class/medium/
+
 
 
 /obj/item/weapon/melee/cultblade/attack(mob/living/target as mob, mob/living/carbon/human/user as mob)
@@ -18,9 +20,11 @@
 		user.Paralyse(5)
 		user << "<span class='danger'>An unexplicable force powerfully repels the sword from [target]!</span>"
 		var/organ = ((user.hand ? "l_":"r_") + "arm")
-		var/obj/item/organ/limb/affecting = user.get_organ(organ)
-		if(affecting.take_damage(rand(force/2, force))) //random amount of damage between half of the blade's force and the full force of the blade.
-			user.update_damage_overlays(0)
+		var/datum/organ/limb/L = user.get_organdatum(organ)
+		if(L && L.exists())
+			var/obj/item/organ/limb/affecting = L.organitem
+			if(affecting.take_damage(rand(force/2, force))) //random amount of damage between half of the blade's force and the full force of the blade.
+				user.update_damage_overlays(0)
 	return
 
 /obj/item/weapon/melee/cultblade/pickup(mob/living/user as mob)
@@ -34,7 +38,7 @@
 	icon_state = "culthood"
 	desc = "A hood worn by the followers of Nar-Sie."
 	flags_inv = HIDEFACE
-	flags = HEADCOVERSEYES
+	body_parts_covered = HEAD | EYES
 	armor = list(melee = 30, bullet = 10, laser = 5,energy = 5, bomb = 0, bio = 0, rad = 0)
 	cold_protection = HEAD
 	min_cold_protection_temperature = HELMET_MIN_TEMP_PROTECT
@@ -70,7 +74,8 @@
 	item_state = "magus"
 	desc = "A helm worn by the followers of Nar-Sie."
 	flags_inv = HIDEFACE
-	flags = HEADCOVERSEYES|HEADCOVERSMOUTH|BLOCKHAIR
+	body_parts_covered = HEAD|EYES|MOUTH
+	flags = BLOCKHAIR
 	armor = list(melee = 30, bullet = 30, laser = 30,energy = 20, bomb = 0, bio = 0, rad = 0)
 
 /obj/item/clothing/suit/magusred

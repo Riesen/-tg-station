@@ -116,7 +116,7 @@
 	build_path = /obj/machinery/computer/robotics
 	origin_tech = "programming=3"
 /obj/item/weapon/circuitboard/cloning
-	name = "circuit board (Cloning)"
+	name = "Circuit board (Cloning Console)"
 	build_path = /obj/machinery/computer/cloning
 	origin_tech = "programming=3;biotech=3"
 /obj/item/weapon/circuitboard/arcade/battle
@@ -188,10 +188,6 @@
 	name = "circuit board (Telecommunications Server Monitor)"
 	build_path = /obj/machinery/computer/telecomms/server
 	origin_tech = "programming=3"
-/obj/item/weapon/circuitboard/comm_traffic
-	name = "circuitboard (Telecommunications Traffic Control)"
-	build_path = /obj/machinery/computer/telecomms/traffic
-	origin_tech = "programming=3"
 /*/obj/item/weapon/circuitboard/curefab
 	name = "circuit board (Cure fab)"
 	build_path = /obj/machinery/computer/curer
@@ -247,6 +243,10 @@
 	build_path = /obj/machinery/computer/libraryconsole
 	origin_tech = "programming=1"
 
+/obj/item/weapon/circuitboard/rcon_console
+	name = "circuit board (RCON remote control console)"
+	build_path = /obj/machinery/computer/rcon
+	origin_tech = "programming=4;engineering=3;powerstorage=5"
 
 /obj/item/weapon/circuitboard/supplycomp/attackby(obj/item/I as obj, mob/user as mob, params)
 	if(istype(I,/obj/item/device/multitool))
@@ -310,7 +310,7 @@
 			if(istype(P, /obj/item/weapon/wrench))
 				playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
 				user << "<span class='notice'>You start wrenching the frame into place.</span>"
-				if(do_after(user, 20))
+				if(do_after(user, 20, target = src))
 					user << "<span class='notice'>You've wrenched the frame into place.</span>"
 					anchored = 1
 					state = 1
@@ -322,7 +322,7 @@
 					return
 				playsound(src.loc, 'sound/items/Welder.ogg', 50, 1)
 				user << "<span class='notice'>You start deconstructing the frame.</span>"
-				if(do_after(user, 20))
+				if(do_after(user, 20, target = src))
 					if(!src || !WT.isOn()) return
 					user << "<span class='notice'>You've deconstructed the frame.</span>"
 					var/obj/item/stack/sheet/metal/M = new (loc, 5)
@@ -332,7 +332,7 @@
 			if(istype(P, /obj/item/weapon/wrench))
 				playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
 				user << "<span class='notice'>You start to unfasten the frame.</span>"
-				if(do_after(user, 20))
+				if(do_after(user, 20, target = src))
 					user << "<span class='notice'>You've unfastened the frame.</span>"
 					anchored = 0
 					state = 0
@@ -372,7 +372,7 @@
 				if(C.get_amount() >= 5)
 					playsound(src.loc, 'sound/items/Deconstruct.ogg', 50, 1)
 					user << "<span class='notice'>You start adding cables to the frame.</span>"
-					if(do_after(user, 20))
+					if(do_after(user, 20, target = src))
 						if(C.get_amount() >= 5 && state == 2)
 							C.use(5)
 							user << "<span class='notice'>You've added cables to the frame.</span>"
@@ -398,7 +398,7 @@
 				else
 					playsound(src.loc, 'sound/items/Deconstruct.ogg', 50, 1)
 					user << "<span class='notice'>You start to put in the glass panel.</span>"
-					if(do_after(user, 20))
+					if(do_after(user, 20, target = src))
 						if(G.get_amount() >= 2 && state == 3)
 							G.use(2)
 							user << "<span class='notice'>You've put in the glass panel.</span>"

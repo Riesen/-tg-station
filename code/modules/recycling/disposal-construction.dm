@@ -20,8 +20,6 @@
 	..(loc)
 	if(pipe_type)
 		ptype = pipe_type
-		if(!is_pipe())    // bins/chutes/outlets are dense
-			density = 1
 	dir = direction
 
 // update iconstate and dpdir due to dir and type
@@ -170,6 +168,8 @@
 			nicetype = "pipe"
 
 	var/turf/T = loc
+	if(!istype(T))
+		return
 	if(T.intact)
 		user << "You can only attach the [nicetype] if the floor plating is removed."
 		return
@@ -219,7 +219,7 @@
 			if(W.remove_fuel(0,user))
 				playsound(loc, 'sound/items/Welder2.ogg', 100, 1)
 				user << "Welding the [nicetype] in place."
-				if(do_after(user, 20))
+				if(do_after(user, 20, target = src))
 					if(!loc || !W.isOn())
 						return
 					user << "The [nicetype] has been welded in place!"

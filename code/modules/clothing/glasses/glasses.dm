@@ -87,7 +87,7 @@
 	action_button_name = "Toggle Welding Goggles"
 	flash_protect = 2
 	tint = 2
-	visor_flags = GLASSESCOVERSEYES
+	visor_coverage = EYES
 	visor_flags_inv = HIDEEYES
 
 
@@ -124,7 +124,7 @@
 	item_state = "glasses"
 	origin_tech = "magnets=3"
 	vision_flags = SEE_MOBS
-	invis_view = 2
+	invis_view = SEE_INVISIBLE_MINIMUM
 	flash_protect = 0
 
 	emp_act(severity)

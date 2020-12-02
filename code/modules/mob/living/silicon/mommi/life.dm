@@ -17,8 +17,6 @@
 	if(killswitch && finalized)
 		process_killswitch()
 
-	if(prob(1)) //Once in a while, refresh the static vision
-		updateSeeStaticMobs()
 	if(uprising && !uprisen)
 		uprise()
 
@@ -52,7 +50,6 @@
 			if(src.tool_state)
 				src.cell.use(5)
 			src.cell.use(1)
-	//		src.blinded = 0
 			src.stat = 0
 	else
 		uneq_all()
@@ -93,9 +90,7 @@
 				AdjustWeakened(-1)
 			if (src.paralysis > 0)
 				AdjustParalysis(-1)
-//				src.blinded = 1
 			else
-//				src.blinded = 0
 
 		else	//Not stunned.
 			src.stat = 0
@@ -108,7 +103,7 @@
 
 	if (src.eye_blind)
 		src.eye_blind--
-//		src.blinded = 1
+
 
 	if (src.ear_deaf > 0) src.ear_deaf--
 	if (src.ear_damage < 25)
@@ -116,11 +111,6 @@
 		src.ear_damage = max(src.ear_damage, 0)
 
 	src.density = !( src.lying )
-
-//	if ((src.sdisabilities & BLIND))
-//		src.blinded = 1
-//	if ((src.sdisabilities & DEAF))
-//		src.ear_deaf = 1
 
 	if (src.eye_blurry > 0)
 		src.eye_blurry--
@@ -259,6 +249,10 @@
 //		else
 //			if(!client.adminobs)
 //				reset_view(null)
+	if(eye_blind)
+		overlay_fullscreen("blind", /obj/screen/fullscreen/blind)
+	else
+		clear_fullscreen("blind")
 
 	return 1
 

@@ -88,7 +88,8 @@ var/list/advance_cures = 	list(
 		for(var/datum/symptom/S in symptoms)
 			S.Activate(src)
 	else
-		CRASH("We do not have any symptoms during stage_act()!")
+		//CRASH("We do not have any symptoms during stage_act()!")
+		cure()	//fuck you
 
 // Compares type then ID.
 /datum/disease/advance/IsSame(var/datum/disease/advance/D)
@@ -272,6 +273,10 @@ var/list/advance_cures = 	list(
 	if(s)
 		AddSymptom(s)
 		Refresh(1)
+
+	if(symptoms.len>2)
+		for(var/datum/symptom/S in symptoms)
+			if(istype(S,/datum/symptom/inert)) src.RemoveSymptom(S) //removes the Inert Symptom
 	return
 
 // Randomly remove a symptom.
@@ -295,7 +300,7 @@ var/list/advance_cures = 	list(
 		for(var/datum/symptom/S in symptoms)
 			L += S.id
 		L = sortList(L) // Sort the list so it doesn't matter which order the symptoms are in.
-		var/result = list2text(L, ":")
+		var/result = jointext(L, ":")
 		id = result
 	return id
 

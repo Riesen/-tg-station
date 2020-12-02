@@ -39,14 +39,7 @@
 	var/cold_damage_per_tick = 2	//same as heat_damage_per_tick, only if the bodytemperature it's lower than minbodytemp
 
 	//Atmos effect - Yes, you can make creatures that require plasma or co2 to survive. N2O is a trace gas and handled separately, hence why it isn't here. It'd be hard to add it. Hard and me don't mix (Yes, yes make all the dick jokes you want with that.) - Errorage
-	var/min_oxy = 5
-	var/max_oxy = 0					//Leaving something at 0 means it's off - has no maximum
-	var/min_tox = 0
-	var/max_tox = 1
-	var/min_co2 = 0
-	var/max_co2 = 5
-	var/min_n2 = 0
-	var/max_n2 = 0
+	var/list/atmos_requirements = list("min_oxy" = 5, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 1, "min_co2" = 0, "max_co2" = 5, "min_n2" = 0, "max_n2" = 0) //Leaving something at 0 means it's off - has no maximum
 	var/unsuitable_atmos_damage = 2	//This damage is taken when atmos doesn't fit all the requirements above
 
 
@@ -67,6 +60,7 @@
 
 	var/supernatural = 0
 	var/purge = 0
+	var/flying = 0 //whether it's flying or touching the ground.
 
 	//simple_animal access
 	var/obj/item/weapon/card/id/access_card = null	//innate access uses an internal ID card
@@ -80,56 +74,76 @@
 
 /mob/living/simple_animal/Login()
 	if(src && src.client)
-		src.client.screen = null
+		src.client.screen = list()
+		client.screen += client.void
+
 	..()
 
 /mob/living/simple_animal/updatehealth()
 	return
 
+/mob/living/simple_animal/updatehealth()
+	..()
+	health = Clamp(health, 0, maxHealth)
+
 /mob/living/simple_animal/Life()
+	if(..()) //alive
+		if(!ckey && !key && !client)
+			handle_automated_movement()
+			handle_automated_action()
+			handle_automated_speech()
+		return 1
 
-	update_gravity(mob_has_gravity())
+/mob/living/simple_animal/handle_regular_status_updates()
+	if(..()) //alive
+		if(health < 1)
+			death()
+			return 0
+		return 1
 
-	//Health
-	if(stat == DEAD)
-		if(health > 0)
-			icon_state = icon_living
-			dead_mob_list -= src
-			living_mob_list += src
-			stat = CONSCIOUS
-			density = 1
-			update_canmove()
-		return 0
+/mob/living/simple_animal/handle_disabilities()
+	//Eyes
+	if(disabilities & BLIND || stat)
+		eye_blind = max(eye_blind, 1)
+	else
+		if(eye_blind)
+			eye_blind = 0
+		if(eye_blurry)
+			eye_blurry = 0
+		if(eye_stat)
+			eye_stat = 0
 
+	//Ears
+	if(disabilities & DEAF)
+		setEarDamage(-1, max(ear_deaf, 1))
+	else if(ear_damage < 100)
+		setEarDamage(0, 0)
 
-	if(health < 1 && stat != DEAD)
-		Die()
+/mob/living/simple_animal/handle_status_effects()
+	..()
+	if(stuttering)
+		stuttering = 0
 
-	if(health > maxHealth)
-		health = maxHealth
+	if(druggy)
+		druggy = 0
 
-	if(stunned)
-		AdjustStunned(-1)
-	if(weakened)
-		AdjustWeakened(-1)
-	if(paralysis)
-		AdjustParalysis(-1)
+/mob/living/simple_animal/proc/handle_automated_action()
+	return
 
-	adjustEarDamage((ear_damage < 25 ? -0.05 : 0), -1)
-
-	//Movement
-	if(!client && !stop_automated_movement && wander)
+/mob/living/simple_animal/proc/handle_automated_movement()
+	if(!stop_automated_movement && wander)
 		if(isturf(src.loc) && !resting && !buckled && canmove)		//This is so it only moves if it's not inside a closet, gentics machine, etc.
 			turns_since_move++
 			if(turns_since_move >= turns_per_move)
-				if(!(stop_automated_movement_when_pulled && pulledby)) //Soma animals don't move when pulled
+				if(!(stop_automated_movement_when_pulled && pulledby)) //Some animals don't move when pulled
 					var/anydir = pick(cardinal)
 					if(Process_Spacemove(anydir))
 						Move(get_step(src, anydir), anydir)
 						turns_since_move = 0
+			return 1
 
-	//Speaking
-	if(!client && speak_chance)
+/mob/living/simple_animal/proc/handle_automated_speech()
+	if(speak_chance)
 		if(rand(0,200) < speak_chance)
 			if(speak && speak.len)
 				if((emote_hear && emote_hear.len) || (emote_see && emote_see.len))
@@ -163,13 +177,13 @@
 						emote("me", 2, pick(emote_hear))
 
 
-	//Atmos
+/mob/living/simple_animal/handle_environment(datum/gas_mixture/environment)
 	var/atmos_suitable = 1
 
 	var/atom/A = src.loc
 	if(isturf(A))
 		var/turf/T = A
-		var/areatemp = T.temperature
+		var/areatemp = get_temperature(environment)
 		if( abs(areatemp - bodytemperature) > 40 )
 			var/diff = areatemp - bodytemperature
 			diff = diff / 5
@@ -184,40 +198,38 @@
 				var/n2  = ST.air.nitrogen
 				var/co2 = ST.air.carbon_dioxide
 
-				if(min_oxy)
-					if(oxy < min_oxy)
-						atmos_suitable = 0
-				if(max_oxy)
-					if(oxy > max_oxy)
-						atmos_suitable = 0
-				if(min_tox)
-					if(tox < min_tox)
-						atmos_suitable = 0
-				if(max_tox)
-					if(tox > max_tox)
-						atmos_suitable = 0
-				if(min_n2)
-					if(n2 < min_n2)
-						atmos_suitable = 0
-				if(max_n2)
-					if(n2 > max_n2)
-						atmos_suitable = 0
-				if(min_co2)
-					if(co2 < min_co2)
-						atmos_suitable = 0
-				if(max_co2)
-					if(co2 > max_co2)
-						atmos_suitable = 0
+				if(atmos_requirements["min_oxy"] && oxy < atmos_requirements["min_oxy"])
+					atmos_suitable = 0
+				else if(atmos_requirements["max_oxy"] && oxy > atmos_requirements["max_oxy"])
+					atmos_suitable = 0
+				else if(atmos_requirements["min_tox"] && tox < atmos_requirements["min_tox"])
+					atmos_suitable = 0
+				else if(atmos_requirements["max_tox"] && tox > atmos_requirements["max_tox"])
+					atmos_suitable = 0
+				else if(atmos_requirements["min_n2"] && n2 < atmos_requirements["min_n2"])
+					atmos_suitable = 0
+				else if(atmos_requirements["max_n2"] && n2 > atmos_requirements["max_n2"])
+					atmos_suitable = 0
+				else if(atmos_requirements["min_co2"] && co2 < atmos_requirements["min_co2"])
+					atmos_suitable = 0
+				else if(atmos_requirements["max_co2"] && co2 > atmos_requirements["max_co2"])
+					atmos_suitable = 0
 
-	//Atmos effect
+				if(!atmos_suitable)
+					adjustBruteLoss(unsuitable_atmos_damage)
+
+		else
+			if(atmos_requirements["min_oxy"] || atmos_requirements["min_tox"] || atmos_requirements["min_n2"] || atmos_requirements["min_co2"])
+				adjustBruteLoss(unsuitable_atmos_damage)
+
+	handle_temperature_damage()
+
+/mob/living/simple_animal/proc/handle_temperature_damage()
 	if(bodytemperature < minbodytemp)
-		adjustBruteLoss(cold_damage_per_tick)
+		adjustBruteLoss(2)
 	else if(bodytemperature > maxbodytemp)
-		adjustBruteLoss(heat_damage_per_tick)
+		adjustBruteLoss(3)
 
-	if(!atmos_suitable)
-		adjustBruteLoss(unsuitable_atmos_damage)
-	return 1
 
 /mob/living/simple_animal/gib(var/animation = 0)
 	if(icon_gib)
@@ -234,12 +246,14 @@
 	adjustBruteLoss(20)
 	return
 
-/mob/living/simple_animal/say_quote(var/text)
-	if(speak_emote && speak_emote.len)
+/mob/living/simple_animal/say_quote(input, list/spans)
+	var/ending = copytext(input, length(input))
+	if(speak_emote && speak_emote.len && ending != "?" && ending != "!")
 		var/emote = pick(speak_emote)
 		if(emote)
-			return "[emote], \"[text]\""
-	return "says, \"[text]\"";
+			input = attach_spans(input, spans)
+			return "[emote], \"[input]\""
+	return ..()
 
 /mob/living/simple_animal/emote(var/act, var/m_type=1, var/message = null)
 	if(stat)
@@ -371,8 +385,13 @@
 			damage = O.force
 			if (O.damtype == STAMINA)
 				damage = 0
-			visible_message("<span class='danger'>[user] has [O.attack_verb.len ? "[pick(O.attack_verb)]": "attacked"] [src] with [O]!</span>",\
-							"<span class='userdanger'>[user] has [O.attack_verb.len ? "[pick(O.attack_verb)]": "attacked"] you with [O]!</span>")
+			if(O.attack_verb && islist(O.attack_verb))
+				visible_message("<span class='danger'>[user] has [O.attack_verb.len ? "[pick(O.attack_verb)]": "attacked"] [src] with [O]!</span>",\
+								"<span class='userdanger'>[user] has [O.attack_verb.len ? "[pick(O.attack_verb)]": "attacked"] you with [O]!</span>")
+			else
+				visible_message("<span class='danger'>[user] has attacked [src] with [O]!</span>",\
+								"<span class='userdanger'>[user] has attacked you with [O]!</span>")
+
 		else
 			visible_message("<span class='danger'>[O] bounces harmlessly off of [src].</span>",\
 							"<span class='userdanger'>[O] bounces harmlessly off of [src].</span>")
@@ -395,22 +414,15 @@
 	if(statpanel("Status"))
 		stat(null, "Health: [round((health / maxHealth) * 100)]%")
 
-/mob/living/simple_animal/proc/Die()
-	health = 0 // so /mob/living/simple_animal/Life() doesn't magically revive them
-	dead_mob_list += src
+/mob/living/simple_animal/death(gibbed)
+	health = 0
 	icon_state = icon_dead
 	stat = DEAD
+	lying = 1
 	density = 0
-	return
-
-/mob/living/simple_animal/death(gibbed)
-	if(stat == DEAD)
-		return
-
 	if(!gibbed)
 		visible_message("<span class='danger'>\the [src] stops moving...</span>")
-
-	Die()
+	..()
 
 /mob/living/simple_animal/ex_act(severity, target)
 	..()
@@ -429,7 +441,7 @@
 /mob/living/simple_animal/adjustBruteLoss(damage)
 	health = Clamp(health - damage, 0, maxHealth)
 	if(health < 1 && stat != DEAD)
-		Die()
+		death(0)
 
 /mob/living/simple_animal/proc/CanAttack(var/atom/the_target)
 	if(see_invisible < the_target.invisibility)
@@ -454,6 +466,9 @@
 
 /mob/living/simple_animal/revive()
 	health = maxHealth
+	icon_state = icon_living
+	density = initial(density)
+	update_canmove()
 	..()
 
 /mob/living/simple_animal/proc/make_babies() // <3 <3 <3
@@ -503,3 +518,10 @@
 		return
 	else
 		..()
+
+
+/mob/living/simple_animal/update_canmove()
+	canmove = ..()
+	density = initial(density) & !lying // 0 density if it's not dense or if it's dead
+	return canmove
+

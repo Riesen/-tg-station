@@ -5,7 +5,7 @@
 	name = "Light-emtter"
 	anchored = 1
 	unacidable = 1
-	luminosity = 8
+	light_range = 8
 
 /**********************Miner Lockers**************************/
 
@@ -53,12 +53,13 @@
 	throwforce = 10.0
 	item_state = "pickaxe"
 	w_class = 4.0
-	m_amt = 3750 //one sheet, but where can you make them?
+	materials = list(MAT_METAL=3750)
 	var/digspeed = 40
 	var/list/digsound = list('sound/effects/picaxe1.ogg','sound/effects/picaxe2.ogg','sound/effects/picaxe3.ogg')
 	origin_tech = "materials=1;engineering=1"
 	attack_verb = list("hit", "pierced", "sliced", "attacked")
 	var/excavation_amount = 100
+
 
 /obj/item/weapon/pickaxe/proc/playDigSound()
 	playsound(src, pick(digsound),50,1)
@@ -71,6 +72,7 @@
 	origin_tech = "materials=4;engineering=3"
 	desc = "A pickaxe with a diamond pick head. Extremely robust at cracking rock walls and digging up dirt."
 
+
 /obj/item/weapon/pickaxe/drill
 	name = "mining drill"
 	icon_state = "handdrill"
@@ -80,7 +82,6 @@
 	hitsound = 'sound/weapons/drill.ogg'
 	origin_tech = "materials=2;powerstorage=3;engineering=2"
 	desc = "An electric mining drill for the especially scrawny."
-
 
 
 
@@ -110,7 +111,7 @@
 	hitsound = 'sound/weapons/sonic_jackhammer.ogg'
 	desc = "Cracks rocks with sonic blasts, and doubles as a demolition power tool for smashing walls.."
 
-
+/*
 /obj/item/weapon/pickaxe/plasmacutter
 	name = "plasma cutter"
 	icon_state = "plasmacutter"
@@ -124,7 +125,7 @@
 	origin_tech = "materials=4;plasmatech=3;engineering=3"
 	desc = "A rock cutter that uses bursts of hot plasma. You could use it to cut limbs off of xenos! Or, you know, mine stuff."
 
-
+*/
 /*****************************Shovel********************************/
 
 /obj/item/weapon/shovel
@@ -138,7 +139,7 @@
 	throwforce = 4.0
 	item_state = "shovel"
 	w_class = 3.0
-	m_amt = 50
+	materials = list(MAT_METAL=50)
 	origin_tech = "materials=1;engineering=1"
 	attack_verb = list("bashed", "bludgeoned", "thrashed", "whacked")
 

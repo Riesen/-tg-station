@@ -34,10 +34,27 @@
 	..(process, D, copy)
 
 
+// Toxin Comp
+// shit nigga do you expect me to rng it up just to test some shit
+/datum/disease/advance/converter/New(var/process = 1, var/datum/disease/advance/D, var/copy = 0)
+	if(!D)
+		name = "Toxin Coverter"
+		symptoms = list(new/datum/symptom/damage_converter)
+	..(process, D, copy)
+
+
 // Hullucigen
 
 /datum/disease/advance/hullucigen/New(var/process = 1, var/datum/disease/advance/D, var/copy = 0)
 	if(!D)
 		name = "Reality Impairment"
 		symptoms = list(new/datum/symptom/hallucigen)
+	..(process, D, copy)
+
+//Inert Virus
+
+/datum/disease/advance/inert/New(var/process = 1, var/datum/disease/advance/D, var/copy = 0)
+	if(!D)
+		name = "Inert Virus"
+		symptoms = list(new/datum/symptom/inert)
 	..(process, D, copy)

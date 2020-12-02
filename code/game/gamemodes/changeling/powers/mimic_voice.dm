@@ -13,6 +13,7 @@
 	if(changeling.mimicing)
 		changeling.mimicing = ""
 		changeling.chem_recharge_slowdown -= 0.5
+		changeling.chem_recharge_slowdown = max(0, changeling.chem_recharge_slowdown)
 		user << "<span class='notice'>We return our vocal glands to their original position.</span>"
 		return
 

@@ -111,7 +111,7 @@ var/bomb_set
 					lastentered = text("[]", href_list["type"])
 					if (text2num(lastentered) == null)
 						var/turf/LOC = get_turf(usr)
-						message_admins("[key_name_admin(usr)] tried to exploit a nuclear bomb by entering non-numerical codes: <a href='?_src_=vars;Vars=\ref[src]'>[lastentered]</a> ! ([LOC ? "<a href='?_src_=holder;adminplayerobservecoodjump=1;X=[LOC.x];Y=[LOC.y];Z=[LOC.z]'>JMP</a>" : "null"])", 0)
+						message_admins("[key_name_admin(usr)] (<A HREF='?_src_=holder;adminplayerobservefollow=\ref[usr]'>FLW</A>) tried to exploit a nuclear bomb by entering non-numerical codes: <a href='?_src_=vars;Vars=\ref[src]'>[lastentered]</a> ! ([LOC ? "<a href='?_src_=holder;adminplayerobservecoodjump=1;X=[LOC.x];Y=[LOC.y];Z=[LOC.z]'>JMP</a>" : "null"])", 0)
 						log_admin("EXPLOIT : [key_name(usr)] tried to exploit a nuclear bomb by entering non-numerical codes: [lastentered] !")
 					else
 						src.code += lastentered
@@ -133,7 +133,8 @@ var/bomb_set
 					src.icon_state = "nuclearbomb2"
 					if(!src.safety)
 						bomb_set = 1//There can still be issues with this reseting when there are multiple bombs. Not a big deal tho for Nuke/N
-						src.previous_level = "[get_security_level()]"
+						var/current_level = get_security_level()
+						previous_level = "[current_level == "delta" ? "red" : current_level ]" //If a nuke is armed during Delta, it will stand down to Red Alert when disarmed.
 						set_security_level("delta")
 					else
 						bomb_set = 0
@@ -148,6 +149,7 @@ var/bomb_set
 				if(safety)
 					src.timing = 0
 					bomb_set = 0
+					set_security_level("[previous_level]")
 			if (href_list["anchor"])
 				if(!isinspace()&&(!immobile))
 					src.anchored = !( src.anchored )
@@ -213,17 +215,7 @@ var/bomb_set
 														//kinda shit but I couldn't  get permission to do what I wanted to do.
 
 		if(!ticker.mode.check_finished())//If the mode does not deal with the nuke going off so just reboot because everyone is stuck as is
-			world << "<B>Resetting in 30 seconds!</B>"
-
-			feedback_set_details("end_error","nuke - unhandled ending")
-
-			if(blackbox)
-				blackbox.save_all_data_to_sql()
-			sleep(300)
-			log_game("Rebooting due to nuclear detonation")
-			kick_clients_in_lobby("<span class='danger'>The round came to an end with you in the lobby.</span>", 1) //second parameter ensures only afk clients are kicked
-			world.Reboot()
-			return
+			world.Reboot("Station destroyed by Nuclear Device.", "end_error", "nuke - unhandled ending")
 	return
 
 /*
@@ -243,12 +235,16 @@ This is here to make the tiles around the station mininuke change when it's arme
 
 
 //==========DAT FUKKEN DISK===============
+/obj/item/weapon/disk
+	icon = 'icons/obj/module.dmi'
+	w_class = 1
+	item_state = "card-id"
+	icon_state = "datadisk0"
+
 /obj/item/weapon/disk/nuclear
 	name = "nuclear authentication disk"
 	desc = "Better keep this safe."
 	icon_state = "nucleardisk"
-	item_state = "card-id"
-	w_class = 1.0
 
 /obj/item/weapon/disk/nuclear/New()
 	..()
@@ -258,7 +254,7 @@ This is here to make the tiles around the station mininuke change when it's arme
 	var/turf/disk_loc = get_turf(src)
 	if(disk_loc.z > ZLEVEL_CENTCOM)
 		get(src, /mob) << "<span class='danger'>You can't help but feel that you just lost something back there...</span>"
-		Destroy()
+		qdel(src)
 
 /obj/item/weapon/disk/nuclear/Destroy()
 	if(blobstart.len > 0)
@@ -267,7 +263,7 @@ This is here to make the tiles around the station mininuke change when it's arme
 		var/turf/diskturf = get_turf(src)
 		message_admins("[src] has been destroyed in ([diskturf.x], [diskturf.y] ,[diskturf.z] - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[diskturf.x];Y=[diskturf.y];Z=[diskturf.z]'>JMP</a>). Moving it to ([NEWDISK.x], [NEWDISK.y], [NEWDISK.z] - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[NEWDISK.x];Y=[NEWDISK.y];Z=[NEWDISK.z]'>JMP</a>).")
 		log_game("[src] has been destroyed in ([diskturf.x], [diskturf.y] ,[diskturf.z]). Moving it to ([NEWDISK.x], [NEWDISK.y], [NEWDISK.z]).")
-		del(src) //Needed to clear all references to it
+		return QDEL_HINT_HARDDEL_NOW //Needed to clear all references to it
 	else
 		ERROR("[src] was supposed to be destroyed, but we were unable to locate a blobstart landmark to spawn a new one.")
-	return 1 // Cancel destruction.
+	return QDEL_HINT_LETMELIVE // Cancel destruction.

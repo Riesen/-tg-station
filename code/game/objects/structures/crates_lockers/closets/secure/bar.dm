@@ -2,6 +2,7 @@
 	name = "booze storage"
 	req_access = list(access_bar)
 	icon_state = "cabinet"
+	weldable = 0
 
 /obj/structure/closet/secure_closet/bar/New()
 	..()

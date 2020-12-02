@@ -82,7 +82,7 @@
 /mob/living/carbon/human/interactive/proc/random()
 	//this is here because this has no client/prefs/brain whatever.
 	underwear = random_underwear(gender)
-	skin_tone = random_skin_tone()
+	set_skin_tone(random_skin_tone())
 	hair_style = random_hair_style(gender)
 	facial_hair_style = random_facial_hair_style(gender)
 	hair_color = random_short_color()
@@ -129,6 +129,7 @@
 	src.equip_to_slot_or_del(MYPDA, slot_belt)
 	zone_sel = new /obj/screen/zone_sel()
 	zone_sel.selecting = "chest"
+	/*
 	if(prob(10)) //my x is augmented
 		//arms
 		if(prob(rand(FUZZY_CHANCE_LOW,FUZZY_CHANCE_HIGH)))
@@ -159,9 +160,10 @@
 			organs += new /obj/item/organ/limb/robot/head
 		for(var/obj/item/organ/limb/LIMB in organs)
 			LIMB.owner = src
+	*/
 	update_icons()
 	update_damage_overlays(0)
-	update_augments()
+	update_body_parts()
 
 	hand = 0
 
@@ -457,7 +459,7 @@
 /mob/living/carbon/human/interactive/proc/target_filter(var/target)
 	var/list/L = target
 	for(var/atom/A in target)
-		if(istype(A,/area) || istype(A,/turf/unsimulated) || istype(A,/turf/space))
+		if(istype(A,/area) || istype(A,/turf/space))
 			L -= A
 	return L
 

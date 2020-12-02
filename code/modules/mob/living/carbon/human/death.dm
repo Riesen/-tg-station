@@ -18,10 +18,12 @@
 
 /mob/living/carbon/human/death(gibbed)
 	if(stat == DEAD)	return
+	if(status_flags & FAKEDEATH)	return
 	if(healths)		healths.icon_state = "health5"
 	stat = DEAD
 	dizziness = 0
 	jitteriness = 0
+	heart_attack = 0
 
 	if(istype(loc, /obj/mecha))
 		var/obj/mecha/M = loc
@@ -30,9 +32,6 @@
 
 	if(!gibbed)
 		emote("deathgasp") //let the world KNOW WE ARE DEAD
-
-		update_canmove()
-		if(client) blind.layer = 0
 
 	if(dna)
 		dna.species.spec_death(gibbed,src)
@@ -55,6 +54,8 @@
 	if(disabilities & HUSK)	return
 	disabilities |= HUSK
 	status_flags |= DISFIGURED	//makes them unknown without fucking up other stuff like admintools
+	if(!organsystem)
+		return 1
 	return 1
 
 /mob/living/carbon/human/ChangeToHusk()
@@ -62,6 +63,7 @@
 	if(.)
 		update_hair()
 		update_body()
+		update_body_parts()
 
 /mob/living/carbon/proc/Drain()
 	ChangeToHusk()

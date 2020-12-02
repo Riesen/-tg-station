@@ -57,41 +57,41 @@
 
 	age = rand(1,999)
 
-	if(container.mineralName)
-		switch(container.mineralName)
-			if("Uranium")
+	if(container.mineralType)
+		switch(container.mineralType)
+			if(/obj/item/weapon/ore/uranium)
 				age_million = rand(1, 704)
 				age_thousand = rand(1,999)
 				find_presence["potassium"] = rand(1,1000) / 100
 				source_mineral = "potassium"
-			if("Iron")
+			if(/obj/item/weapon/ore/iron)
 				age_thousand = rand(1, 999)
 				age_million = rand(1, 999)
 				find_presence["iron"] = rand(1,1000) / 100
 				source_mineral = "iron"
-			if("Diamond")
+			if(/obj/item/weapon/ore/diamond)
 				age_thousand = rand(1,999)
 				age_million = rand(1,999)
 				find_presence["nitrogen"] = rand(1,1000) / 100
 				source_mineral = "nitrogen"
-			if("Gold")
+			if(/obj/item/weapon/ore/gold)
 				age_thousand = rand(1,999)
 				age_million = rand(1,999)
 				age_billion = rand(3,4)
 				find_presence["iron"] = rand(1,1000) / 100
 				source_mineral = "iron"
-			if("Silver")
+			if(/obj/item/weapon/ore/silver)
 				age_thousand = rand(1,999)
 				age_million = rand(1,999)
 				find_presence["iron"] = rand(1,1000) / 100
 				source_mineral = "iron"
-			if("Plasma")
+			if(/obj/item/weapon/ore/plasma)
 				age_thousand = rand(1,999)
 				age_million = rand(1,999)
 				age_billion = rand(10, 13)
 				find_presence["plasma"] = rand(1,1000) / 100
 				source_mineral = "plasma"
-			if("Bananium")
+			if(/obj/item/weapon/ore/bananium)
 				age = rand(-1,-999)				//thats the joke
 				age_thousand = rand(-1,-999)
 				find_presence["plasma"] = rand(1,1000) / 100
@@ -127,15 +127,15 @@
 		artifact_distance = rand()
 		artifact_id = container.artifact_find.artifact_id
 	else
-		if(master_controller) //Sanity check due to runtimes ~Z
-			for(var/turf/simulated/mineral/T in master_controller.artifact_spawning_turfs)
+		if(Master) //Sanity check due to runtimes ~Z
+			for(var/turf/simulated/mineral/T in Master.artifact_spawning_turfs)
 				if(T.artifact_find)
 					var/cur_dist = get_dist(container, T) * 2
 					if( (artifact_distance < 0 || cur_dist < artifact_distance) && cur_dist <= T.artifact_find.artifact_detect_range )
 						artifact_distance = cur_dist + rand() * 2 - 1
 						artifact_id = T.artifact_find.artifact_id
 				else
-					master_controller.artifact_spawning_turfs.Remove(T)
+					Master.artifact_spawning_turfs.Remove(T)
 
 /*
 #undef FIND_PLANT

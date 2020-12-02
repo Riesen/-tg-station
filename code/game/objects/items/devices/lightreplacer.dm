@@ -15,7 +15,7 @@
 //
 // HOW TO REFILL THE DEVICE
 //
-// It will need to be manually refilled with lights.
+// It will need to be manually refilled with lights or glass sheets.
 // If it's part of a robot module, it will charge when the Robot is inside a Recharge Station.
 //
 // EMAGGED FEATURES
@@ -41,7 +41,7 @@
 /obj/item/device/lightreplacer
 
 	name = "light replacer"
-	desc = "A device to automatically replace lights. Refill with working lightbulbs."
+	desc = "A device to automatically replace lights. Refill with working lightbulbs or sheets of glass."
 
 	icon = 'icons/obj/janitor.dmi'
 	icon_state = "lightreplacer0"
@@ -102,14 +102,14 @@
 		Emag()
 
 /obj/item/device/lightreplacer/attack_self(mob/user)
-	/* // This would probably be a bit OP. If you want it though, uncomment the code.
+	 // This would probably be a bit OP. If you want it though, uncomment the code.
 	if(isrobot(user))
 		var/mob/living/silicon/robot/R = user
 		if(R.emagged)
 			src.Emag()
 			usr << "You shortcircuit the [src]."
 			return
-	*/
+	
 	usr << "It has [uses] lights remaining."
 
 /obj/item/device/lightreplacer/update_icon()
@@ -144,7 +144,9 @@
 				var/obj/item/weapon/light/L1 = new target.light_type(target.loc)
 				L1.status = target.status
 				L1.rigged = target.rigged
-				L1.brightness = target.brightness
+				L1.brightness_range = target.brightness_range
+				L1.brightness_power = target.brightness_power
+				L1.brightness_color = target.brightness_color
 				L1.switchcount = target.switchcount
 				target.switchcount = 0
 				L1.update()
@@ -157,7 +159,9 @@
 			target.status = L2.status
 			target.switchcount = L2.switchcount
 			target.rigged = emagged
-			target.brightness = L2.brightness
+			target.brightness_range = L2.brightness_range
+			target.brightness_power = L2.brightness_power
+			target.brightness_color = L2.brightness_color
 			target.on = target.has_power()
 			target.update()
 			qdel(L2)

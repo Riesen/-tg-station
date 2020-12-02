@@ -5,12 +5,11 @@
 	health = 250
 	icon_state = "alienq_s"
 	status_flags = CANPARALYSE
-	heal_rate = 5
-	plasma_rate = 20
+	unique_name = 0
 	ventcrawler = 0 //pull over that ass too fat
 
 
-/mob/living/carbon/alien/humanoid/queen/New()
+/mob/living/carbon/alien/humanoid/queen/New(loc, var/datum/organsystem/humanoid/alien/drone/oldorgans)
 	create_reagents(100)
 
 	//there should only be one queen
@@ -23,12 +22,9 @@
 
 	real_name = src.name
 
-	AddAbility(new/obj/effect/proc_holder/alien/acid(null))
-	AddAbility(new/obj/effect/proc_holder/alien/neurotoxin(null))
-	AddAbility(new/obj/effect/proc_holder/alien/resin(null))
-	AddAbility(new/obj/effect/proc_holder/alien/lay_egg(null))
+	organsystem = new/datum/organsystem/humanoid/alien/queen(src, oldorgans)
 
-	..()
+	..(loc)
 
 /mob/living/carbon/alien/humanoid/queen/handle_hud_icons_health()
 	if (src.healths)
@@ -62,10 +58,9 @@
 	desc = "Lay an egg to produce huggers to impregnate prey with."
 	plasma_cost = 75
 	check_turf = 1
-
 	action_icon_state = "alien_egg"
 
-/obj/effect/proc_holder/alien/lay_egg/fire(var/mob/living/carbon/alien/user)
+/obj/effect/proc_holder/alien/lay_egg/fire(mob/living/carbon/user)
 	if(locate(/obj/structure/alien/egg) in get_turf(user))
 		user << "There's already an egg here."
 		return 0
@@ -78,15 +73,3 @@
 	icon_state = "queen_s"
 	pixel_x = -16
 	mob_size = MOB_SIZE_LARGE
-
-/mob/living/carbon/alien/humanoid/queen/large/update_icons()
-	update_hud()		//TODO: remove the need for this to be here
-	overlays.Cut()
-	if(stat == DEAD)
-		icon_state = "queen_dead"
-	else if(stat == UNCONSCIOUS || lying || resting)
-		icon_state = "queen_sleep"
-	else
-		icon_state = "queen_s"
-	for(var/image/I in overlays_standing)
-		overlays += I

@@ -272,6 +272,8 @@
 		head = null
 		if(I.flags & BLOCKHAIR)
 			update_hair(0)	//rebuild hair
+		sec_hud_set_ID()
+		sec_hud_set_security_status()
 		update_inv_head(0)
 	else if(I == ears)
 		ears = null
@@ -291,10 +293,12 @@
 				internals.icon_state = "internal0"
 			internal = null
 		sec_hud_set_ID()
+		sec_hud_set_security_status()
 		update_inv_wear_mask(0)
 	else if(I == wear_id)
 		wear_id = null
 		sec_hud_set_ID()
+		sec_hud_set_security_status()
 		update_inv_wear_id(0)
 	else if(I == r_store)
 		r_store = null
@@ -333,6 +337,7 @@
 			if(wear_mask.flags & BLOCKHAIR)
 				update_hair(redraw_mob)	//rebuild hair
 			sec_hud_set_ID()
+			sec_hud_set_security_status()
 			update_inv_wear_mask(redraw_mob)
 		if(slot_handcuffed)
 			handcuffed = I
@@ -352,6 +357,7 @@
 		if(slot_wear_id)
 			wear_id = I
 			sec_hud_set_ID()
+			sec_hud_set_security_status()
 			update_inv_wear_id(redraw_mob)
 		if(slot_ears)
 			ears = I
@@ -366,6 +372,8 @@
 			head = I
 			if(head.flags & BLOCKHAIR)
 				update_hair(redraw_mob)	//rebuild hair
+			sec_hud_set_ID()
+			sec_hud_set_security_status()
 			update_inv_head(redraw_mob)
 		if(slot_shoes)
 			shoes = I
@@ -396,3 +404,11 @@
 			src << "<span class='danger'>You are trying to equip this item to an unsupported inventory slot. Report this to a coder!</span>"
 			return
 
+
+
+/mob/living/carbon/human/get_multitool(var/active_only=0)
+	if(istype(get_active_hand(),/obj/item/device/multitool))
+		return get_active_hand()
+	if(active_only && istype(get_inactive_hand(),/obj/item/device/multitool))
+		return get_inactive_hand()
+	return null

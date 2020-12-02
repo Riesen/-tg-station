@@ -57,11 +57,17 @@
 	return 0
 
 //Checks for specific types in a list
-/proc/is_type_in_list(var/atom/A, var/list/L)
+/proc/is_type_in_list(atom/A, list/L)
+	if (!L.len)
+		return 0
+	if (!L[L[1]])
+		generate_type_list_cache(L)
+	return L[A.type]
+
+/proc/generate_type_list_cache(L)
 	for(var/type in L)
-		if(istype(A, type))
-			return 1
-	return 0
+		for(var/T in typesof(type))
+			L[T] = 1
 
 //Empties the list by setting the length to 0. Hopefully the elements get garbage collected
 /proc/clearlist(list/list)
@@ -345,3 +351,28 @@
 		if(D.vars.Find(varname))
 			if(D.vars[varname] == value)
 				return D
+
+
+// List of lists, sorts by element[key] - for things like crew monitoring computer sorting records by name.
+/proc/sortByKey(var/list/L, var/key)
+	if(L.len < 2)
+		return L
+	var/middle = L.len / 2 + 1
+	return mergeKeyedLists(sortByKey(L.Copy(0, middle), key), sortByKey(L.Copy(middle), key), key)
+
+/proc/mergeKeyedLists(var/list/L, var/list/R, var/key)
+	var/Li=1
+	var/Ri=1
+	var/list/result = new()
+	while(Li <= L.len && Ri <= R.len)
+		if(sorttext(L[Li][key], R[Ri][key]) < 1)
+			// Works around list += list2 merging lists; it's not pretty but it works
+			result += "temp item"
+			result[result.len] = R[Ri++]
+		else
+			result += "temp item"
+			result[result.len] = L[Li++]
+
+	if(Li <= L.len)
+		return (result + L.Copy(Li, 0))
+	return (result + R.Copy(Ri, 0))

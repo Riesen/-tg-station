@@ -123,6 +123,7 @@ update_flag
 	if (src.health <= 10)
 		var/atom/location = src.loc
 		location.assume_air(air_contents)
+		air_update_turf()
 
 		src.destroyed = 1
 		playsound(src.loc, 'sound/effects/spray.ogg', 10, 1, -3)
@@ -138,9 +139,9 @@ update_flag
 	else
 		return 1
 
-/obj/machinery/portable_atmospherics/canister/process()
+/obj/machinery/portable_atmospherics/canister/process_atmos()
 	if (destroyed)
-		return
+		return PROCESS_KILL
 
 	..()
 
@@ -176,8 +177,9 @@ update_flag
 	else
 		can_label = 0
 
+/obj/machinery/portable_atmospherics/canister/process()
 	src.updateDialog()
-	return
+	return ..()
 
 /obj/machinery/portable_atmospherics/canister/return_air()
 	return air_contents
@@ -257,6 +259,9 @@ update_flag
 /obj/machinery/portable_atmospherics/canister/attack_paw(var/mob/user as mob)
 	return src.attack_hand(user)
 
+/obj/machinery/portable_atmospherics/canister/attack_tk(var/mob/user as mob)
+	return src.attack_hand(user)
+
 /obj/machinery/portable_atmospherics/canister/attack_hand(var/mob/user as mob)
 	return src.ui_interact(user)
 
@@ -270,7 +275,7 @@ update_flag
 /obj/machinery/portable_atmospherics/canister/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null)
 	if (src.destroyed)
 		return
-	ui = SSnano.push_open_or_new_ui(user, src, ui_key, ui, "canister.tmpl", "Canister", 480, 400, 0)
+	ui = SSnano.push_open_or_new_ui(user, src, ui_key, ui, "canister.tmpl", "Canister", 480, 400, 10)
 
 /obj/machinery/portable_atmospherics/canister/get_ui_data()
 	var/data = list()
@@ -313,11 +318,11 @@ update_flag
 				else
 					logmsg = "Valve was <b>opened</b> by [key_name(usr)], starting the transfer into the <span class='boldannounce'>air</span><br>"
 					if(air_contents.toxins > 0)
-						message_admins("[key_name(usr)] (<A HREF='?_src_=holder;adminmoreinfo=\ref[usr]'>?</A>) opened a canister that contains plasma! (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
+						message_admins("[key_name_admin(usr)] (<A HREF='?_src_=holder;adminmoreinfo=\ref[usr]'>?</A>) (<A HREF='?_src_=holder;adminplayerobservefollow=\ref[usr]'>FLW</A>) opened a canister that contains plasma! (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
 						log_admin("[key_name(usr)] opened a canister that contains plasma at [x], [y], [z]")
 					var/datum/gas/sleeping_agent = locate(/datum/gas/sleeping_agent) in air_contents.trace_gases
 					if(sleeping_agent && (sleeping_agent.moles > 1))
-						message_admins("[key_name(usr)] (<A HREF='?_src_=holder;adminmoreinfo=\ref[usr]'>?</A>) opened a canister that contains N2O! (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
+						message_admins("[key_name_admin(usr)] (<A HREF='?_src_=holder;adminmoreinfo=\ref[usr]'>?</A>) (<A HREF='?_src_=holder;adminplayerobservefollow=\ref[usr]'>FLW</A>) opened a canister that contains N2O! (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
 						log_admin("[key_name(usr)] opened a canister that contains N2O at [x], [y], [z]")
 			investigate_log(logmsg, "atmos")
 			release_log += logmsg
@@ -325,6 +330,8 @@ update_flag
 
 		if (href_list["remove_tank"])
 			if(holding)
+				if(valve_open)
+					investigate_log("[key_name(usr)] removed the [holding], leaving the valve open and transfering into the <span class='boldannounce'>air</span><br>", "atmos")
 				holding.loc = loc
 				holding = null
 

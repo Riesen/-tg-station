@@ -1,7 +1,8 @@
 /obj/machinery/computer/teleporter
 	name = "Teleporter Control Console"
 	desc = "Used to control a linked teleportation Hub and Station."
-	icon_state = "teleport"
+	icon_screen = "teleport"
+	icon_keyboard = "teleport_key"
 	circuit = "/obj/item/weapon/circuitboard/teleporter"
 	var/obj/item/device/gps/locked = null
 	var/regime_set = "Teleporter"
@@ -19,6 +20,11 @@
 
 /obj/machinery/computer/teleporter/initialize()
 	link_power_station()
+
+/obj/machinery/computer/teleporter/Destroy()
+	if (power_station)
+		power_station.teleporter_console = null
+		power_station = null
 
 /obj/machinery/computer/teleporter/proc/link_power_station()
 	if(power_station)
@@ -58,6 +64,7 @@
 		if (istype(S, /turf))
 			usr.loc = S.loc // ye olde code ends
 			qdel(I)  //Delete the card once the nigga is yoinked
+			SSmob.set_clownplanet_mob_ai(AI_ON)
 	else
 		..()
 	return
@@ -113,10 +120,10 @@
 		return
 
 	if(!check_hub_connection())
-		usr << "<span class='warning'>Error: Unable to detect hub.</span>"
+		say("Error: Unable to detect hub.")
 		return
 	if(calibrating)
-		usr << "<span class='warning'>Error: Calibration in progress. Stand by.</span>"
+		say("Error: Calibration in progress. Stand by.")
 		return
 
 	if(href_list["regimeset"])
@@ -136,21 +143,21 @@
 		target = get_turf(locked.locked_location)
 	if(href_list["calibrate"])
 		if(!target)
-			usr << "<span class='warning'>Error: No target set to calibrate to.</span>"
+			say("Error: No target set to calibrate to.")
 			return
 		if(power_station.teleporter_hub.calibrated || power_station.teleporter_hub.accurate >= 3)
-			usr << "<span class='notice'>Hub is already calibrated.</span>"
+			say("Hub is already calibrated.")
 			return
-		src.visible_message("<span class='notice'>Processing hub calibration to target...</span>")
+		say("Processing hub calibration to target...")
 
 		calibrating = 1
 		spawn(50 * (3 - power_station.teleporter_hub.accurate)) //Better parts mean faster calibration
 			calibrating = 0
 			if(check_hub_connection())
 				power_station.teleporter_hub.calibrated = 1
-				src.visible_message("<span class='notice'>Calibration complete.</span>")
+				say("Calibration complete.")
 			else
-				src.visible_message("<span class='warning'>Error: Unable to detect hub.</span>")
+				say("Error: Unable to detect hub.")
 			updateDialog()
 
 	updateDialog()
@@ -179,20 +186,20 @@
 		var/list/L = list()
 		var/list/areaindex = list()
 
-		for(var/obj/item/device/radio/beacon/R in world)
+		for(var/obj/item/device/beacon/R in beacons)
 			var/turf/T = get_turf(R)
 			if (!T)
 				continue
 			if(T.z == ZLEVEL_CENTCOM || T.z > ZLEVEL_SPACEMAX)
 				continue
-			var/tmpname = T.loc.name
+			var/tmpname = "[R.code] ([T.loc.name])"
 			if(areaindex[tmpname])
 				tmpname = "[tmpname] ([++areaindex[tmpname]])"
 			else
 				areaindex[tmpname] = 1
 			L[tmpname] = R
 
-		for (var/obj/item/weapon/implant/tracking/I in world)
+		for (var/obj/item/weapon/implant/tracking/I in implants)
 			if (!I.implanted || !ismob(I.loc))
 				continue
 			else
@@ -201,8 +208,10 @@
 					if (M.timeofdeath + 6000 < world.time)
 						continue
 				var/turf/T = get_turf(M)
-				if(!T)	continue
-				if(T.z == ZLEVEL_CENTCOM)	continue
+				if(!T)
+					continue
+				if(T.z == ZLEVEL_CENTCOM || T.z > ZLEVEL_SPACEMAX)
+					continue
 				var/tmpname = M.real_name
 				if(areaindex[tmpname])
 					tmpname = "[tmpname] ([++areaindex[tmpname]])"
@@ -276,6 +285,12 @@
 
 /obj/machinery/teleport/hub/initialize()
 	link_power_station()
+
+/obj/machinery/teleport/hub/Destroy()
+	if (power_station)
+		power_station.teleporter_hub = null
+		power_station = null
+	..()
 
 /obj/machinery/teleport/hub/RefreshParts()
 	var/A = 0
@@ -391,7 +406,12 @@
 
 /obj/machinery/teleport/station/Destroy()
 	if(teleporter_hub)
+		teleporter_hub.power_station = null
 		teleporter_hub.update_icon()
+	teleporter_hub = null
+	if (teleporter_console)
+		teleporter_console.power_station = null
+		teleporter_console = null
 	..()
 
 /obj/machinery/teleport/station/attackby(var/obj/item/weapon/W, mob/user, params)

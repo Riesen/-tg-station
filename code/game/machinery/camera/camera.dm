@@ -71,7 +71,7 @@
 			network = list()
 			cameranet.removeCamera(src)
 			stat |= EMPED
-			SetLuminosity(0)
+			set_light(0)
 			triggerCameraAlarm()
 			emped = emped+1  //Increase the number of consecutive EMP's
 			var/thisemp = emped //Take note of which EMP this proc is for
@@ -326,7 +326,7 @@
 	user << "<span class='notice'>You start to weld [src].</span>"
 	playsound(src.loc, 'sound/items/Welder.ogg', 50, 1)
 	busy = 1
-	if(do_after(user, 100))
+	if(do_after(user, 100, target = src))
 		busy = 0
 		if(!WT.isOn())
 			return 0

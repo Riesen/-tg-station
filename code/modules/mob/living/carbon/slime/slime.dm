@@ -3,10 +3,13 @@
 	icon = 'icons/mob/slimes.dmi'
 	icon_state = "grey baby slime"
 	pass_flags = PASSTABLE
-	say_message = "hums"
 	ventcrawler = 2
+	verb_ask = "telepathically asks"
+	verb_say = "telepathically chirps"
+	verb_exclaim = "telepathically cries"
 	var/is_adult = 0
 	var/docile = 0
+	has_limbs = 0
 	languages = SLIME | HUMAN
 	faction = list("slime")
 
@@ -827,6 +830,9 @@
 /mob/living/carbon/slime/stripPanelEquip(obj/item/what, mob/who)
 	src << "<span class='warning'>You don't have the dexterity to do this!</span>"
 	return
+
+/mob/living/carbon/slime/active_hand_exists()
+	return 1
 
 
 //////////////////////////////Old shit from metroids/RoRos, and the old cores, would not take much work to re-add them////////////////////////

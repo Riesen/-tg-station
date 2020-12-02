@@ -1,3 +1,6 @@
+#define TARGET_CLOSEST 1
+#define TARGET_RANDOM 2
+
 /obj/effect/proc_holder
 	var/panel = "Debug"//What panel the proc holder needs to go on.
 
@@ -7,6 +10,7 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 	name = "Spell"
 	desc = "A wizard spell"
 	panel = "Spells"
+	var/sound = "sound/weapons/badZap.ogg"
 	anchored = 1 // Crap like fireball projectiles are proc_holders, this is needed so fireballs don't get blown back into your face via atmos etc.
 	pass_flags = PASSTABLE
 	density = 0
@@ -41,10 +45,11 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 	var/overlay_icon = 'icons/obj/wizard.dmi'
 	var/overlay_icon_state = "spell"
 	var/overlay_lifespan = 0
+	var/shadowling_req = 0 //If user needs to be a shadowling or thrall
 
 	var/sparks_spread = 0
 	var/sparks_amt = 0 //cropped at 10
-	var/smoke_spread = 0 //1 - harmless, 2 - harmful
+	var/smoke_spread = 0 //1 - harmless, 2 - harmful, 3 - sleeping
 	var/smoke_amt = 0 //cropped at 10
 
 	var/critfailchance = 0
@@ -54,7 +59,6 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 	var/action_icon = 'icons/mob/actions.dmi'
 	var/action_icon_state = "spell_default"
 	var/action_background_icon_state = "bg_spell"
-
 
 /obj/effect/proc_holder/spell/proc/cast_check(skipcharge = 0,mob/user = usr) //checks if the spell can be cast based on its settings; skipcharge is used when an additional cast_check is called inside the spell
 
@@ -90,6 +94,11 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 			user << "<span class='notice'>You can't get the words out!</span>"
 			return 0
 
+		if(shadowling_req)
+			if(!is_shadow_or_thrall(H))
+				user << "<span class='notice'>This spell can only be cast by shadowlings!</span>"
+				return 0
+
 		if(clothes_req) //clothes check
 			if(!istype(H.wear_suit, /obj/item/clothing/suit/wizrobe) && !istype(H.wear_suit, /obj/item/clothing/suit/space/hardsuit/wizard))
 				H << "<span class='notice'>I don't feel strong enough without my robe.</span>"
@@ -101,7 +110,7 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 				H << "<span class='notice'>I don't feel strong enough without my hat.</span>"
 				return 0
 	else
-		if(clothes_req || human_req)
+		if(clothes_req || human_req || shadowling_req)
 			user << "<span class='notice'>This spell can only be cast by humans!</span>"
 			return 0
 		if(nonabstract_req && (isbrain(user) || ispAI(user)))
@@ -134,6 +143,9 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 		if("emote")
 			user.visible_message(invocation, invocation_emote_self) //same style as in mob/living/emote.dm
 
+/obj/effect/proc_holder/spell/proc/playMagSound()
+	playsound(get_turf(usr), sound,50,1)
+
 /obj/effect/proc_holder/spell/New()
 	..()
 
@@ -156,7 +168,8 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 /obj/effect/proc_holder/spell/proc/perform(list/targets, recharge = 1, mob/user = usr) //if recharge is started is important for the trigger spells
 	before_cast(targets)
 	invocation()
-	user.attack_log += text("\[[time_stamp()]\] <span class='danger'>[user.real_name] ([user.ckey]) cast the spell [name].</span>")
+	if(user)
+		user.attack_log += text("\[[time_stamp()]\] <span class='danger'>[user.real_name] ([user.ckey]) cast the spell [name].</span>")
 	spawn(0)
 		if(charge_type == "recharge" && recharge)
 			start_recharge()
@@ -197,15 +210,15 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 			sparks.start()
 		if(smoke_spread)
 			if(smoke_spread == 1)
-				var/datum/effect/effect/system/harmless_smoke_spread/smoke = new /datum/effect/effect/system/harmless_smoke_spread()
+				var/datum/effect/effect/system/smoke_spread/smoke = new /datum/effect/effect/system/smoke_spread()
 				smoke.set_up(smoke_amt, 0, location, smoke_amt == 1 ? 15 : 0) // if more than one smoke, spread it around
 				smoke.start()
 			else if(smoke_spread == 2)
-				var/datum/effect/effect/system/bad_smoke_spread/smoke = new /datum/effect/effect/system/bad_smoke_spread()
+				var/datum/effect/effect/system/smoke_spread/bad/smoke = new /datum/effect/effect/system/smoke_spread/bad()
 				smoke.set_up(smoke_amt, 0, location, smoke_amt == 1 ? 15 : 0) // same here
 				smoke.start()
 			else if(smoke_spread == 3)
-				var/datum/effect/effect/system/sleep_smoke_spread/smoke = new /datum/effect/effect/system/sleep_smoke_spread()
+				var/datum/effect/effect/system/smoke_spread/sleeping/smoke = new /datum/effect/effect/system/smoke_spread/sleeping()
 				smoke.set_up(smoke_amt, 0, location, smoke_amt == 1 ? 15 : 0) // same here
 				smoke.start()
 
@@ -251,6 +264,9 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 	var/max_targets = 1 //leave 0 for unlimited targets in range, 1 for one selectable target in range, more for limited number of casts (can all target one guy, depends on target_ignore_prev) in range
 	var/target_ignore_prev = 1 //only important if max_targets > 1, affects if the spell can be cast multiple times at one person from one cast
 	var/include_user = 0 //if it includes usr in the target list
+	var/random_target = 0 // chooses random viable target instead of asking the caster
+	var/random_target_priority = TARGET_CLOSEST // if random_target is enabled how it will pick the target
+
 
 /obj/effect/proc_holder/spell/aoe_turf //affects all turfs in view or range (depends)
 	var/inner_radius = -1 //for all your ring spell needs
@@ -275,7 +291,22 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 
 				//targets += input("Choose the target for the spell.", "Targeting") as mob in possible_targets
 				//Adds a safety check post-input to make sure those targets are actually in range.
-				var/mob/M = input("Choose the target for the spell.", "Targeting") as mob in possible_targets
+				var/mob/M
+				if(!random_target)
+					M = input("Choose the target for the spell.", "Targeting") as mob in possible_targets
+				else
+					switch(random_target_priority)
+						if(TARGET_RANDOM)
+							M = pick(possible_targets)
+						if(TARGET_CLOSEST)
+							for(var/mob/living/L in possible_targets)
+								if(M)
+									if(get_dist(user,L) < get_dist(user,M))
+										if(los_check(user,L))
+											M = L
+								else
+									if(los_check(user,L))
+										M = L
 				if(M in view_or_range(range, user, selection_type)) targets += M
 
 		else
@@ -323,7 +354,17 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 		return 0
 	return 1
 
-
+/obj/effect/proc_holder/spell/targeted/proc/los_check(mob/A,mob/B)
+	//Checks for obstacles from A to B
+	var/obj/dummy = new(A.loc)
+	dummy.pass_flags |= PASSTABLE
+	for(var/turf/turf in getline(A,B))
+		for(var/atom/movable/AM in turf)
+			if(!AM.CanPass(dummy,turf,1))
+				qdel(dummy)
+				return 0
+	qdel(dummy)
+	return 1
 
 /obj/effect/proc_holder/spell/proc/can_cast(mob/user = usr)
 	if(((!user.mind) || !(src in user.mind.spell_list)) && !(src in user.mob_spell_list))
@@ -364,5 +405,4 @@ var/list/spells = typesof(/obj/effect/proc_holder/spell) //needed for the badmin
 			return 0
 		if(nonabstract_req && (isbrain(user) || ispAI(user)))
 			return 0
-
 	return 1

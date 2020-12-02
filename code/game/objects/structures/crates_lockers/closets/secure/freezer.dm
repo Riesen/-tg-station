@@ -1,9 +1,29 @@
 /obj/structure/closet/secure_closet/freezer
 	icon_state = "freezer"
+	var/target_temp = T0C - 40
+	var/cooling_power = 40
 
+/obj/structure/closet/secure_closet/freezer/return_air()
+	var/datum/gas_mixture/gas = (..())
+	if(!gas)	return null
+	var/datum/gas_mixture/newgas = new/datum/gas_mixture()
+	newgas.oxygen = gas.oxygen
+	newgas.carbon_dioxide = gas.carbon_dioxide
+	newgas.nitrogen = gas.nitrogen
+	newgas.toxins = gas.toxins
+	newgas.volume = gas.volume
+	newgas.temperature = gas.temperature
+	if(newgas.temperature <= target_temp)	return
+
+	if((newgas.temperature - cooling_power) > target_temp)
+		newgas.temperature -= cooling_power
+	else
+		newgas.temperature = target_temp
+	return newgas
 
 /obj/structure/closet/secure_closet/freezer/kitchen
 	name = "kitchen Cabinet"
+	target_temp = T0C + 2
 	req_access = list(access_kitchen)
 
 /obj/structure/closet/secure_closet/freezer/kitchen/New()
@@ -21,18 +41,20 @@
 
 /obj/structure/closet/secure_closet/freezer/meat
 	name = "meat fridge"
+	target_temp = T0C + 2
 
 
 /obj/structure/closet/secure_closet/freezer/meat/New()
 	..()
 	for(var/i = 0, i < 4, i++)
-		new /obj/item/weapon/reagent_containers/food/snacks/meat/monkey(src)
+		new /obj/item/weapon/reagent_containers/food/snacks/meat/slab/monkey(src)
 	return
 
 
 
 /obj/structure/closet/secure_closet/freezer/fridge
 	name = "refrigerator"
+	target_temp = T0C + 2
 
 
 /obj/structure/closet/secure_closet/freezer/fridge/New()

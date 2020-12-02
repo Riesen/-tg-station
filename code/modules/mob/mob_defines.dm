@@ -5,11 +5,13 @@
 	flags = HEAR
 	hud_possible = list(ANTAG_HUD)
 	var/datum/mind/mind
+	var/unacidable = 0
 
 	var/stat = 0 //Whether a mob is alive or dead. TODO: Move this to living - Nodrak
 
 	var/obj/screen/flash = null
 	var/obj/screen/blind = null
+	var/obj/screen/cover = null
 	var/obj/screen/hands = null
 	var/obj/screen/pullin = null
 	var/obj/screen/internals = null
@@ -45,7 +47,7 @@
 	var/eye_blurry = 0		//Carbon
 	var/ear_deaf = 0		//Carbon
 	var/ear_damage = 0		//Carbon
-	var/stuttering = null	//Carbon
+	var/stuttering = 0	//Carbon
 	var/slurring = 0		//Carbon
 	var/real_name = null
 	var/bhunger = 0			//Carbon
@@ -59,6 +61,7 @@
 	var/canmove = 1
 	var/eye_stat = null//Living, potentially Carbon
 	var/lastpuke = 0
+	pressure_resistance = 8
 
 	var/name_archive //For admin things like possession
 
@@ -99,8 +102,6 @@
 
 	var/in_throw_mode = 0
 
-	var/coughedtime = null
-
 	var/music_lastplayed = "null"
 
 	var/job = null//Living
@@ -111,7 +112,6 @@
 	//see: setup.dm for list of mutations
 
 	var/voice_name = "unidentifiable voice"
-	var/say_message = null // When you are understood by others. Currently only used by aliens and monkeys in their say_quote procs
 
 	var/list/faction = list("neutral") //A list of factions that this mob is currently in, for hostile mob targetting, amongst other things
 	var/move_on_shuttle = 1 // Can move on the shuttle.
@@ -141,6 +141,7 @@
 	var/area/lastarea = null
 
 	var/digitalcamo = 0 // Can they be tracked by the AI?
+	var/weakeyes = 0 //Are they vulnerable to flashes?
 
 	var/has_unlimited_silicon_privilege = 0 // Can they interact with station electronics
 

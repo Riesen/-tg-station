@@ -20,9 +20,14 @@
 	w_class = 1.0
 	throw_speed = 3
 	throw_range = 7
-	m_amt = 10
+	materials = list(MAT_METAL=10)
 	pressure_resistance = 2
 	var/colour = "black"	//what colour the ink is!
+
+/obj/item/weapon/pen/suicide_act(mob/user)
+	user.visible_message("<span class='suicide'>[user] is scribbling numbers all over themself with [src]! It looks like they're trying to commit sudoku!</span>")
+	return(BRUTELOSS)
+
 
 
 /obj/item/weapon/pen/blue
@@ -52,6 +57,26 @@
 
 	add_logs(user, M, "stabbed", object="[name]")
 
+
+/obj/item/weapon/pen/fourcolor
+	colour = "black"
+	desc = "It's a fancy four-color ink pen, set to black."
+	name = "four-color pen"
+
+/obj/item/weapon/pen/fourcolor/attack_self(mob/living/carbon/user)
+	switch(colour)
+		if("black")
+			colour = "red"
+		if("red")
+			colour = "green"
+		if("green")
+			colour = "blue"
+		else
+			colour = "black"
+	//user << "<span class='notice'>[src] will now write in [colour].</span>" // short form
+	user << "<span class='notice'>[src] will now write in <font style='color=[colour]'>[colour]</font>.</span>"
+	desc = "It's a fancy four-color ink pen, set to [colour]."
+	
 /*
  * Sleepypens
  */
@@ -73,3 +98,5 @@
 	reagents.add_reagent("zombiepowder", 5)
 	reagents.add_reagent("mutetoxin", 15)
 	..()
+
+

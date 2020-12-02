@@ -1,7 +1,8 @@
 /turf/simulated/wall
 	name = "wall"
 	desc = "A huge chunk of metal used to separate rooms."
-	icon = 'icons/turf/walls.dmi'
+	icon = 'icons/turf/walls/wall.dmi'
+	icon_state = "wall"
 	var/mineral = "metal"
 	opacity = 1
 	density = 1
@@ -17,12 +18,14 @@
 	var/sheet_type = /obj/item/stack/sheet/metal
 	var/obj/item/stack/sheet/builtin_sheet = null
 
-	var/del_suppress_resmoothing = 0 // Do not resmooth neighbors on Destroy. (smoothwall.dm)
 	canSmoothWith = list(
 	/turf/simulated/wall,
+	/turf/simulated/wall/r_wall,
 	/obj/structure/falsewall,
-	/obj/structure/falsewall/reinforced  // WHY DO WE SMOOTH WITH FALSE R-WALLS WHEN WE DON'T SMOOTH WITH REAL R-WALLS.
-	)
+	/obj/structure/falsewall/reinforced,  // WHY DO WE SMOOTH WITH FALSE R-WALLS WHEN WE DON'T SMOOTH WITH REAL R-WALLS.
+	/turf/simulated/wall/rust,
+	/turf/simulated/wall/r_wall/rust)
+	smooth = 1
 
 
 /turf/simulated/wall/New()
@@ -51,14 +54,17 @@
 	ChangeTurf(/turf/simulated/floor/plating)
 
 /turf/simulated/wall/proc/break_wall()
+	if(builtin_sheet)
 		builtin_sheet.amount = 2
 		builtin_sheet.loc = src
-		return (new /obj/structure/girder(src))
+	return (new /obj/structure/girder(src))
 
 /turf/simulated/wall/proc/devastate_wall()
-		builtin_sheet.amount = 2
-		builtin_sheet.loc = src
-		new /obj/item/stack/sheet/metal(src)
+	if(!builtin_sheet)
+		return
+	builtin_sheet.amount = 2
+	builtin_sheet.loc = src
+	new /obj/item/stack/sheet/metal(src)
 
 /turf/simulated/wall/ex_act(severity, target)
 	if(target == src)
@@ -151,7 +157,7 @@
 	var/turf/T = user.loc	//get user's location for delay checks
 
 	//the istype cascade has been spread among various procs for easy overriding
-	if(try_wallmount(W,user,T) || try_decon(W,user,T) || try_destroy(W,user,T))
+	if(try_wallmount(W,user,T) || try_decon(W,user,T) || (istype(src) && try_destroy(W,user,T)))
 		return
 
 	return attack_hand(user)
@@ -183,6 +189,9 @@
 	else if(istype(W,/obj/item/weapon/contraband/poster))
 		place_poster(W,user)
 		return 1
+	else if(istype(W,/obj/item/weapon/patriotism/flag))
+		place_flag(W,user)
+		return 1
 
 	return 0
 
@@ -193,17 +202,17 @@
 		if( WT.remove_fuel(0,user) )
 			user << "<span class='notice'>You begin slicing through the outer plating.</span>"
 			playsound(src, 'sound/items/Welder.ogg', 100, 1)
-			if(do_after(user, slicing_duration))
+			if(do_after(user, slicing_duration, target = src))
 				if( !istype(src, /turf/simulated/wall) || !user || !WT || !WT.isOn() || !T )
 					return 1
 				if( user.loc == T && user.get_active_hand() == WT )
 					user << "<span class='notice'>You remove the outer plating.</span>"
 					dismantle_wall()
 					return 1
-	else if( istype(W, /obj/item/weapon/pickaxe/plasmacutter) )
+	else if( istype(W, /obj/item/weapon/gun/energy/plasmacutter) )
 		user << "<span class='notice'>You begin slicing through the outer plating.</span>"
 		playsound(src, 'sound/items/Welder.ogg', 100, 1)
-		if(do_after(user, slicing_duration*0.6))  // plasma cutter is faster than welding tool
+		if(do_after(user, slicing_duration*0.6, target = src))  // plasma cutter is faster than welding tool
 			if( !istype(src, /turf/simulated/wall) || !user || !W || !T )
 				return 1
 			if( user.loc == T && user.get_active_hand() == W )
@@ -268,6 +277,8 @@
 	if(prob(20))
 		ChangeTurf(/turf/simulated/wall/cult)
 
+/turf/simulated/wall/storage_contents_dump_act(obj/item/weapon/storage/src_object, mob/user)
+	return 0
 
 /turf/simulated/wall/melt()
 	if(mineral == "diamond")

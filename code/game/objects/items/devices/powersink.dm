@@ -10,7 +10,7 @@
 	throwforce = 5
 	throw_speed = 1
 	throw_range = 2
-	m_amt = 750
+	materials = list(MAT_METAL=750)
 	origin_tech = "powerstorage=3;syndicate=5"
 	var/drain_rate = 600000		// amount of power to drain per tick
 	var/power_drained = 0 		// has drained this much power
@@ -52,7 +52,7 @@
 
 	mode = value
 	update_icon()
-	SetLuminosity(0)
+	set_light(0)
 
 /obj/item/device/powersink/attackby(var/obj/item/I, var/mob/user, params)
 	if(istype(I, /obj/item/weapon/screwdriver))
@@ -95,7 +95,7 @@
 				"[user] activates \the [src]!", \
 				"You activate \the [src]!",
 				"You hear a click.")
-			message_admins("Power sink activated by [key_name(user, user.client)](<A HREF='?_src_=holder;adminmoreinfo=\ref[user]'>?</A>) at ([x],[y],[z] - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
+			message_admins("Power sink activated by [key_name_admin(user)](<A HREF='?_src_=holder;adminmoreinfo=\ref[user]'>?</A>) (<A HREF='?_src_=holder;adminplayerobservefollow=\ref[user]'>FLW</A>) at ([x],[y],[z] - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
 			log_game("Power sink activated by [key_name(user)] at ([x],[y],[z])")
 			set_mode(OPERATING)
 
@@ -113,7 +113,7 @@
 
 	var/datum/powernet/PN = attached.powernet
 	if(PN)
-		SetLuminosity(5)
+		set_light(12, 2.5)
 
 		// found a powernet, so drain up to max power from it
 

@@ -3,7 +3,7 @@
 /obj/machinery/bot
 	icon = 'icons/obj/aibots.dmi'
 	layer = MOB_LAYER
-	luminosity = 3
+	light_range = 3
 	use_power = 0
 	var/obj/item/weapon/card/id/botcard			// the ID card that the bot "holds"
 	var/list/prev_access = list()
@@ -87,12 +87,12 @@
 /obj/machinery/bot/proc/turn_on()
 	if(stat)	return 0
 	on = 1
-	SetLuminosity(initial(luminosity))
+	set_light(initial(luminosity))
 	return 1
 
 /obj/machinery/bot/proc/turn_off()
 	on = 0
-	SetLuminosity(0)
+	set_light(0)
 	bot_reset() //Resets an AI's call, should it exist.
 
 /obj/machinery/bot/New()
@@ -108,6 +108,8 @@
 		radio_controller.remove_object(src,beacon_freq)
 		if(bot_filter)
 			radio_controller.remove_object(src,control_freq)
+	qdel(Radio)
+	qdel(botcard)
 	..()
 
 /obj/machinery/bot/proc/add_to_beacons(bot_filter) //Master filter control for bots. Must be placed in the bot's local New() to support map spawned bots.
@@ -370,7 +372,7 @@ Example usage: patient = scan(/mob/living/carbon/human, oldpatient, 1)
 The proc would return a human next to the bot to be set to the patient var.
 Pass the desired type path itself, declaring a temporary var beforehand is not required.
 */
-obj/machinery/bot/proc/scan(var/scan_type, var/old_target, var/scan_range = DEFAULT_SCAN_RANGE)
+/obj/machinery/bot/proc/scan(var/scan_type, var/old_target, var/scan_range = DEFAULT_SCAN_RANGE)
 	var/final_result
 	for (var/scan in view (scan_range, src) ) //Search for something in range!
 		if(!istype(scan, scan_type)) //Check that the thing we found is the type we want!
@@ -384,7 +386,7 @@ obj/machinery/bot/proc/scan(var/scan_type, var/old_target, var/scan_range = DEFA
 		return final_result
 
 //When the scan finds a target, run bot specific processing to select it for the next step. Empty by default.
-obj/machinery/bot/proc/process_scan(var/scan_target)
+/obj/machinery/bot/proc/process_scan(var/scan_target)
 	return scan_target
 
 
@@ -399,7 +401,7 @@ obj/machinery/bot/proc/process_scan(var/scan_target)
 Movement proc for stepping a bot through a path generated through A-star.
 Pass a positive integer as an argument to override a bot's default speed.
 */
-obj/machinery/bot/proc/bot_move(var/dest, var/move_speed)
+/obj/machinery/bot/proc/bot_move(var/dest, var/move_speed)
 
 	if(!dest || !path || path.len == 0) //A-star failed or a path/destination was not set.
 		path = list()
@@ -422,7 +424,7 @@ obj/machinery/bot/proc/bot_move(var/dest, var/move_speed)
 	return 1
 
 
-obj/machinery/bot/proc/bot_step(var/dest)
+/obj/machinery/bot/proc/bot_step(var/dest)
 	if(path && path.len > 1)
 		step_towards(src, path[1])
 		if(get_turf(src) == path[1]) //Successful move
@@ -474,7 +476,7 @@ obj/machinery/bot/proc/bot_step(var/dest)
 			calling_ai = null
 		bot_reset()
 
-obj/machinery/bot/proc/bot_reset()
+/obj/machinery/bot/proc/bot_reset()
 	if(calling_ai) //Simple notification to the AI if it called a bot. It will not know the cause or identity of the bot.
 		calling_ai << "<span class='danger'>Call command to a bot has been reset.</span>"
 		calling_ai = null
@@ -500,7 +502,7 @@ obj/machinery/bot/proc/bot_reset()
 			patrol_step()
 	return
 
-obj/machinery/bot/proc/start_patrol()
+/obj/machinery/bot/proc/start_patrol()
 
 	if(tries >= 4) //Bot is trapped, so stop trying to patrol.
 		auto_patrol = 0
@@ -733,7 +735,7 @@ obj/machinery/bot/proc/start_patrol()
 	post_signal_multiple(control_freq, kv)
 
 
-obj/machinery/bot/proc/bot_summon()
+/obj/machinery/bot/proc/bot_summon()
 		// summoned to PDA
 	summon_step()
 	return
@@ -786,6 +788,7 @@ obj/machinery/bot/proc/bot_summon()
 
 
 /obj/machinery/bot/Bump(M as mob|obj) //Leave no door unopened!
+	. = ..()
 	if((istype(M, /obj/machinery/door/airlock) ||  istype(M, /obj/machinery/door/window)) && (!isnull(botcard)))
 		var/obj/machinery/door/D = M
 		if(D.check_access(botcard))

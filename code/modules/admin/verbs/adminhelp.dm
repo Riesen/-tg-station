@@ -1,36 +1,10 @@
+/proc/keywords_lookup(var/msg)
 
-
-//This is a list of words which are ignored by the parser when comparing message contents for names. MUST BE IN LOWER CASE!
-var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","alien","as")
-
-/client/verb/adminhelp(msg as text)
-	set category = "Admin"
-	set name = "Adminhelp"
-
-	if(say_disabled)	//This is here to try to identify lag problems
-		usr << "<span class='danger'>Speech is currently admin-disabled.</span>"
-		return
-
-	//handle muting and automuting
-	if(prefs.muted & MUTE_ADMINHELP)
-		src << "<span class='danger'>Error: Admin-PM: You cannot send adminhelps (Muted).</span>"
-		return
-	if(src.handle_spam_prevention(msg,MUTE_ADMINHELP))
-		return
-
-	//remove out adminhelp verb temporarily to prevent spamming of admins.
-	src.verbs -= /client/verb/adminhelp
-	spawn(1200)
-		src.verbs += /client/verb/adminhelp	// 2 minute cool-down for adminhelps
-
-	//clean the input msg
-	if(!msg)	return
-	msg = sanitize(copytext(msg,1,MAX_MESSAGE_LEN))
-	if(!msg)	return
-	var/original_msg = msg
+	//This is a list of words which are ignored by the parser when comparing message contents for names. MUST BE IN LOWER CASE!
+	var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","alien","as", "i")
 
 	//explode the input msg into a list
-	var/list/msglist = text2list(msg, " ")
+	var/list/msglist = splittext(msg, " ")
 
 	//generate keywords lookup
 	var/list/surnames = list()
@@ -41,7 +15,7 @@ var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","
 		if(M.mind)	indexing += M.mind.name
 
 		for(var/string in indexing)
-			var/list/L = text2list(string, " ")
+			var/list/L = splittext(string, " ")
 			var/surname_found = 0
 			//surnames
 			for(var/i=L.len, i>=1, i--)
@@ -78,14 +52,49 @@ var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","
 							mobs_found += found
 							if(!ai_found && isAI(found))
 								ai_found = 1
-							msg += "<b><font color='black'>[original_word] (<A HREF='?_src_=holder;adminmoreinfo=\ref[found]'>?</A>)</font></b> "
+							msg += "[original_word]<font size='1' color='black'>(<A HREF='?_src_=holder;adminmoreinfo=\ref[found]'>?</A>|<A HREF='?_src_=holder;adminplayerobservefollow=\ref[found]'>F</A>)</font> "
 							continue
-			msg += "[original_word] "
+		msg += "[original_word] "
+	return msg
+
+/client/var/adminhelptimerid = 0
+
+/client/proc/giveadminhelpverb()
+	src.verbs |= /client/verb/adminhelp
+	adminhelptimerid = 0
+
+/client/verb/adminhelp(msg as text)
+	set category = "Admin"
+	set name = "Adminhelp"
+
+	if(say_disabled)	//This is here to try to identify lag problems
+		usr << "<span class='danger'>Speech is currently admin-disabled.</span>"
+		return
+
+	//handle muting and automuting
+	if(prefs.muted & MUTE_ADMINHELP)
+		src << "<span class='danger'>Error: Admin-PM: You cannot send adminhelps (Muted).</span>"
+		return
+	if(src.handle_spam_prevention(msg,MUTE_ADMINHELP))
+		return
+
+	//clean the input msg
+	if(!msg)	return
+	msg = sanitize(copytext(msg,1,MAX_MESSAGE_LEN))
+	if(!msg)	return
+	var/original_msg = msg
+
+	//remove our adminhelp verb temporarily to prevent spamming of admins.
+	src.verbs -= /client/verb/adminhelp
+	adminhelptimerid = addtimer(src,"giveadminhelpverb",1200) //2 minute cooldown of admin helps
+
+	msg = keywords_lookup(msg)
 
 	if(!mob)	return						//this doesn't happen
 
 	var/ref_mob = "\ref[mob]"
-	msg = "<span class='adminnotice'><b><font color=red>HELP: </font>[key_name(src, 1)] (<A HREF='?_src_=holder;adminmoreinfo=[ref_mob]'>?</A>) (<A HREF='?_src_=holder;adminplayeropts=[ref_mob]'>PP</A>) (<A HREF='?_src_=vars;Vars=[ref_mob]'>VV</A>) (<A HREF='?_src_=holder;subtlemessage=[ref_mob]'>SM</A>) (<A HREF='?_src_=holder;adminplayerobservejump=[ref_mob]'>JMP</A>) (<A HREF='?_src_=holder;traitor=[ref_mob]'>TP</A>) [ai_found ? " (<A HREF='?_src_=holder;adminchecklaws=[ref_mob]'>CL</A>)" : ""]:</b> [msg]</span>"
+	var/ref_client = "\ref[src]"
+	msg = "<span class='adminnotice'><b><font color=red>HELP: </font><A HREF='?priv_msg=[ckey];ahelp_reply=1'>[key_name(src)]</A> (<A HREF='?_src_=holder;adminmoreinfo=[ref_mob]'>?</A>) (<A HREF='?_src_=holder;adminplayeropts=[ref_mob]'>PP</A>) (<A HREF='?_src_=vars;Vars=[ref_mob]'>VV</A>) (<A HREF='?_src_=holder;subtlemessage=[ref_mob]'>SM</A>) (<A HREF='?_src_=holder;adminplayerobservefollow=[ref_mob]'>FLW</A>) (<A HREF='?_src_=holder;traitor=[ref_mob]'>TP</A>) (<A HREF='?_src_=holder;rejectadminhelp=[ref_client]'>REJT</A>):</b> [msg]</span>"
 
 	//send this msg to all admins
 
@@ -133,5 +142,5 @@ proc/send2irc_adminless_only(source, msg, requiredflags = R_BAN)
 
 proc/send2irc(msg,msg2)
 	if(config.useircbot)
-		shell("python nudge.py [msg] [msg2]")
+		shell("python nudge.py [msg] \"[msg2]\"")
 	return

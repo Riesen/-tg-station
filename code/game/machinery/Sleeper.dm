@@ -15,10 +15,13 @@
 	var/efficiency
 	var/initial_bin_rating = 1
 	var/min_health = 25
-	var/list/injection_chems = list() //list of injectable chems except ephedrine, coz ephedrine is always avalible
+	var/list/injection_chems = list() //list of injectable chems except inaprovaline, coz inaprovaline is always avalible
 	var/list/possible_chems = list(list("morphine", "dexalin", "bicaridine", "kelotane"),
 								   list("morphine", "dexalin", "bicaridine", "kelotane", "imidazoline"),
-								   list("morphine", "dexalin", "bicaridine", "kelotane", "imidazoline", "anti_toxin", "ryetalyn", "alkysine", "pen_acid"))
+								   list("morphine", "dexalin", "bicaridine", "kelotane", "imidazoline", "anti_toxin", "ryetalyn", "alkysine", "pen_acid"),
+								   list("morphine", "dexalin", "bicaridine", "kelotane", "imidazoline", "anti_toxin", "ryetalyn", "alkysine", "pen_acid", "tricordrazine"))
+								   // salglu_solution , perfluorodecalin , iron , limejuice -- very mild brute/burn , oxy , blood , toxin remedies
+								   // must re-enable perfluorodecalin .
 /obj/machinery/sleeper/New()
 	..()
 	component_parts = list()
@@ -51,7 +54,7 @@
 	return 0
 
 /obj/machinery/sleeper/MouseDrop_T(mob/target, mob/user)
-	if(stat || user.stat || user.lying || !Adjacent(user) || !target.Adjacent(user)|| !iscarbon(target))
+	if(stat || user.stat || user.lying || !iscarbon(target) || target.buckled || !Adjacent(user) || !target.Adjacent(user) )
 		return
 	close_machine(target)
 

@@ -2,6 +2,7 @@ var/datum/configuration/config = null
 
 var/host = null
 var/join_motd = null
+var/sec_den = 1
 var/station_name = null
 var/game_version = "/tg/ Station 13"
 var/changelog_hash = ""
@@ -27,11 +28,11 @@ var/global/comms_allowed = 0 //By default, the server does not allow messages to
 
 
 //This was a define, but I changed it to a variable so it can be changed in-game.(kept the all-caps definition because... code...) -Errorage
-var/MAX_EX_DEVESTATION_RANGE = 7
-var/MAX_EX_HEAVY_RANGE = 14
-var/MAX_EX_LIGHT_RANGE = 21
-var/MAX_EX_FLASH_RANGE = 21
-var/MAX_EX_FLAME_RANGE = 21
+var/MAX_EX_DEVESTATION_RANGE = 28
+var/MAX_EX_HEAVY_RANGE = 56
+var/MAX_EX_LIGHT_RANGE = 84
+var/MAX_EX_FLASH_RANGE = 84
+var/MAX_EX_FLAME_RANGE = 84
 
 var/list/be_special_flags = list(
 	"Traitor" = BE_TRAITOR,
@@ -48,6 +49,6 @@ var/list/be_special_flags = list(
 	"Monkey" = BE_MONKEY,
 	"Gang" = BE_GANG,
 	"Abductor" = BE_ABDUCTOR,
-	"Shadowling" = BE_SHADOWLING //space niggers
-//	"Revenant" = BE_REVENANT ;^)
+	"Shadowling" = BE_SHADOWLING, //space niggers
+	"Revenant" = BE_REVENANT
 	)

@@ -13,10 +13,24 @@
 	idle_power_usage = 5
 	active_power_usage = 100
 	flags = NOREACT
-	var/global/max_n_of_items = 999 // Sorry but the BYOND infinite loop detector doesn't like things over 1000.
+	var/max_n_of_items = 1000
+	icon_open = "smartfridge_open"
+	icon_closed = "smartfridge"
 	var/icon_on = "smartfridge"
 	var/icon_off = "smartfridge-off"
+	machine_flags = REPLACEPARTS | SCREWTOGGLE | WRENCHMOVE | CROWPRY | CROWDESTROY
 	var/item_quants = list()
+
+/obj/machinery/smartfridge/New()
+	..()
+	component_parts = list()
+	component_parts += new /obj/item/weapon/circuitboard/smartfridge(null)
+	component_parts += new /obj/item/weapon/stock_parts/matter_bin(null)
+	RefreshParts()
+
+/obj/machinery/smartfridge/RefreshParts()
+	for(var/obj/item/weapon/stock_parts/matter_bin/B in component_parts)
+		max_n_of_items = 1000 * B.rating
 
 /obj/machinery/smartfridge/power_change()
 	..()
@@ -29,15 +43,12 @@
 		icon_state = icon_off
 
 
-
 /*******************
 *   Item Adding
 ********************/
 
 /obj/machinery/smartfridge/attackby(var/obj/item/O as obj, var/mob/user as mob, params)
-	if(default_unfasten_wrench(user, O))
-		power_change()
-		return
+	..()
 	if(stat)
 		return 0
 
@@ -104,6 +115,7 @@
 	O.loc = src
 	var/n = O.name
 
+
 	if(item_quants[n])
 		item_quants[n]++
 	else
@@ -136,7 +148,7 @@
 		for (var/O in item_quants)
 			if(item_quants[O] > 0)
 				var/N = item_quants[O]
-				var/itemName = sanitize(O)
+				var/itemName = encodeparams(sanitize(O))
 				dat += "<FONT color = 'blue'><B>[capitalize(O)]</B>:"
 				dat += " [N] </font>"
 				dat += "<a href='byond://?src=\ref[src];vend=[itemName];amount=1'>Vend</A> "
@@ -193,6 +205,7 @@
 	active_power_usage = 200
 	icon_on = "drying_rack_on"
 	icon_off = "drying_rack"
+	machine_flags = WRENCHMOVE | CROWPRY
 	var/drying = 0
 
 /obj/machinery/smartfridge/drying_rack/interact(mob/user as mob)
@@ -217,7 +230,7 @@
 		toggle_drying(1)
 	update_icon()
 
-obj/machinery/smartfridge/drying_rack/load() //For updating the filled overlay
+/obj/machinery/smartfridge/drying_rack/load() //For updating the filled overlay
 	..()
 	update_icon()
 
@@ -347,4 +360,4 @@ obj/machinery/smartfridge/drying_rack/load() //For updating the filled overlay
 /obj/machinery/smartfridge/chemistry/virology
 	name = "smart virus storage"
 	desc = "A refrigerated storage unit for volatile sample storage."
-	spawn_meds = list(/obj/item/weapon/reagent_containers/syringe/antiviral = 4, /obj/item/weapon/reagent_containers/glass/bottle/cold = 1, /obj/item/weapon/reagent_containers/glass/bottle/flu_virion = 1, /obj/item/weapon/reagent_containers/glass/bottle/mutagen = 1, /obj/item/weapon/reagent_containers/glass/bottle/plasma = 1, /obj/item/weapon/reagent_containers/glass/bottle/synaptizine = 1)
+	spawn_meds = list(/obj/item/weapon/reagent_containers/syringe/antiviral = 4, /obj/item/weapon/reagent_containers/glass/bottle/inert_virion = 1, /obj/item/weapon/reagent_containers/glass/bottle/cold = 1, /obj/item/weapon/reagent_containers/glass/bottle/flu_virion = 1, /obj/item/weapon/reagent_containers/glass/bottle/mutagen = 1, /obj/item/weapon/reagent_containers/glass/bottle/plasma = 1, /obj/item/weapon/reagent_containers/glass/bottle/synaptizine = 1)

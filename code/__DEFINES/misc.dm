@@ -1,13 +1,35 @@
 #define MIDNIGHT_ROLLOVER		864000	//number of deciseconds in a day
 
+#define JANUARY		1
+#define FEBRUARY	2
+#define MARCH		3
+#define APRIL		4
+#define MAY			5
+#define JUNE		6
+#define JULY		7
+#define AUGUST		8
+#define SEPTEMBER	9
+#define OCTOBER		10
+#define NOVEMBER	11
+#define DECEMBER	12
+
+//Select holiday names -- If you test for a holiday in the code, make the holiday's name a define and test for that instead
+#define NEW_YEAR				"New Year"
+#define VALENTINES				"Valentine's Day"
+#define APRIL_FOOLS				"April Fool's Day"
+#define EASTER					"Easter"
+#define HALLOWEEN				"Halloween"
+#define CHRISTMAS				"Christmas"
+#define FRIDAY_13TH				"Friday the 13th"
 
 //Human Overlays Indexes/////////
-#define SPECIES_LAYER			26		// mutantrace colors... these are on a seperate layer in order to prvent
+//#define SPECIES_LAYER			27		// mutantrace colors... these are on a seperate layer in order to prvent	//Seems to be obsolete
 #define BODY_BEHIND_LAYER		25
-#define BODY_LAYER				24		//underwear, undershirts, socks, eyes, lips(makeup)
-#define BODY_ADJ_LAYER			23
-#define MUTATIONS_LAYER			22		//Tk headglows etc.
-#define AUGMENTS_LAYER			21
+#define BODYPARTS_LAYER			24		//Originally 22. Moving to test if this fixes some shit
+#define BODY_LAYER				23		//underwear, undershirts, socks, eyes, lips(makeup)
+#define BODY_ADJ_LAYER			22
+#define MUTATIONS_LAYER			21		//Tk headglows etc.
+//#define AUGMENTS_LAYER			21	//Obsolete
 #define DAMAGE_LAYER			20		//damage indicators (cuts and burns)
 #define UNIFORM_LAYER			19
 #define ID_LAYER				18
@@ -28,7 +50,7 @@
 #define R_HAND_LAYER			3		//Having the two hands seperate seems rather silly, merge them together? It'll allow for code to be reused on mobs with arbitarily many hands
 #define BODY_FRONT_LAYER		2
 #define FIRE_LAYER				1		//If you're on fire
-#define TOTAL_LAYERS			26		//KEEP THIS UP-TO-DATE OR SHIT WILL BREAK ;_;
+#define TOTAL_LAYERS			25		//KEEP THIS UP-TO-DATE OR SHIT WILL BREAK ;_;
 
 //Security levels
 #define SEC_LEVEL_GREEN	0
@@ -60,6 +82,8 @@
 
 #define MINERAL_MATERIAL_AMOUNT 2000
 //The amount of materials you get from a sheet of mineral like iron/diamond/glass etc
+#define MAX_STACK_SIZE 50
+//The maximum size of a stack object.
 
 
 #define CLICK_CD_MELEE 8
@@ -86,11 +110,14 @@
 #define STAGE_THREE 5
 #define STAGE_FOUR 7
 #define STAGE_FIVE 9
+#define STAGE_SIX 11 //From supermatter shard
 
 //zlevel defines, can be overridden for different maps in the appropriate _maps file.
 #define ZLEVEL_SPACEMAX 7
+#define ZLEVEL_CLOWN 8
 #define ZLEVEL_MINING 5
 #define ZLEVEL_SPACEMIN 3
+#define ZLEVEL_DEEPSPACE 6
 #define ZLEVEL_ABANDONNEDTSAT 3
 #define ZLEVEL_CENTCOM 2
 #define ZLEVEL_STATION 1
@@ -122,3 +149,21 @@
 #define SECONDS * 10
 #define MINUTES * 600
 #define HOURS   * 36000
+
+#define MAT_METAL		"$metal"
+#define MAT_GLASS		"$glass"
+#define MAT_SILVER		"$silver"
+#define MAT_GOLD		"$gold"
+#define MAT_DIAMOND		"$diamond"
+#define MAT_URANIUM		"$uranium"
+#define MAT_PLASMA		"$plasma"
+#define MAT_BANANIUM	"$bananium"
+
+//subtypesof(), typesof() without the parent path
+#define subtypesof(typepath) ( typesof(typepath) - typepath )// Plant types
+
+// Plant types
+#define PLANT_NORMAL 0
+#define PLANT_WEED 1
+#define PLANT_MUSHROOM 2
+#define PLANT_ALIEN 3

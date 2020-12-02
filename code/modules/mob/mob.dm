@@ -161,6 +161,7 @@ var/next_mob_id = 0
 	if(hearing_distance)
 		range = hearing_distance
 	var/msg = message
+
 	for(var/mob/M in get_hearers_in_view(range, src))
 		if(self_message && M==src)
 			msg = self_message
@@ -363,24 +364,21 @@ var/list/slot_equipment_priority = list( \
 
 	if(!src || !isturf(src.loc) || !(A in view(src.loc)))
 		return 0
-	if(istype(A, /obj/effect/decal/point))
+	if(istype(A, /obj/effect/overlay/temp/point))
 		return 0
 
 	var/tile = get_turf(A)
 	if (!tile)
 		return 0
 
-	var/obj/P = new /obj/effect/decal/point(tile)
-	P.invisibility = invisibility
-	spawn (20)
-		if(P)
-			qdel(P)
+	PoolOrNew(/obj/effect/overlay/temp/point, list(A,invisibility))
 
 	return 1
 
+
 //this and stop_pulling really ought to be /mob/living procs
 /mob/proc/start_pulling(var/atom/movable/AM)
-	if ( !AM || !src || src==AM || !isturf(src.loc) )	//if there's no person pulling OR the person is pulling themself OR the object being pulled is inside something: abort!
+	if ( !AM || !src || src==AM || !isturf(AM.loc) )	//if there's no person pulling OR the person is pulling themself OR the object being pulled is inside something: abort!
 		return
 	if (!( AM.anchored ))
 		AM.add_fingerprint(src)
@@ -496,6 +494,7 @@ var/list/slot_equipment_priority = list( \
 		log_game("[usr.key] AM failed due to disconnect.")
 		return
 	client.screen.Cut()
+	client.screen += client.void
 	if(!client)
 		log_game("[usr.key] AM failed due to disconnect.")
 		return
@@ -732,9 +731,10 @@ var/list/slot_equipment_priority = list( \
 			stat("CPU:","[world.cpu]")
 			stat("Instances:","[world.contents.len]")
 
-			if(master_controller)
-				stat("MasterController:","[round(master_controller.cost,0.001)]ds (Interval:[master_controller.processing_interval] | Iteration:[master_controller.iteration])")
-				for(var/datum/subsystem/SS in master_controller.subsystems)
+			if(Master)
+				stat("MasterController:","[round(Master.subsystem_cost,0.001)]ds (Interval:[Master.processing] | Iteration:[Master.iteration])")
+				stat("Subsystem cost per second:","[round(Master.subsystem_cost,0.001)]ds")
+				for(var/datum/subsystem/SS in Master.subsystems)
 					if(SS.can_fire)
 						SS.stat_entry()
 			else
@@ -790,19 +790,30 @@ var/list/slot_equipment_priority = list( \
 /mob/proc/update_canmove()
 	var/ko = weakened || paralysis || stat || (status_flags & FAKEDEATH)
 	var/buckle_lying = !(buckled && !buckled.buckle_lying)
+	var/has_legs = get_num_legs()
+//	var/has_arms = get_num_arms()
 	if(ko || resting || stunned)
 		drop_r_hand()
 		drop_l_hand()
-	else
+		if(pulling)
+			stop_pulling()
+	else if(has_legs)
 		lying = 0
-		canmove = 1
+
 	if(buckled)
 		lying = 90*buckle_lying
 	else
-		if((ko || resting) && !lying)
+		if((ko || resting || !has_legs) && !lying)
 			fall(ko)
+	//canmove = !(ko || resting || stunned || buckled || (!has_legs && !has_arms)) //Use this if you want people legless and armless to be totally unable to move
 	canmove = !(ko || resting || stunned || buckled)
 	density = !lying
+	if(lying)
+		if(layer == initial(layer)) //to avoid special cases like hiding larvas.
+			layer = MOB_LAYER - 0.2 //so mob lying always appear behind standing mobs
+	else
+		if(layer == MOB_LAYER - 0.2)
+			layer = initial(layer)
 	update_transform()
 	lying_prev = lying
 	return canmove
@@ -975,3 +986,23 @@ var/list/slot_equipment_priority = list( \
 		spell.action.background_icon_state = spell.action_background_icon_state
 	if(isliving(src))
 		spell.action.Grant(src)
+		spell.action.Grant(src)
+
+/mob/proc/can_see_reagents()
+	if(stat == DEAD) //Ghosts and such can always see reagents
+		return 1
+	if(has_unlimited_silicon_privilege) //Silicons can automatically view reagents
+		return 1
+	if(ishuman(src))
+		var/mob/living/carbon/human/H = src
+		if(H.head && istype(H.head, /obj/item/clothing))
+			var/obj/item/clothing/CL = H.head
+			if(CL.scan_reagents)
+				return 1
+		if(H.wear_mask && H.wear_mask.scan_reagents)
+			return 1
+		if(H.glasses && istype(H.glasses, /obj/item/clothing))
+			var/obj/item/clothing/CL = H.glasses
+			if(CL.scan_reagents)
+				return 1
+	return 0

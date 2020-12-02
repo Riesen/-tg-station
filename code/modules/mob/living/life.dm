@@ -38,8 +38,6 @@
 
 	update_gravity(mob_has_gravity())
 
-	handle_actions()
-
 	update_pulling()
 
 	for(var/obj/item/weapon/grab/G in src)
@@ -56,14 +54,13 @@
 	if(client)
 		handle_regular_hud_updates()
 
-	return .
-
 
 
 /mob/living/proc/handle_breathing()
 	return
 
 /mob/living/proc/handle_mutations_and_radiation()
+	radiation = 0 //so radiation don't accumulate in simple animals
 	return
 
 /mob/living/proc/handle_chemicals_in_body()
@@ -75,7 +72,7 @@
 /mob/living/proc/handle_random_events()
 	return
 
-/mob/living/proc/handle_environment(var/datum/gas_mixture/environment)
+/mob/living/proc/handle_environment(datum/gas_mixture/environment)
 	return
 
 /mob/living/proc/handle_stomach()
@@ -118,6 +115,7 @@
 		if(!weakened)
 			update_icons()
 
+
 /mob/living/proc/handle_disabilities()
 	//Eyes
 	if(disabilities & BLIND || stat)	//blindness from disability or unconsciousness doesn't get better on its own
@@ -135,23 +133,32 @@
 		if(ear_damage < 100)
 			adjustEarDamage(-0.05,-1)
 
-
 /mob/living/proc/handle_actions()
 	//Pretty bad, i'd use picked/dropped instead but the parent calls in these are nonexistent
 	for(var/datum/action/A in actions)
 		if(A.CheckRemoval(src))
 			A.Remove(src)
 	for(var/obj/item/I in src)
-		if(I.action_button_name)
-			if(!I.action)
-				if(I.action_button_is_hands_free)
-					I.action = new/datum/action/item_action/hands_free
-				else
-					I.action = new/datum/action/item_action
-				I.action.name = I.action_button_name
-				I.action.target = I
-			I.action.Grant(src)
+		give_action_button(I, 1)
 	return
+
+/mob/living/proc/give_action_button(var/obj/item/I, recursive = 0)
+	if(I.action_button_name)
+		if(!I.action)
+			if(istype(I, /obj/item/organ/internal))
+				I.action = new/datum/action/organ_action
+			else if(I.action_button_is_hands_free)
+				I.action = new/datum/action/item_action/hands_free
+			else
+				I.action = new/datum/action/item_action
+			I.action.name = I.action_button_name
+			I.action.target = I
+		I.action.Grant(src)
+
+	if(recursive)
+		for(var/obj/item/T in I)
+			give_action_button(I, recursive - 1)
+
 
 //this handles hud updates. Calls update_vision() and handle_hud_icons()
 /mob/living/proc/handle_regular_hud_updates()
@@ -164,39 +171,46 @@
 	return 1
 
 /mob/living/proc/handle_vision()
-
-	client.screen.Remove(global_hud.blurry, global_hud.druggy, global_hud.vimpaired, global_hud.darkMask)
-
 	update_sight()
 
-	if(stat != DEAD)
-		if(blind)
-			if(eye_blind)
-				blind.layer = 18
-			else
-				blind.layer = 0
+	if(stat == DEAD)
+		return
+	if(eye_blind)
+		overlay_fullscreen("blind", /obj/screen/fullscreen/blind)
+		throw_alert("blind", /obj/screen/alert/blind)
+	else
+		clear_fullscreen("blind")
+		clear_alert("blind")
 
-				if (disabilities & NEARSIGHT)
-					client.screen += global_hud.vimpaired
-
-				if (eye_blurry)
-					client.screen += global_hud.blurry
-
-				if (druggy)
-					client.screen += global_hud.druggy
-
-				if(eye_stat > 20)
-					if(eye_stat > 30)
-						client.screen += global_hud.darkMask
-					else
-						client.screen += global_hud.vimpaired
-
-		if(machine)
-			if (!( machine.check_eye(src) ))
-				reset_view(null)
+		if(disabilities & NEARSIGHT)
+			overlay_fullscreen("nearsighted", /obj/screen/fullscreen/impaired, 1)
 		else
-			if(!client.adminobs)
-				reset_view(null)
+			clear_fullscreen("nearsighted")
+
+		if(eye_blurry)
+			overlay_fullscreen("blurry", /obj/screen/fullscreen/blurry)
+		else
+			clear_fullscreen("blurry")
+
+		if(druggy)
+			overlay_fullscreen("high", /obj/screen/fullscreen/high)
+			throw_alert("high", /obj/screen/alert/high)
+		else
+			clear_fullscreen("high")
+			clear_alert("high")
+
+		if(eye_stat > 30)
+			overlay_fullscreen("impaired", /obj/screen/fullscreen/impaired, 2)
+		else if(eye_stat > 20)
+			overlay_fullscreen("impaired", /obj/screen/fullscreen/impaired, 1)
+		else
+			clear_fullscreen("impaired")
+
+	if(machine)
+		if (!( machine.check_eye(src) ))
+			reset_view(null)
+	else
+		reset_view(null)
 
 /mob/living/proc/update_sight()
 	return

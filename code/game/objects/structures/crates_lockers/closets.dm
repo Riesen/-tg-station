@@ -11,6 +11,8 @@
 	var/welded = 0
 	var/locked = 0
 	var/broken = 0
+	var/weldable = 1
+	var/weldoverlay = "welded"
 	var/large = 1
 	var/wall_mounted = 0 //never solid (You can always pass over it)
 	var/health = 100
@@ -40,7 +42,7 @@
 		else
 			overlays += "[icon_state]_door"
 		if(welded)
-			overlays += "welded"
+			overlays += weldoverlay
 		if(secure)
 			if(!broken)
 				if(locked)
@@ -204,12 +206,12 @@
 			return
 		if(istype(W,/obj/item/tk_grab))
 			return 0
-		if(istype(W, /obj/item/weapon/weldingtool))
+		if(istype(W, /obj/item/weapon/weldingtool) && weldable)
 			var/obj/item/weapon/weldingtool/WT = W
 			if(WT.remove_fuel(0,user))
 				user << "<span class='notice'>You begin cutting \the [src] apart...</span>"
 				playsound(loc, 'sound/items/Welder.ogg', 40, 1)
-				if(do_after(user,40,5,1))
+				if(do_after(user,40,5,1, target = src))
 					if( !opened || !istype(src, /obj/structure/closet) || !user || !WT || !WT.isOn() || !user.loc )
 						return
 					playsound(loc, 'sound/items/Welder2.ogg', 50, 1)
@@ -226,12 +228,14 @@
 	else
 		if(istype(W, /obj/item/stack/packageWrap))
 			return
-		if(istype(W, /obj/item/weapon/weldingtool))
+		if(istype(W, /obj/item/weapon/extraction_pack))
+			return
+		if(istype(W, /obj/item/weapon/weldingtool)  && weldable)
 			var/obj/item/weapon/weldingtool/WT = W
 			if(WT.remove_fuel(0,user))
 				user << "<span class='notice'>You begin [welded ? "unwelding":"welding"] \the [src]...</span>"
 				playsound(loc, 'sound/items/Welder2.ogg', 40, 1)
-				if(do_after(user,40,5,1))
+				if(do_after(user,40,5,1, target = src))
 					if(opened || !istype(src, /obj/structure/closet) || !user || !WT || !WT.isOn() || !user.loc )
 						return
 					playsound(loc, 'sound/items/welder.ogg', 50, 1)
@@ -294,7 +298,8 @@
 		return
 
 	if(!src.toggle())
-		return src.attackby(null, user)
+		togglelock(user)
+		return
 
 // tk grab then use on self
 /obj/structure/closet/attack_self_tk(mob/user as mob)
@@ -336,7 +341,7 @@
 	user << "<span class='notice'>You lean on the back of [src] and start pushing the door open. (this will take about [breakout_time] minutes.)</span>"
 	for(var/mob/O in viewers(src))
 		O << "<span class='warning'>[src] begins to shake violently!</span>"
-	if(do_after(user,(breakout_time*60*10))) //minutes * 60seconds * 10deciseconds
+	if(do_after(user,(breakout_time*60*10), target = src)) //minutes * 60seconds * 10deciseconds
 		if(!user || user.stat != CONSCIOUS || user.loc != src || opened || (!locked && !welded && !istype(src.loc, /obj/mecha)) )
 			return
 		//we check after a while whether there is a point of resisting anymore and whether the user is capable of resisting
@@ -385,7 +390,7 @@
 			src.locked = !src.locked
 			add_fingerprint(user)
 			for(var/mob/O in viewers(user, 3))
-				if((O.client && !( O.eye_blind )))
+				if((O.client && !is_blind(O)))
 					O << "<span class='notice'>[user] has [locked ? null : "un"]locked the locker.</span>"
 			update_icon()
 		else

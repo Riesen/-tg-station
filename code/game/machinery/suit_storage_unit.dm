@@ -78,27 +78,28 @@
 	MASK_TYPE = /obj/item/clothing/mask/gas/syndicate
 	STORAGE_TYPE = /obj/item/weapon/tank/jetpack/oxygen/harness
 
+/obj/machinery/suit_storage_unit/excsuit
+	SUIT_TYPE = /obj/item/clothing/suit/space/anomaly
+	HELMET_TYPE = /obj/item/clothing/head/helmet/space/anomaly
+	MASK_TYPE = /obj/item/clothing/mask/breath
+
 /obj/machinery/suit_storage_unit/ertCom
-	SUIT_TYPE = /obj/item/clothing/suit/space/ert
-	HELMET_TYPE = /obj/item/clothing/head/helmet/space/hardsuit/ert
+	SUIT_TYPE = /obj/item/clothing/suit/space/hardsuit/ert
 	MASK_TYPE = /obj/item/clothing/mask/breath
 	STORAGE_TYPE = /obj/item/weapon/tank/internals/emergency_oxygen/double
 
 /obj/machinery/suit_storage_unit/ertSec
-	SUIT_TYPE = /obj/item/clothing/suit/space/ert/sec
-	HELMET_TYPE = /obj/item/clothing/head/helmet/space/hardsuit/ert/sec
+	SUIT_TYPE = /obj/item/clothing/suit/space/hardsuit/ert/sec
 	MASK_TYPE = /obj/item/clothing/mask/breath
 	STORAGE_TYPE = /obj/item/weapon/tank/internals/emergency_oxygen/double
 
 /obj/machinery/suit_storage_unit/ertEngi
-	SUIT_TYPE = /obj/item/clothing/suit/space/ert/engi
-	HELMET_TYPE = /obj/item/clothing/head/helmet/space/hardsuit/ert/engi
+	SUIT_TYPE = /obj/item/clothing/suit/space/hardsuit/ert/engi
 	MASK_TYPE = /obj/item/clothing/mask/breath
 	STORAGE_TYPE = /obj/item/weapon/tank/internals/emergency_oxygen/double
 
 /obj/machinery/suit_storage_unit/ertMed
-	SUIT_TYPE = /obj/item/clothing/suit/space/ert/med
-	HELMET_TYPE = /obj/item/clothing/head/helmet/space/hardsuit/ert/med
+	SUIT_TYPE = /obj/item/clothing/suit/space/hardsuit/ert/med
 	MASK_TYPE = /obj/item/clothing/mask/breath
 	STORAGE_TYPE = /obj/item/weapon/tank/internals/emergency_oxygen/double
 
@@ -455,7 +456,7 @@
 		var/breakout_time = 2
 		user << "<span class='notice'>You start kicking against the doors to escape! (This will take about [breakout_time] minutes.)</span>"
 		visible_message("You see [user] kicking against the doors of \the [src]!")
-		if(do_after(user,(breakout_time*60*10)))
+		if(do_after(user,(breakout_time*60*10), target = src))
 			if(!user || user.stat != CONSCIOUS || user.loc != src || isopen || !islocked)
 				return
 			else
@@ -477,6 +478,8 @@
 
 /obj/machinery/suit_storage_unit/proc/store_mob(mob/living/M as mob, mob/user as mob)
 	if(!istype(M))
+		return
+	if(M.buckled)
 		return
 	if (user.stat != 0)
 		return

@@ -71,14 +71,14 @@
 
 
 /obj/item/weapon/twohanded/mjollnir
-	name = "Mjollnir"
+	name = "Mjolnir"
 	desc = "A weapon worthy of a god, able to strike with the force of a lightning bolt. It crackles with barely contained energy."
 	icon_state = "mjollnir0"
 	flags = CONDUCT
 	slot_flags = SLOT_BACK
 	force = 5
 	force_unwielded = 5
-	force_wielded = 20
+	force_wielded = 25
 	throwforce = 30
 	throw_range = 7
 	w_class = 5
@@ -106,9 +106,15 @@
 		//charged = 0
 		playsound(src.loc, "sparks", 50, 1)
 		if(istype(M, /mob/living))
-			M.Stun(10)
+			M.Stun(3)
 			shock(M)
 
+/obj/item/weapon/twohanded/mjollnir/throw_impact(atom/target)
+	. = ..()
+	if(istype(target, /mob/living))
+		var/mob/living/L = target
+		L.Stun(3)
+		shock(L)
 
 /obj/item/weapon/twohanded/mjollnir/update_icon()  //Currently only here to fuck with the on-mob icons.
 	icon_state = "mjollnir[wielded]"

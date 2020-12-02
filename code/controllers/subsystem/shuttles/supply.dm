@@ -36,6 +36,14 @@
 	buy()
 	sell()
 
+/proc/check_open_turf(var/turf/T)
+	if(T.density)
+		return 0
+	for (var/atom/movable/C in T.contents)
+		if(C.density)
+			return 0
+	return 1
+
 /obj/docking_port/mobile/supply/proc/buy()
 	if(z != ZLEVEL_STATION)		//we only buy when we are -at- the station
 		return 1
@@ -44,9 +52,9 @@
 		return 2
 
 	var/list/emptyTurfs = list()
-	for(var/turf/simulated/shuttle/T in areaInstance)
-		if(T.density || T.contents.len)	continue
-		emptyTurfs += T
+	for(var/turf/simulated/floor/T in areaInstance)
+		if(check_open_turf(T))
+			emptyTurfs += T
 
 	for(var/datum/supply_order/SO in SSshuttle.shoppinglist)
 		if(!SO.object) continue
@@ -187,7 +195,7 @@
 		/obj/effect/spider/spiderling,
 		/obj/item/weapon/disk/nuclear,
 		/obj/machinery/nuclearbomb,
-		/obj/item/device/radio/beacon,
+		/obj/item/device/beacon,
 		/obj/machinery/the_singularitygen,
 		/obj/singularity,
 	)
@@ -303,8 +311,7 @@
 	updateUsrDialog()
 	return
 
-/obj/machinery/computer/ordercomp/say_quote(text)
-	return "flashes, \"[text]\""
+
 
 
 /obj/machinery/computer/supplycomp/attack_hand(var/mob/user as mob)
@@ -429,7 +436,7 @@
 		var/timeout = world.time + 600
 		var/reason = stripped_input(usr,"Reason:","Why do you require this item?","")
 		if(world.time > timeout)	return
-//		if(!reason)	return
+		if(!reason)	return
 
 		var/idname = "*None Provided*"
 		var/idrank = "*None Provided*"
@@ -447,7 +454,7 @@
 		reqtime = (world.time + 5) % 1e5
 
 		temp = "Order request placed.<BR>"
-		temp += "<BR><A href='?src=\ref[src];order=[last_viewed_group]'>Back</A> | <A href='?src=\ref[src];mainmenu=1'>Main Menu</A> | <A href='?src=\ref[src];confirmorder=[O.ordernum]'>Authorize Order</A>"
+		temp += "<BR><A href='?src=\ref[src];order=[last_viewed_group]'>Back</A> | <A href='?src=\ref[src];mainmenu=1'>Main Menu</A> | <A href='?src=\ref[src];confirmorder=[O.ordernum]'>Authorize Order (Cost: [O.object.cost])</A>"
 
 	else if(href_list["confirmorder"])
 		//Find the correct supply_order datum
@@ -491,7 +498,7 @@
 	else if (href_list["viewrequests"])
 		temp = "<A href='?src=\ref[src];mainmenu=1'>Main Menu</A><BR><BR>Current requests: <BR><BR>"
 		for(var/datum/supply_order/SO in SSshuttle.requestlist)
-			temp += "#[SO.ordernum] - [SO.object.name] requested by [SO.orderedby]  [SSshuttle.supply.getDockedId() == "supply_away" ? "<A href='?src=\ref[src];confirmorder=[SO.ordernum]'>Approve</A> <A href='?src=\ref[src];rreq=[SO.ordernum]'>Remove</A>" : ""]<BR>"
+			temp += "#[SO.ordernum] - [SO.object.name] requested by [SO.orderedby]  [SSshuttle.supply.getDockedId() == "supply_away" ? "<A href='?src=\ref[src];confirmorder=[SO.ordernum]'>Approve (Cost: [SO.object.cost])</A> <A href='?src=\ref[src];rreq=[SO.ordernum]'>Remove</A>" : ""]<BR>"
 
 		temp += "<BR><A href='?src=\ref[src];clearreq=1'>Clear list</A>"
 
@@ -532,5 +539,4 @@
 	frequency.post_signal(src, status_signal)
 
 
-/obj/machinery/computer/supplycomp/say_quote(text)
-	return "flashes, \"[text]\""
+

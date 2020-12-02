@@ -162,16 +162,16 @@
 /obj/item/borg/upgrade/ddrill/action(var/mob/living/silicon/robot/R)
 	if(..()) return 0
 
-	if(!istype(R.module, /obj/item/weapon/robot_module/miner))
+	if(!istype(R.module, /obj/item/weapon/robot_module/miner) && !istype(R.module, /obj/item/weapon/robot_module/mommi))
 		R << "Upgrade mounting error!  No suitable hardpoint detected!"
 		usr << "There's no mounting point for the module!"
 		return 0
 	else
-		for(var/obj/item/weapon/pickaxe/drill/cyborg/D in R.module.modules)
-			qdel(D)
-		for(var/obj/item/weapon/shovel/S in R.module.modules)
-			qdel(S)
-		R.module.modules += new /obj/item/weapon/pickaxe/drill/diamonddrill(src)
+		for(var/obj/item/weapon/pickaxe/P in R.module.modules)
+			qdel(P)
+		/*for(var/obj/item/weapon/shovel/S in R.module.modules)
+			qdel(S)*/ //shovels have unique functionality.
+		R.module.modules += new /obj/item/weapon/pickaxe/drill/diamonddrill(R.module) // can't be used unless drill has the module for its loc
 		R.module.rebuild()
 		return 1
 
@@ -186,6 +186,12 @@
 
 	if(R.emagged == 1)
 		return 0
+
+	if(ismommi(R))	//Removes speech and killswitch restrictions. Still thinking if I should just set keeper to zero, but that has other implications too
+		if(R.scrambledcodes)
+			R.unrestrict()
+			return 1
+		else return 0
 
 	R.SetEmagged(1)
 	return 1

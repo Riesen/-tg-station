@@ -12,7 +12,7 @@
 	slot_flags = SLOT_BELT
 	var/detonating = 0 //If the charge is currently primed
 	var/safety = 1 //If the charge can be put on things other than rocks
-	var/explosionPower = 2 //The power of the explosion; larger powers = bigger boom
+	var/explosionPower = 3 //The power of the explosion; larger powers = bigger boom
 	var/atom/movable/putOn = null //The atom the charge is on
 	var/primedOverlay = null
 
@@ -51,7 +51,7 @@
 		return
 	user.visible_message("<span class='notice'>[user] starts placing [src] onto [target].</span>", \
 						 "<span class='notice'>You start placing the charge.</span>")
-	if(do_after(user, 30 && in_range(user, target)))
+	if(do_after(user, 30, target = src) && in_range(user, target))
 		user.visible_message("<span class='notice'>[user] places [src] onto [target].</span>", \
 							 "<span class='warning'>You slap [src] onto [target]!</span>")
 		user.drop_item()
@@ -69,7 +69,7 @@
 	icon_state = active_state
 	update_icon()
 	detonating = 1
-	luminosity = 1
+	light_range = 2
 	for(var/i = 0, i < timer, i++)
 		sleep(10)
 		playsound(get_turf(src), 'sound/machines/defib_saftyOff.ogg', 50, 1)

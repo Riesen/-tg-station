@@ -1,4 +1,2 @@
 <!-- Most valid html will work in here, excluding images. -->
-<h4>Newfriends, click the rules button at the top right of your screen to check them.</h4>
-<h4>Still looking for active admins in various timezones. Send me an email (Spoky@redchan.it) with your BYOND CKey, timezone, and what times you play if you're interested. Experience in SS13 is prefered.</h4>
-<h3>If you have any complaints, don't just shitpost in the thread, please send an email to seiji@8chan.co instead. Alternatively, you can hop in our secret irc circlejerk @ #pizzastation on irc.rizon.net</h3>
+<h3>We're on the new codebase now.</h3>

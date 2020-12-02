@@ -27,6 +27,7 @@
 	var/force_wielded = 0
 	var/wieldsound = null
 	var/unwieldsound = null
+	var/wielded_dismember_class = new /datum/dismember_class/cant_dismember
 
 /obj/item/weapon/twohanded/proc/unwield(mob/living/carbon/user)
 	if(!wielded || !user) return
@@ -44,12 +45,16 @@
 	var/obj/item/weapon/twohanded/offhand/O = user.get_inactive_hand()
 	if(O && istype(O))
 		O.unwield()
+	dismember_class = new /datum/dismember_class/cant_dismember
 	return
 
 /obj/item/weapon/twohanded/proc/wield(mob/living/carbon/user)
 	if(wielded) return
 	if(istype(user,/mob/living/carbon/monkey) )
 		user << "<span class='warning'>It's too heavy for you to wield fully.</span>"
+		return
+	if(!user.active_hand_exists(1))	//Checks for inactive hand, 1 means inverted
+		user << "<span class='warning'>You don't have an other hand!</span>"
 		return
 	if(user.get_inactive_hand())
 		user << "<span class='warning'>You need your other hand to be empty</span>"
@@ -65,6 +70,7 @@
 	O.name = "[name] - offhand"
 	O.desc = "Your second grip on the [name]"
 	user.put_in_inactive_hand(O)
+	dismember_class = wielded_dismember_class
 	return
 
 /obj/item/weapon/twohanded/mob_can_equip(M as mob, slot)
@@ -138,7 +144,7 @@
 	wielded = 1
 
 
-obj/item/weapon/twohanded/
+/obj/item/weapon/twohanded/
 
 /*
  * Fireaxe
@@ -155,6 +161,8 @@ obj/item/weapon/twohanded/
 	force_wielded = 25 // Was 18, Buffed - RobRichards/RR
 	attack_verb = list("attacked", "chopped", "cleaved", "torn", "cut")
 	hitsound = 'sound/weapons/bladeslice.ogg'
+
+	wielded_dismember_class = new /datum/dismember_class/medium
 
 /obj/item/weapon/twohanded/fireaxe/update_icon()  //Currently only here to fuck with the on-mob icons.
 	icon_state = "fireaxe[wielded]"
@@ -194,9 +202,12 @@ obj/item/weapon/twohanded/
 	hitsound = "swing_hit"
 	flags = NOSHIELD
 	origin_tech = "magnets=3;syndicate=4"
+	block_chance = 50
 	item_color = "green"
 	attack_verb = list("attacked", "slashed", "stabbed", "sliced", "torn", "ripped", "diced", "cut")
 	var/hacked = 0
+
+	wielded_dismember_class = new /datum/dismember_class/high/nobleed
 
 /obj/item/weapon/twohanded/dualsaber/New()
 	item_color = pick("red", "blue", "green", "purple")
@@ -302,65 +313,119 @@ obj/item/weapon/twohanded/
 	icon_state = "chainsaw0"
 	name = "Chainsaw"
 	desc = "Perfect for felling trees or fellow spaceman."
-	force = 15
-	throwforce = 15
+	force = 13
+	throwforce = 13
 	throw_speed = 1
 	throw_range = 5
 	w_class = 4.0 // can't fit in backpacks
-	force_unwielded = 15 //still pretty robust
-	force_wielded = 50  //you'll gouge their eye out! Or a limb...maybe even their entire body!
-	wieldsound = 'sound/weapons/chainsawstart.ogg'
-	hitsound = null
-	no_hitsound = 1 //We have custom hitsounds
+	force_unwielded = 13
+	force_wielded = 22
+	wieldsound = 'sound/weapons/chainsawStart.ogg'
+	hitsound = "swing_hit"
 	flags = NOSHIELD
-	origin_tech = "materials=6;syndicate=4"
+	origin_tech = "materials=2;combat=2;engineering=2"
 	attack_verb = list("bashed", "smacked")
 	var/wield_cooldown = 0
+	var/max_fuel = 40
 //	bleedcap = 0 //You can bleed anytime bby
+
+	wielded_dismember_class = new/datum/dismember_class/high/
+	augmenttype = /obj/item/weapon/mounted_chainsaw/
+
+/obj/item/weapon/twohanded/chainsaw/New()
+	..()
+	create_reagents(max_fuel)
+	reagents.add_reagent("fuel", max_fuel)
+	update_icon()
+	return
 
 /obj/item/weapon/twohanded/chainsaw/unwield()
 	..()
+	hitsound = initial(hitsound)
 //	bleedchance = 0
 	attack_verb = list("bashed", "smacked")
 
-/obj/item/weapon/twohanded/chainsaw/wield()
-	..()
-//	bleedchance = 50
-	attack_verb = list("sawed", "cut", "hacked", "carved", "cleaved", "butchered", "felled", "timbered")
+/obj/item/weapon/twohanded/chainsaw/wield(user)
+	if(get_fuel())
+		..(user)
+		hitsound = "chainsaw_attack"
+		sharp = 1
+		//bleedchance = 50
+		attack_verb = list("sawed", "cut", "hacked", "carved", "cleaved", "butchered", "felled", "timbered")
+		remove_fuel(1, user)
+	else
+		user << "<span class='notice'>The [src] is out of fuel.</span>"
 
 /obj/item/weapon/twohanded/chainsaw/update_icon()
 	if(wielded)
 		icon_state = "chainsaw[wielded]"
 	else
 		icon_state = "chainsaw0"
-
-/obj/item/weapon/twohanded/chainsaw/attack_self(mob/user as mob) //Override to create a cooldown
-	if(wielded)
-		if(world.time <= wield_cooldown + 10)
-			return
-		wield_cooldown = world.time
-	..()
-
-/obj/item/weapon/twohanded/chainsaw/attack(mob/target as mob, mob/living/user as mob)
-	if(wielded)
-		//incredibly loud; you ain't goin' for stealth with this thing. Credit goes to where Hotline Miami 2 got the chainsaw sounds from.
-		playsound(loc, pick('sound/weapons/chainsawAttack1.ogg', 'sound/weapons/chainsawAttack2.ogg', 'sound/weapons/chainsawAttack3.ogg'), 80, 1, 2)
-		if(isrobot(target))
-			..()
-			return
-		if(!isliving(target))
-			return
-		else
-			target.Weaken(4)
-			..()
-			// user.changeNext_move(CLICK_CD_MELEE * 2) //As a balance measure it's not as spammable as other weapons.
-		return
-	else
-		playsound(loc, "swing_hit", 50, 1, -1)
-		return ..()
+	return
 
 /obj/item/weapon/twohanded/chainsaw/IsShield() //Disarming someone with a chainsaw should be difficult.
 	if(wielded)
 		return 1
 	else
 		return 0
+
+/obj/item/weapon/twohanded/chainsaw/process()
+	if(wielded)
+		if(prob(5))
+			remove_fuel(1)
+
+/obj/item/weapon/twohanded/chainsaw/proc/remove_fuel(amount = 1, mob/user = null)
+	if(!wielded || !check_fuel(user))
+		return 0
+	if(get_fuel() >= amount)
+		reagents.remove_reagent("fuel", amount)
+		check_fuel(user)
+		return 1
+	return 0
+
+/obj/item/weapon/twohanded/chainsaw/afterattack(atom/O, mob/user, proximity)
+	if(!proximity) return
+	if(istype(O, /obj/structure/reagent_dispensers/fueltank) && in_range(src, O))
+		if(!wielded)
+			O.reagents.trans_to(src, max_fuel)
+			user << "<span class='notice'>[src] refueled.</span>"
+			playsound(src.loc, 'sound/effects/refill.ogg', 50, 1, -6)
+			return
+		else
+			user << "<span class='notice'>You can't refuel the [src] while it's running.</span>"
+	if(wielded)
+		remove_fuel(1, user)
+
+//Turns off the chainsaw if there is no more fuel
+/obj/item/weapon/twohanded/chainsaw/proc/check_fuel(mob/user)
+	if(get_fuel() <= 0 && wielded)
+		user << "<span class='notice'>The [src] has run out of fuel.</span>"
+		unwield(user)
+		return 0
+	return 1
+
+//Returns the amount of fuel in the chainsaw
+/obj/item/weapon/twohanded/chainsaw/proc/get_fuel()
+	return reagents.get_reagent_amount("fuel")
+
+/obj/item/weapon/twohanded/chainsaw/examine(mob/user)
+	..()
+	user << "It contains [get_fuel()] unit\s of fuel out of [max_fuel]."
+
+/obj/item/weapon/twohanded/chainsaw/attack_self(mob/user as mob) //Override to create a cooldown
+	if(wielded)
+		if(world.time <= wield_cooldown + 10)
+			return
+		wield_cooldown = world.time
+	..(user)
+
+/obj/item/weapon/mounted_chainsaw
+	icon_state = "chainsaw1"
+	item_state = "mounted_chainsaw"	//#niggered from /tg/
+	name = "mounted chainsaw"
+	desc = "A chainsaw that has replaced your arm."
+	force = 21
+	attack_verb = list("sawed", "torn", "cut", "chopped", "diced")
+	hitsound = "sound/weapons/chainsawhit.ogg"
+	augmenttype = /obj/item/weapon/twohanded/chainsaw/
+	dismember_class = new /datum/dismember_class/medium/

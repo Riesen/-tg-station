@@ -47,7 +47,7 @@ Made by Xhuis
 	var/list/datum/mind/shadows = list()
 	var/list/datum/mind/thralls = list()
 	var/list/shadow_objectives = list()
-	var/required_thralls = 15 //How many thralls are needed (hardcoded for now)
+	var/required_thralls = 10 //How many thralls are needed (hardcoded for now)
 	var/shadowling_ascended = 0 //If at least one shadowling has ascended
 	var/shadowling_dead = 0 //is shadowling kill
 
@@ -68,11 +68,11 @@ Made by Xhuis
 	name = "shadowling"
 	config_tag = "shadowling"
 	antag_flag = BE_SHADOWLING
-	required_players = 20
+	required_players = 15
 	required_enemies = 2
 	recommended_enemies = 2
 	restricted_jobs = list("AI", "Cyborg", "MoMMI")
-	protected_jobs = list("Security Officer", "Warden", "Detective", "Head of Security", "Captain")
+	protected_jobs = list("Security Officer", "Warden", "Detective", "Head of Security", "Captain", "Head of Personnel")
 
 /datum/game_mode/shadowling/announce()
 	world << "<b>The current game mode is - Shadowling!</b>"
@@ -86,7 +86,7 @@ Made by Xhuis
 		restricted_jobs += "Assistant"
 
 
-	var/shadowlings = 2 //How many shadowlings there are; hardcoded to 2
+	var/shadowlings = max(2, round(num_players()/10))
 
 	while(shadowlings)
 		var/datum/mind/shadow = pick(antag_candidates)
@@ -155,25 +155,11 @@ Made by Xhuis
 		return 1
 
 
+/mob/proc/remove_shadowling_powers()
+	for(var/obj/effect/proc_holder/spell/S in mind.spell_list)
+		if(S.shadowling_req)
+			mind.spell_list -= S
 
-/*
-	GAME FINISH CHECKS
-*/
-
-
-/datum/game_mode/shadowling/check_finished()
-	var/shadows_alive = 0 //and then shadowling was kill
-	for(var/datum/mind/shadow in shadows) //but what if shadowling was not kill?
-		if(!istype(shadow.current,/mob/living/carbon/human) && !istype(shadow.current,/mob/living/simple_animal/ascendant_shadowling))
-			continue
-		if(shadow.current.stat == DEAD)
-			continue
-		shadows_alive++
-	if(shadows_alive)
-		return ..()
-	else
-		shadowling_dead = 1 //but shadowling was kill :(
-		return 1
 
 
 /datum/game_mode/shadowling/proc/check_shadow_victory()
@@ -190,8 +176,11 @@ Made by Xhuis
 		world << "<span class='redtext'><b>The shadowlings have been killed by the crew!</b></span>"
 	else if(!check_shadow_victory() && SSshuttle.emergency.mode >= SHUTTLE_ESCAPE)
 		world << "<span class='redtext'><b>The crew has escaped the station before the shadowlings could ascend!</b></span>"
+	else
+		world << "<span class='redtext'><b>The shadowlings have failed!</b></span>"
 	..()
 	return 1
+
 
 
 /datum/game_mode/proc/auto_declare_completion_shadowling()
@@ -223,6 +212,8 @@ Made by Xhuis
 	burnmod = 2 //2x burn damage lel
 	heatmod = 2
 
+	roundstart = 0	//Used to inherit from shadows
+
 /datum/species/shadow/ling/spec_life(mob/living/carbon/human/H)
 	//H.shadowling_status = 1 //If they are affected more strongly by flashes and stuff
 	var/light_amount = 0
@@ -231,7 +222,7 @@ Made by Xhuis
 		var/turf/T = H.loc
 		var/area/A = T.loc
 		if(A)
-			if(A.lighting_use_dynamic)	light_amount = T.lighting_lumcount
+			if(A.lighting_use_dynamic)	light_amount = T.get_lumcount() * 10
 			else						light_amount =  10
 		if(light_amount > LIGHT_DAM_THRESHOLD) //Not complete blackness - they can live in very small light levels plus starlight
 			H.take_overall_damage(0, LIGHT_DAMAGE_TAKEN)

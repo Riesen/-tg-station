@@ -13,11 +13,12 @@
 	desc = "HOLY SHEET! That is a lot of glass."
 	singular_name = "glass sheet"
 	icon_state = "sheet-glass"
-	g_amt = MINERAL_MATERIAL_AMOUNT
+	materials = list(MAT_GLASS=MINERAL_MATERIAL_AMOUNT)
 	origin_tech = "materials=1"
+	grind_reagents = list("silicon" = 20)
 
 /obj/item/stack/sheet/glass/cyborg
-	g_amt = 0
+	materials = list()
 	is_cyborg = 1
 	cost = 500
 
@@ -128,13 +129,12 @@
 	desc = "Glass which seems to have rods or something stuck in them."
 	singular_name = "reinforced glass sheet"
 	icon_state = "sheet-rglass"
-	g_amt = MINERAL_MATERIAL_AMOUNT
-	m_amt = MINERAL_MATERIAL_AMOUNT / 2
+	materials = list(MAT_METAL=MINERAL_MATERIAL_AMOUNT/2, MAT_GLASS=MINERAL_MATERIAL_AMOUNT)
 	origin_tech = "materials=2"
+	grind_reagents = list("silicon" = 20, "iron" = 20)
 
 /obj/item/stack/sheet/rglass/cyborg
-	g_amt = 0
-	m_amt = 0
+	materials = list()
 	var/datum/robot_energy_storage/metsource
 	var/datum/robot_energy_storage/glasource
 	var/metcost = 250
@@ -270,7 +270,7 @@
 	force = 5.0
 	throwforce = 10.0
 	item_state = "shard-glass"
-	g_amt = MINERAL_MATERIAL_AMOUNT
+	materials = list(MAT_GLASS=MINERAL_MATERIAL_AMOUNT)
 	attack_verb = list("stabbed", "slashed", "sliced", "cut")
 	hitsound = 'sound/weapons/bladeslice.ogg'
 	var/cooldown = 0
@@ -306,9 +306,11 @@
 		if(!H.gloves)
 			H << "<span class='warning'>[src] cuts into your hand!</span>"
 			var/organ = (H.hand ? "l_" : "r_") + "arm"
-			var/obj/item/organ/limb/affecting = H.get_organ(organ)
-			if(affecting.take_damage(force / 2))
-				H.update_damage_overlays(0)
+			var/datum/organ/limb/L = H.get_organdatum(organ)
+			if(L && L.exists())
+				var/obj/item/organ/limb/affecting = L.organitem
+				if(affecting.take_damage(force / 2))
+					H.update_damage_overlays(0)
 	else if(ismonkey(user))
 		var/mob/living/carbon/monkey/M = user
 		M << "<span class='warning'>[src] cuts into your hand!</span>"

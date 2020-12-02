@@ -231,7 +231,6 @@
 
 	if(eye_blind)
 		eye_blind = 0
-		eye_blind = max(eye_blind, 1)
 
 	setEarDamage((ear_damage < 25 ? 0 : ear_damage),(disabilities & DEAF ? 1 :0))
 

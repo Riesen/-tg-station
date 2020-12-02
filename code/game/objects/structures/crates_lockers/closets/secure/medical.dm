@@ -78,6 +78,7 @@
 
 /obj/structure/closet/secure_closet/CMO/New()
 	..()
+	new /obj/item/clothing/cloak/cmo(src)
 	new /obj/item/clothing/suit/hooded/wintercoat/medical(src)
 	if(prob(50))
 		new /obj/item/weapon/storage/backpack/medic(src)
@@ -96,7 +97,7 @@
 	new /obj/item/weapon/storage/belt/medical(src)
 	new /obj/item/device/flash/handheld(src)
 	new /obj/item/weapon/reagent_containers/hypospray/CMO(src)
-	new /obj/item/cybernetic_implant/eyes/hud/medical(src)
+	new /obj/item/organ/internal/eyes/cyberimp/hud/medical(src)
 	return
 
 

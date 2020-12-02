@@ -7,34 +7,28 @@
 	w_class = 2
 	flags = CONDUCT
 	slot_flags = SLOT_BELT
-	m_amt = 50
-	g_amt = 20
+	materials = list(MAT_METAL=50, MAT_GLASS=20)
 	action_button_name = "Toggle Light"
 	var/on = 0
-	var/brightness_on = 4 //luminosity when on
+	var/brightness_on = 6 //luminosity when on
+	light_power = 2
 
 /obj/item/device/flashlight/initialize()
 	..()
 	if(on)
 		icon_state = "[initial(icon_state)]-on"
-		SetLuminosity(brightness_on)
+		set_light(brightness_on)
 	else
 		icon_state = initial(icon_state)
-		SetLuminosity(0)
+		set_light(0)
 
 /obj/item/device/flashlight/proc/update_brightness(var/mob/user = null)
 	if(on)
 		icon_state = "[initial(icon_state)]-on"
-		if(loc == user)
-			user.AddLuminosity(brightness_on)
-		else if(isturf(loc))
-			SetLuminosity(brightness_on)
+		set_light(brightness_on)
 	else
 		icon_state = initial(icon_state)
-		if(loc == user)
-			user.AddLuminosity(-brightness_on)
-		else if(isturf(loc))
-			SetLuminosity(0)
+		set_light(0)
 
 /obj/item/device/flashlight/attack_self(mob/user)
 	if(!isturf(user.loc))
@@ -57,12 +51,12 @@
 			return
 
 		var/mob/living/carbon/human/H = M	//mob has protective eyewear
-		if(istype(M, /mob/living/carbon/human) && ((H.head && H.head.flags & HEADCOVERSEYES) || (H.wear_mask && H.wear_mask.flags & MASKCOVERSEYES) || (H.glasses && H.glasses.flags & GLASSESCOVERSEYES)))
-			user << "<span class='notice'>You're going to need to remove that [(H.head && H.head.flags & HEADCOVERSEYES) ? "helmet" : (H.wear_mask && H.wear_mask.flags & MASKCOVERSEYES) ? "mask": "glasses"] first.</span>"
+		if(istype(M, /mob/living/carbon/human) && H.check_part_covered("eyes"))
+			user << "<span class='notice'>You're going to need to remove that [(H.head && H.head.body_parts_covered & EYES) ? "helmet" : (H.wear_mask && H.wear_mask.body_parts_covered & EYES) ? "mask": "glasses"] first.</span>"
 			return
 
 		if(M == user)	//they're using it on themselves
-			if(!M.eye_blind)
+			if(!is_blind(M))
 				flick("flash", M.flash)
 				M.visible_message("<span class='notice'>[M] directs [src] to \his eyes.</span>", \
 									 "<span class='notice'>You wave the light in front of your eyes! Trippy!</span>")
@@ -80,23 +74,14 @@
 			else if(M.dna.check_mutation(XRAY))	//mob has X-RAY vision
 				user << "<span class='notice'>[M] pupils give an eerie glow!</span>"
 			else	//they're okay!
-				if(!M.eye_blind)
+				if(!is_blind(M))
 					flick("flash", M.flash)	//flash the affected mob
 					user << "<span class='notice'>[M]'s pupils narrow.</span>"
 	else
 		return ..()
 
 
-/obj/item/device/flashlight/pickup(mob/user)
-	if(on)
-		user.AddLuminosity(brightness_on)
-		SetLuminosity(0)
 
-
-/obj/item/device/flashlight/dropped(mob/user)
-	if(on)
-		user.AddLuminosity(-brightness_on)
-		SetLuminosity(brightness_on)
 
 
 /obj/item/device/flashlight/pen
@@ -159,8 +144,7 @@
 	brightness_on = 5
 	w_class = 4
 	flags = CONDUCT
-	m_amt = 0
-	g_amt = 0
+	materials = list()
 	on = 1
 
 
@@ -181,7 +165,7 @@
 		attack_self(usr)
 
 //Bananalamp
-obj/item/device/flashlight/lamp/bananalamp
+/obj/item/device/flashlight/lamp/bananalamp
 	name = "banana lamp"
 	desc = "Only a clown would think to make a ghetto banana-shaped lamp. Even has a goofy pullstring."
 	icon_state = "bananalamp"
@@ -193,10 +177,11 @@ obj/item/device/flashlight/lamp/bananalamp
 	name = "flare"
 	desc = "A red Nanotrasen issued flare. There are instructions on the side, it reads 'pull cord, make light'."
 	w_class = 2.0
-	brightness_on = 7 // Pretty bright.
+	brightness_on = 8 // Pretty bright.
+	light_power = 2.5
 	icon_state = "flare"
 	item_state = "flare"
-	action_button_name = null	//just pull it manually, neckbeard.
+	action_button_name = null	//just pull it manually, neckbeard. //You are now pulling manually
 	var/fuel = 0
 	var/on_damage = 7
 	var/produce_heat = 1500
@@ -275,9 +260,8 @@ obj/item/device/flashlight/lamp/bananalamp
 	item_state = "slime"
 	w_class = 2
 	slot_flags = SLOT_BELT
-	m_amt = 0
-	g_amt = 0
-	brightness_on = 6 //luminosity when on
+	materials = list()
+	brightness_on = 7 //luminosity when on
 
 /obj/item/device/flashlight/emp
 	origin_tech = "magnets=4;syndicate=5"

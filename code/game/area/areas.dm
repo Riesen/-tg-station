@@ -5,15 +5,12 @@
 // the same logical /area have the parent /area object... well, you would be mistaken.  If you
 // want to find machines, mobs, etc, in the same logical area, you will need to check all the
 // related areas.  This returns a master contents list to assist in that.
+// Deprecated
 /proc/area_contents(var/area/A)
 	if(!istype(A)) return null
-	var/list/contents = list()
-	for(var/area/LSA in A.related)
-		contents += LSA.contents
-	return contents
+	return A.contents
 
 
-// ===
 /area
 	var/global/global_uid = 0
 	var/uid
@@ -26,25 +23,23 @@
 
 /area/New()
 	icon_state = ""
-	layer = 10
-	master = src //moved outside the spawn(1) to avoid runtimes in lighting.dm when it references src.loc.loc.master ~Carn
+	layer = LIGHTING_LAYER
+//	master = src //moved outside the spawn(1) to avoid runtimes in lighting.dm when it references src.loc.loc.master ~Carn
 	uid = ++global_uid
 	areas.Add(src)
-	related = list(src)
+//	related = list(src)
 
-	if(requires_power)
-		luminosity = 0
-	else
+	if(!requires_power)
 		power_light = 1			//rastaf0
 		power_equip = 1			//rastaf0
 		power_environ = 1		//rastaf0
-		luminosity = 1
-		lighting_use_dynamic = 0
+//		luminosity = 1
+//		lighting_use_dynamic = 0
 
 	..()
 
 	power_change()		// all machines set to current power level, also updates lighting icon
-	InitializeLighting()
+//	InitializeLighting()
 
 	blend_mode = BLEND_MULTIPLY // Putting this in the constructure so that it stops the icons being screwed up in the map editor.
 
@@ -69,35 +64,25 @@
 				else
 					a.triggerAlarm("Power", src, cameras, source)
 
-			for(var/mob/living/simple_animal/drone/D in mob_list)
-				if(state == 1)
-					D.cancelAlarm("Power", src, source)
-				else
-					D.triggerAlarm("Power", src, cameras, source)
 	return
 
 /area/proc/atmosalert(var/danger_level, var/obj/source as obj)
 	if(danger_level != atmosalm)
 		if (danger_level==2)
 			var/list/cameras = list()
-			for(var/area/RA in related)
-				for(var/obj/machinery/camera/C in RA)
-					cameras += C
+			for(var/obj/machinery/camera/C in src)
+				cameras += C
 
 			for(var/mob/living/silicon/aiPlayer in player_list)
 				aiPlayer.triggerAlarm("Atmosphere", src, cameras, source)
 			for(var/obj/machinery/computer/station_alert/a in machines)
 				a.triggerAlarm("Atmosphere", src, cameras, source)
-			for(var/mob/living/simple_animal/drone/D in mob_list)
-				D.triggerAlarm("Atmosphere", src, cameras, source)
 
 		else if (src.atmosalm == 2)
 			for(var/mob/living/silicon/aiPlayer in player_list)
 				aiPlayer.cancelAlarm("Atmosphere", src, source)
 			for(var/obj/machinery/computer/station_alert/a in machines)
 				a.cancelAlarm("Atmosphere", src, source)
-			for(var/mob/living/simple_animal/drone/D in mob_list)
-				D.cancelAlarm("Atmosphere", src, source)
 
 		src.atmosalm = danger_level
 		return 1
@@ -109,51 +94,45 @@
 
 	var/list/cameras = list()
 
-	for(var/area/RA in related)
-		if (!( RA.fire ))
-			RA.set_fire_alarm_effect()
-			for(var/obj/machinery/door/firedoor/D in RA)
-				if(!D.blocked)
-					if(D.operating)
-						D.nextstate = CLOSED
-					else if(!D.density)
-						spawn(0)
-							D.close()
-			for(var/obj/machinery/firealarm/F in RA)
-				F.update_icon()
-		for (var/obj/machinery/camera/C in RA)
-			cameras += C
+	if (!( src.fire ))
+		src.set_fire_alarm_effect()
+		for(var/obj/machinery/door/firedoor/D in src)
+			if(!D.blocked)
+				if(D.operating)
+					D.nextstate = CLOSED
+				else if(!D.density)
+					spawn(0)
+						D.close()
+		for(var/obj/machinery/firealarm/F in src)
+			F.update_icon()
+	for (var/obj/machinery/camera/C in src)
+		cameras += C
 
 	for (var/obj/machinery/computer/station_alert/a in machines)
 		a.triggerAlarm("Fire", src, cameras, source)
 	for (var/mob/living/silicon/aiPlayer in player_list)
 		aiPlayer.triggerAlarm("Fire", src, cameras, source)
-	for (var/mob/living/simple_animal/drone/D in mob_list)
-		D.triggerAlarm("Fire", src, cameras, source)
 	return
 
 /area/proc/firereset(var/obj/source as obj)
-	for(var/area/RA in related)
-		if (RA.fire)
-			RA.fire = 0
-			RA.mouse_opacity = 0
-			RA.updateicon()
-			for(var/obj/machinery/door/firedoor/D in RA)
-				if(!D.blocked)
-					if(D.operating)
-						D.nextstate = OPEN
-					else if(D.density)
-						spawn(0)
-							D.open()
-			for(var/obj/machinery/firealarm/F in RA)
-				F.update_icon()
+	if (src.fire)
+		src.fire = 0
+		src.mouse_opacity = 0
+		src.updateicon()
+		for(var/obj/machinery/door/firedoor/D in src)
+			if(!D.blocked)
+				if(D.operating)
+					D.nextstate = OPEN
+				else if(D.density)
+					spawn(0)
+						D.open()
+		for(var/obj/machinery/firealarm/F in src)
+			F.update_icon()
 
 	for (var/mob/living/silicon/aiPlayer in player_list)
 		aiPlayer.cancelAlarm("Fire", src, source)
 	for (var/obj/machinery/computer/station_alert/a in machines)
 		a.cancelAlarm("Fire", src, source)
-	for (var/mob/living/simple_animal/drone/D in mob_list)
-		D.cancelAlarm("Fire", src, source)
 	return
 
 /area/proc/burglaralert(var/obj/trigger)
@@ -162,18 +141,17 @@
 
 	var/list/cameras = list()
 
-	for(var/area/RA in related)
-		//Trigger alarm effect
-		RA.set_fire_alarm_effect()
-		//Lockdown airlocks
-		for(var/obj/machinery/door/airlock/DOOR in RA)
-			spawn(0)
-				DOOR.close()
-				if(DOOR.density)
-					DOOR.locked = 1
-					DOOR.update_icon()
-		for (var/obj/machinery/camera/C in RA)
-			cameras += C
+	//Trigger alarm effect
+	src.set_fire_alarm_effect()
+	//Lockdown airlocks
+	for(var/obj/machinery/door/airlock/DOOR in src)
+		spawn(0)
+			DOOR.close()
+			if(DOOR.density)
+				DOOR.locked = 1
+				DOOR.update_icon()
+	for (var/obj/machinery/camera/C in src)
+		cameras += C
 
 	for (var/mob/living/silicon/SILICON in player_list)
 		if(SILICON.triggerAlarm("Burglar", src, cameras, trigger))
@@ -224,7 +202,7 @@
 	return
 
 /area/proc/updateicon()
-	if ((fire || eject || party) && (!requires_power||power_environ) && !lighting_space)//If it doesn't require power, can still activate this proc.
+	if ((fire || eject || party) && (!requires_power||power_environ))//If it doesn't require power, can still activate this proc.
 		if(fire && !eject && !party)
 			icon_state = "blue"
 		/*else if(atmosalm && !fire && !eject && !party)
@@ -248,48 +226,47 @@
 
 /area/proc/powered(var/chan)		// return true if the area has power to given channel
 
-	if(!master.requires_power)
+	if(!requires_power)
 		return 1
-	if(master.always_unpowered)
+	if(always_unpowered)
 		return 0
-	if(src.lighting_space)
-		return 0 // Nope sorry
+//	if(src.lighting_space)
+//		return 0 // Nope sorry
 	switch(chan)
 		if(EQUIP)
-			return master.power_equip
+			return power_equip
 		if(LIGHT)
-			return master.power_light
+			return power_light
 		if(ENVIRON)
-			return master.power_environ
+			return power_environ
 
 	return 0
 
 // called when power status changes
 
 /area/proc/power_change()
-	for(var/area/RA in related)
-		for(var/obj/machinery/M in RA)	// for each machine in the area
-			M.power_change()				// reverify power status (to update icons etc.)
-		if (fire || eject || party)
-			RA.updateicon()
+	for(var/obj/machinery/M in src)	// for each machine in the area
+		M.power_change()				// reverify power status (to update icons etc.)
+	if (fire || eject || party)
+		src.updateicon()
 
 /area/proc/usage(var/chan)
 	var/used = 0
 	switch(chan)
 		if(LIGHT)
-			used += master.used_light
+			used += used_light
 		if(EQUIP)
-			used += master.used_equip
+			used += used_equip
 		if(ENVIRON)
-			used += master.used_environ
+			used += used_environ
 		if(TOTAL)
-			used += master.used_light + master.used_equip + master.used_environ
+			used += used_light + used_equip + used_environ
 		if(STATIC_EQUIP)
-			used += master.static_equip
+			used += static_equip
 		if(STATIC_LIGHT)
-			used += master.static_light
+			used += static_light
 		if(STATIC_ENVIRON)
-			used += master.static_environ
+			used += static_environ
 	return used
 
 /area/proc/addStaticPower(value, powerchannel)
@@ -303,19 +280,19 @@
 
 /area/proc/clear_usage()
 
-	master.used_equip = 0
-	master.used_light = 0
-	master.used_environ = 0
+	used_equip = 0
+	used_light = 0
+	used_environ = 0
 
 /area/proc/use_power(var/amount, var/chan)
 
 	switch(chan)
 		if(EQUIP)
-			master.used_equip += amount
+			used_equip += amount
 		if(LIGHT)
-			master.used_light += amount
+			used_light += amount
 		if(ENVIRON)
-			master.used_environ += amount
+			used_environ += amount
 
 
 /area/Entered(A)
@@ -333,7 +310,7 @@
 	// Ambience goes down here -- make sure to list each area seperately for ease of adding things in later, thanks! Note: areas adjacent to each other should have the same sounds to prevent cutoff when possible.- LastyScratch
 	if(!(L && L.client && (L.client.prefs.toggles & SOUND_AMBIENCE)))	return
 
-	if(!L.client.ambience_playing)
+	if(L.client && !L.client.ambience_playing && L.client.prefs.toggles & SOUND_SHIP_AMBIENCE)
 		L.client.ambience_playing = 1
 		L << sound('sound/ambience/shipambience.ogg', repeat = 1, wait = 0, volume = 35, channel = 2)
 

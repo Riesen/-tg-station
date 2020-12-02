@@ -34,7 +34,7 @@ In short:
 
 
 /datum/universal_state/hell/OnTurfChange(var/turf/T)
-	if(T.name == "space")
+	if(istype(T, /turf/space))
 		T.overlays += "hell01"
 		T.underlays -= "hell01"
 	else
@@ -67,8 +67,7 @@ In short:
 
 
 /datum/universal_state/hell/proc/AreaSet()
-	for(var/area/ca in areas)
-		var/area/A=get_area_master(ca)
+	for(var/area/A in areas)
 		if(!istype(A,/area) || A.name=="Space")
 			continue
 
@@ -104,24 +103,34 @@ In short:
 			T.overlays += "hell01"
 		else
 			T.underlays += "hell01"
-			T.update_lumcount(1, 255, 0, 0, 0)
+	for(var/atom/movable/lighting_overlay/L in all_lighting_overlays)
+		L.update_lumcount(0.5, 0, 0)
+
+
 
 /datum/universal_state/hell/proc/MiscSet()
 	for(var/turf/simulated/floor/T in turfs)
+		if(T.z != 1)
+			return
 		if(prob(1))
 			new /obj/effect/gateway/active/cult(T)
 
 	for (var/obj/machinery/firealarm/alm in machines)
+		if(alm.z != 1)
+			return
 		if (!(alm.stat & BROKEN))
 			alm.ex_act(2)
 
 /datum/universal_state/hell/proc/APCSet()
 	for (var/obj/machinery/power/apc/APC in machines)
+		if(APC.z != 1)
+			return
 		if (!(APC.stat & BROKEN) && !istype(APC.area,/area/turret_protected/ai))
 			APC.chargemode = 0
 			if(APC.cell)
 				APC.cell.charge = 0
 			APC.emagged = 1
+			APC.locked = 0
 			APC.queue_icon_update()
 
 /datum/universal_state/hell/proc/KillMobs()

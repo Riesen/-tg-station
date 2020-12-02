@@ -8,16 +8,38 @@ var/const/SAFETY_COOLDOWN = 100
 	layer = MOB_LAYER+1 // Overhead
 	anchored = 1
 	density = 1
+	icon_open = "grinder-oOpen"
+	icon_closed = "grinder-o0"
 	var/safety_mode = 0 // Temporality stops the machine if it detects a mob
 	var/grinding = 0
 	var/icon_name = "grinder-o"
 	var/blood = 0
 	var/eat_dir = WEST
+	var/amount_produced = 1
+	var/datum/material_container/materials
+	machine_flags = REPLACEPARTS | EMAGGABLE | CROWDESTROY | SCREWTOGGLE | CROWPRY
 
 /obj/machinery/recycler/New()
 	// On us
 	..()
+	component_parts = list()
+	component_parts += new /obj/item/weapon/circuitboard/recycler(null)
+	component_parts += new /obj/item/weapon/stock_parts/matter_bin(null)
+	component_parts += new /obj/item/weapon/stock_parts/manipulator(null)
+	materials = new /datum/material_container(src, list(MAT_METAL=1, MAT_GLASS=1, MAT_PLASMA=1, MAT_SILVER=1, MAT_GOLD=1, MAT_DIAMOND=1, MAT_URANIUM=1, MAT_BANANIUM=1))
+	RefreshParts()
 	update_icon()
+
+/obj/machinery/recycler/RefreshParts()
+	var/amt_made = 0
+	var/mat_mod = 0
+	for(var/obj/item/weapon/stock_parts/matter_bin/B in component_parts)
+		mat_mod = 2*B.rating
+	mat_mod *= 50000
+	for(var/obj/item/weapon/stock_parts/manipulator/M in component_parts)
+		amt_made = 25 * M.rating //% of materials salvaged
+	materials.max_amount = mat_mod
+	amount_produced = min(100, amt_made)
 
 /obj/machinery/recycler/examine(mob/user)
 	..()
@@ -31,15 +53,22 @@ var/const/SAFETY_COOLDOWN = 100
 
 
 /obj/machinery/recycler/attackby(var/obj/item/I, var/mob/user, params)
-	if(istype(I, /obj/item/weapon/screwdriver))
-		if(emagged)
-			emagged = 0
-			update_icon()
-			user << "<span class='notice'>You reset the crusher to its default factory settings.</span>"
-	else
-		..()
+	if(default_deconstruction_screwdriver(user, "grinder-oOpen", "grinder-o0", I))
 		return
+	if(exchange_parts(user, I))
+		return
+
+	if(default_pry_open(I))
+		return
+	if(default_unfasten_wrench(user, I))
+		return
+
+	default_deconstruction_crowbar(I)
+
+	..()
+
 	add_fingerprint(user)
+	return
 
 /obj/machinery/recycler/emag_act(user as mob)
 	if(!emagged)
@@ -66,17 +95,11 @@ var/const/SAFETY_COOLDOWN = 100
 
 /obj/machinery/recycler/Bumped(var/atom/movable/AM)
 
-	if(stat & (BROKEN|NOPOWER))
+	if(stat & (BROKEN|NOPOWER) || panel_open)
 		return
 	if(safety_mode)
 		return
-	// If we're not already grinding something.
-	if(!grinding)
-		grinding = 1
-		spawn(1)
-			grinding = 0
-	else
-		return
+
 
 	var/move_dir = get_dir(loc, AM.loc)
 	if(move_dir == eat_dir)
@@ -88,22 +111,30 @@ var/const/SAFETY_COOLDOWN = 100
 		else if(istype(AM, /obj/item))
 			recycle(AM)
 		else // Can't recycle
+			if(AM.anchored) //Edge cases involving windows/grilles
+				return
 			playsound(src.loc, 'sound/machines/buzz-sigh.ogg', 50, 0)
 			AM.loc = src.loc
 
 /obj/machinery/recycler/proc/recycle(var/obj/item/I, var/sound = 1)
 	I.loc = src.loc
+	if(!istype(I))
+		return
+	var/material_amount = materials.can_insert(I)
+	if(!material_amount)
+		qdel(I)
+		if(sound)
+			playsound(src.loc, 'sound/items/Welder.ogg', 50, 1)
+		return
+	materials.insert_item(I, multiplier = (amount_produced / 100))
 	qdel(I)
-	if(prob(15))
-		new /obj/item/stack/sheet/metal(loc)
-	if(prob(10))
-		new /obj/item/stack/sheet/glass(loc)
-	if(prob(2))
-		new /obj/item/stack/sheet/plasteel(loc)
-	if(prob(1))
-		new /obj/item/stack/sheet/rglass(loc)
+	materials.retrieve_all()
+	//Will probably add a multitool menu to select what minerals to output later - Zaers, 2015-07-05
+	//Putting a date on the comment so you can look at this in the future and despair
 	if(sound)
 		playsound(src.loc, 'sound/items/Welder.ogg', 50, 1)
+
+
 
 
 /obj/machinery/recycler/proc/stop(var/mob/living/L)
@@ -130,8 +161,8 @@ var/const/SAFETY_COOLDOWN = 100
 	// By default, the emagged recycler will gib all non-carbons. (human simple animal mobs don't count)
 	if(iscarbon(L))
 		gib = 0
-		if(L.stat == CONSCIOUS)
-			L.say("ARRRRRRRRRRRGH!!!")
+//		if(L.stat == CONSCIOUS)
+//			L.say("ARRRRRRRRRRRGH!!!")
 		add_blood(L)
 
 	if(!blood && !issilicon(L))

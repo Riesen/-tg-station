@@ -18,7 +18,12 @@
 	var/wizardevent = 0
 
 	var/alertadmins = 1			//should we let the admins know this event is firing
+	var/announcement = 0		//If this event has an announcement, used for the false alarm event
 								//should be disabled on events that fire a lot
+	var/min_pop 		= 0		//Do not run events that would be bad on a server population below this number (0 to disable)
+	var/max_pop 		= 0		//Here for symmetry, but it could be used for events that make no sense about X players (0 to disable)
+
+
 
 /datum/round_event_control/wizard
 	wizardevent = 1
@@ -43,6 +48,7 @@
 	var/endWhen			= 0	//When in the lifetime the event should end.
 
 	var/activeFor		= 0	//How long the event has existed. You don't need to change this.
+
 
 //Called first before processing.
 //Allows you to setup your event, such as randomly

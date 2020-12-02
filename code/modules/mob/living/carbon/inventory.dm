@@ -13,3 +13,17 @@
 		if(slot_r_hand)
 			return r_hand
 	return null
+
+//We need to override put_in_l/r_hand to check if said hands even exist in the first place.
+//After that we can just call the super. |- Ricotez
+/mob/living/carbon/put_in_l_hand(var/obj/item/W)
+	if(organsystem)
+		if(!exists("l_arm"))
+			return 0
+	return ..()
+
+/mob/living/carbon/put_in_r_hand(var/obj/item/W)
+	if(organsystem)
+		if(!exists("r_arm"))
+			return 0
+	return ..()

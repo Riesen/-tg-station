@@ -26,6 +26,8 @@
 	var/list/mutations = list()   //All mutations are from now on here
 	var/mob/living/carbon/holder
 
+	var/obj/item/organ/holder_organ
+
 /datum/dna/New(mob/living/carbon/new_holder)
 	if(new_holder && istype(new_holder))
 		holder = new_holder
@@ -38,6 +40,16 @@
 		hardset_dna(destination, null, null, null, null, species.type)
 		destination.dna.real_name = real_name
 		destination.dna.mutations = mutations
+
+/datum/dna/proc/copy_dna(datum/dna/new_dna)
+	unique_enzymes = new_dna.unique_enzymes
+	struc_enzymes = new_dna.struc_enzymes
+	uni_identity = new_dna.uni_identity
+	blood_type = new_dna.blood_type
+	mutant_color = new_dna.mutant_color
+	species = new new_dna.species.type
+	real_name = new_dna.real_name
+	mutations = new_dna.mutations
 
 /datum/dna/proc/add_mutation(mutation_name)
 	var/datum/mutation/human/HM = mutations_list[mutation_name]
@@ -103,6 +115,7 @@
 	. = ""
 	if(istype(character))
 		real_name = character.real_name
+		blood_type = character.dna.blood_type
 		. += md5(character.real_name)
 	else
 		. += repeat_string(DNA_UNIQUE_ENZYMES_LEN, "0")
@@ -148,6 +161,9 @@
 
 	check_dna_integrity(owner)
 
+	if(owner.organsystem)
+		owner.organsystem.set_dna(owner.dna)
+
 	owner.regenerate_icons()
 	return
 
@@ -178,12 +194,27 @@
 	character.dna.uni_identity = character.dna.generate_uni_identity(character)
 	character.dna.struc_enzymes = character.dna.generate_struc_enzymes(character)
 	character.dna.unique_enzymes = character.dna.generate_unique_enzymes(character)
+
+	if(character.organsystem)
+		character.organsystem.set_dna(character.dna)
+
 	return character.dna
 
 /proc/create_dna(mob/living/carbon/C, datum/species/S) //don't use this unless you're about to use hardset_dna or ready_dna
 	C.dna = new /datum/dna(C)
 	C.dna.holder = C
 	if(S)	C.dna.species = new S()	// do not remove; this is here to prevent runtimes
+	if(!C.dna.blood_type) C.dna.blood_type = pick(bloodtypes)
+
+/datum/dna/proc/mutations_get_spans()
+	var/list/spans = list()
+	for(var/datum/mutation/human/M in mutations)
+		spans |= M.get_spans()
+	return spans
+
+/datum/dna/proc/get_eye_color()	//Let's just hope this doesn't need sanity checks
+	return sanitize_hexcolor(getblock(uni_identity, DNA_EYE_COLOR_BLOCK))
+
 
 /////////////////////////// DNA DATUM
 
@@ -277,7 +308,7 @@
 		var/mob/living/carbon/human/H = C
 		H.hair_color = sanitize_hexcolor(getblock(structure, DNA_HAIR_COLOR_BLOCK))
 		H.facial_hair_color = sanitize_hexcolor(getblock(structure, DNA_FACIAL_HAIR_COLOR_BLOCK))
-		H.skin_tone = skin_tones[deconstruct_block(getblock(structure, DNA_SKIN_TONE_BLOCK), skin_tones.len)]
+		H.set_skin_tone(skin_tones[deconstruct_block(getblock(structure, DNA_SKIN_TONE_BLOCK), skin_tones.len)])
 		H.eye_color = sanitize_hexcolor(getblock(structure, DNA_EYE_COLOR_BLOCK))
 		H.facial_hair_style = facial_hair_styles_list[deconstruct_block(getblock(structure, DNA_FACIAL_HAIR_STYLE_BLOCK), facial_hair_styles_list.len)]
 		H.hair_style = hair_styles_list[deconstruct_block(getblock(structure, DNA_HAIR_STYLE_BLOCK), hair_styles_list.len)]
@@ -285,6 +316,8 @@
 		H.update_body()
 		H.update_hair()
 	return 1
+
+
 
 /proc/domutcheck(mob/living/carbon/M)
 	if(!check_dna_integrity(M))
@@ -394,7 +427,7 @@
 	user << "<span class='notice'>You lean on the back of [src] and start pushing the door open. (this will take about [breakout_time] minutes.)</span>"
 	user.visible_message("<span class='warning'>You hear a metallic creaking from [src]!</span>")
 
-	if(do_after(user,(breakout_time*60*10))) //minutes * 60seconds * 10deciseconds
+	if(do_after(user,(breakout_time*60*10), target = src)) //minutes * 60seconds * 10deciseconds
 		if(!user || user.stat != CONSCIOUS || user.loc != src || state_open || !locked)
 			return
 
@@ -483,7 +516,8 @@
 	name = "\improper DNA scanner access console"
 	desc = "Scan DNA."
 	icon = 'icons/obj/computer.dmi'
-	icon_state = "scanner"
+	icon_screen = "dna"
+	icon_keyboard = "med_key"
 	density = 1
 	circuit = /obj/item/weapon/circuitboard/scan_consolenew
 	var/radduration = 2
@@ -533,7 +567,7 @@
 
 /obj/machinery/computer/scan_consolenew/proc/ShowInterface(mob/user, last_change)
 	if(!user) return
-	var/datum/browser/popup = new(user, "scannernew", "DNA Modifier Console", 880, 600) // Set up the popup browser window
+	var/datum/browser/popup = new(user, "scannernew", "DNA Modifier Console", 880, 640) // Set up the popup browser window
 	if(!( in_range(src, user) || istype(user, /mob/living/silicon) ))
 		popup.close()
 		return
@@ -549,45 +583,45 @@
 			if(check_dna_integrity(viable_occupant) && (!(NOCLONE in viable_occupant.mutations) || (connected.scan_level == 3)))	//occupent is viable for dna modification
 				occupant_status += "[viable_occupant.name] => "
 				switch(viable_occupant.stat)
-					if(CONSCIOUS)	occupant_status += "<span class='good'>Conscious</span>"
-					if(UNCONSCIOUS)	occupant_status += "<span class='average'>Unconscious</span>"
-					else			occupant_status += "<span class='bad'>DEAD - Cannot Operate</span>"
+					if(CONSCIOUS)	occupant_status += "<span class='good'>Conscious</span><br>"
+					if(UNCONSCIOUS)	occupant_status += "<span class='average'>Unconscious</span><br>"
+					else			occupant_status += "<span class='bad'>DEAD - Cannot Operate</span<br>>"
 				occupant_status += "</div></div>"
-				occupant_status += "<div class='line'><div class='statusLabel'>Health:</div><div class='progressBar'><div style='width: [viable_occupant.health]%;' class='progressFill good'></div></div><div class='statusValue'>[viable_occupant.health]%</div></div>"
-				occupant_status += "<div class='line'><div class='statusLabel'>Radiation Level:</div><div class='progressBar'><div style='width: [viable_occupant.radiation]%;' class='progressFill bad'></div></div><div class='statusValue'>[viable_occupant.radiation]%</div></div>"
+				occupant_status += "<div class='line'><div class='statusLabel'>Health:</div><div class='progressBar'><div style='width: [viable_occupant.health]%;' class='progressFill good'></div></div><div class='statusValue'>[viable_occupant.health]%</div></div><br>"
+				occupant_status += "<div class='line'><div class='statusLabel'>Radiation Level:</div><div class='progressBar'><div style='width: [viable_occupant.radiation]%;' class='progressFill bad'></div></div><div class='statusValue'>[viable_occupant.radiation]%</div></div><br>"
 				var/rejuvenators = viable_occupant.reagents.get_reagent_amount("inaprovaline")
-				occupant_status += "<div class='line'><div class='statusLabel'>Rejuvenators:</div><div class='progressBar'><div style='width: [round((rejuvenators / REJUVENATORS_MAX) * 100)]%;' class='progressFill highlight'></div></div><div class='statusValue'>[rejuvenators] units</div></div>"
-				occupant_status += "<div class='line'><div class='statusLabel'>Unique Enzymes :</div><div class='statusValue'><span class='highlight'>[viable_occupant.dna.unique_enzymes]</span></div></div>"
-				occupant_status += "<div class='line'><div class='statusLabel'>Last Operation:</div><div class='statusValue'>[last_change ? last_change : "----"]</div></div>"
+				occupant_status += "<div class='line'><div class='statusLabel'>Rejuvenators:</div><div class='progressBar'><div style='width: [round((rejuvenators / REJUVENATORS_MAX) * 100)]%;' class='progressFill highlight'></div></div><div class='statusValue'>[rejuvenators] units</div></div><br>"
+				occupant_status += "<div class='line'><div class='statusLabel'>Unique Enzymes :</div><div class='statusValue'><span class='highlight'>[viable_occupant.dna.unique_enzymes]</span></div></div><br>"
+				occupant_status += "<div class='line'><div class='statusLabel'>Last Operation:</div><div class='statusValue'>[last_change ? last_change : "----"]</div></div><br>"
 			else
 				viable_occupant = null
-				occupant_status += "<span class='bad'>Invalid DNA structure</span></div></div>"
+				occupant_status += "<span class='bad'>Invalid DNA structure</span></div></div><br>"
 		else
-			occupant_status += "<span class='bad'>No subject detected</span></div></div>"
+			occupant_status += "<span class='bad'>No subject detected</span></div></div><br>"
 
 		if(connected.state_open)
 			scanner_status = "Open"
 		else
 			scanner_status = "Closed"
 			if(connected.locked)
-				scanner_status += " <span class='bad'>(Locked)</span>"
+				scanner_status += " <span class='bad'>(Locked)</span><br>"
 			else
-				scanner_status += " <span class='good'>(Unlocked)</span>"
+				scanner_status += " <span class='good'>(Unlocked)</span><br>"
 
 
 	else
-		occupant_status += "<span class='bad'>----</span></div></div>"
-		scanner_status += "<span class='bad'>Error: No scanner detected</span>"
+		occupant_status += "<span class='bad'>----</span></div></div><br>"
+		scanner_status += "<span class='bad'>Error: No scanner detected</span><br>"
 
 	var/status = "<div class='statusDisplay'>"
-	status += "<div class='line'><div class='statusLabel'>Scanner:</div><div class='statusValue'>[scanner_status]</div></div>"
+	status += "<div class='line'><div class='statusLabel'>Scanner:</div><div class='statusValue'>[scanner_status]</div></div><br>"
 	status += "[occupant_status]"
 
 
 	status += "<h3>Radiation Emitter Status</h3>"
 	var/stddev = radstrength*RADIATION_STRENGTH_MULTIPLIER
-	status += "<div class='line'><div class='statusLabel'>Output Level:</div><div class='statusValue'>[radstrength]</div></div>"
-	status += "<div class='line'><div class='statusLabel'>&nbsp;&nbsp;\> Mutation:</div><div class='statusValue'>(-[stddev] to +[stddev] = 68%) (-[2*stddev] to +[2*stddev] = 95%)</div></div>"
+	status += "<div class='line'><div class='statusLabel'>Output Level:</div><div class='statusValue'>[radstrength]</div></div><br>"
+	status += "<div class='line'><div class='statusLabel'>&nbsp;&nbsp;\> Mutation:</div><div class='statusValue'>(-[stddev] to +[stddev] = 68%) (-[2*stddev] to +[2*stddev] = 95%)</div></div><br>"
 	if(connected)
 		stddev = RADIATION_ACCURACY_MULTIPLIER/(radduration + (connected.precision_coeff ** 2))
 	else
@@ -598,12 +632,12 @@
 		if(0.25 to 0.5)			chance_to_hit = "68-95%"
 		if(0.5 to 0.75)			chance_to_hit = "55-68%"
 		else					chance_to_hit = "<38%"
-	status += "<div class='line'><div class='statusLabel'>Pulse Duration:</div><div class='statusValue'>[radduration]</div></div>"
-	status += "<div class='line'><div class='statusLabel'>&nbsp;&nbsp;\> Accuracy:</div><div class='statusValue'>[chance_to_hit]</div></div>"
-	status += "</div>" // Close statusDisplay div
+	status += "<div class='line'><div class='statusLabel'>Pulse Duration:</div><div class='statusValue'>[radduration]</div></div><br>"
+	status += "<div class='line'><div class='statusLabel'>&nbsp;&nbsp;\> Accuracy:</div><div class='statusValue'>[chance_to_hit]</div></div><br>"
+	status += "</div><br>" // Close statusDisplay div
 	var/buttons = "<a href='?src=\ref[src];'>Scan</a> "
 	if(connected)
-		buttons += " <a href='?src=\ref[src];task=toggleopen;'>[connected.state_open ? "Close" : "Open"] Scanner</a> "
+		buttons += " <a href='?src=\ref[src];task=toggleopen;'>[connected.state_open ? "Close" : "Open"] Scanner</a>"
 		if (connected.state_open)
 			buttons += "<span class='linkOff'>[connected.locked ? "Unlock" : "Lock"] Scanner</span> "
 		else
@@ -689,6 +723,7 @@
 			temp_html += "<br><a href='?src=\ref[src];task=setduration;num=[radduration-1];'>--</a> <a href='?src=\ref[src];task=setduration;'>Pulse Duration</a> <a href='?src=\ref[src];task=setduration;num=[radduration+1];'>++</a>"
 
 			temp_html += "<h3>Irradiate Subject</h3>"
+
 			temp_html += "<div class='line'><div class='statusLabel'>Unique Identifier:</div><div class='statusValue'><div class='clearBoth'>"
 
 			var/max_line_len = 7*DNA_BLOCK_SIZE
@@ -703,7 +738,7 @@
 						temp_html += "<div class='dnaBlockNumber'>[(i / DNA_BLOCK_SIZE) + 1]</div>"
 			else
 				temp_html += "----"
-			temp_html += "</div></div></div><br>"
+			temp_html += "</div></div></div><br><br>"
 
 			temp_html += "<div class='line'><div class='statusLabel'>Structural Enzymes:</div><div class='statusValue'><div class='clearBoth'>"
 			if(viable_occupant)
@@ -718,6 +753,7 @@
 			else
 				temp_html += "----"
 			temp_html += "</div></div></div>"
+
 
 	popup.set_content(temp_html)
 	popup.open()
@@ -825,8 +861,7 @@
 								I = new /obj/item/weapon/dnainjector(loc)
 								for(var/datum/mutation/human/HM in good_mutations + bad_mutations + not_good_mutations)
 									if(HM.check_block_string(buffer_slot["SE"]))
-										if(prob(HM.get_chance))
-											I.add_mutations.Add(HM)
+										I.add_mutations.Add(HM)
 									else
 										I.remove_mutations.Add(HM)
 								I.damage_coeff  = connected.damage_coeff

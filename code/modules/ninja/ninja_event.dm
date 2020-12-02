@@ -13,7 +13,7 @@ Contents:
 /datum/round_event_control/ninja
 	name = "Space Ninja"
 	typepath = /datum/round_event/ninja
-	max_occurrences = 1
+	max_occurrences = 0 // 1 is too many for a 15-man crew.
 	earliest_start = 30000 // 1 hour
 
 
@@ -212,7 +212,5 @@ proc/create_ninja_mind(key)
 	equip_to_slot_or_del(new /obj/item/weapon/tank/jetpack/carbondioxide(src), slot_back)
 
 	var/obj/item/weapon/implant/explosive/E = new/obj/item/weapon/implant/explosive(src)
-	E.imp_in = src
-	E.implanted = 1
-	E.implanted(src)
+	E.implant(src)
 	return 1

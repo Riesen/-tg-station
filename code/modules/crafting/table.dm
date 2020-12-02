@@ -1,4 +1,4 @@
-#define TABLECRAFT_MAX_ITEMS 30
+#define TABLECRAFT_MAX_ITEMS 60
 
 /obj/structure/table
 	var/list/table_contents = list()
@@ -12,10 +12,17 @@
 	check_table()
 	main_loop:
 		for(var/A in R.reqs)
+			var/needed_amount = R.reqs[A]
 			for(var/B in table_contents)
 				if(ispath(B, A))
 					if(table_contents[B] >= R.reqs[A])
 						continue main_loop
+					else
+						needed_amount -= table_contents[B]
+						if(needed_amount <= 0)
+							continue main_loop
+						else
+							continue
 			return 0
 	for(var/A in R.chem_catalysts)
 		if(table_contents[A] < R.chem_catalysts[A])
@@ -58,29 +65,32 @@
 		else
 			possible_tools += I.type
 	possible_tools += table_contents
-	var/i = R.tools.len
-	var/I
-	for(var/A in R.tools)
-		I = possible_tools.Find(A)
-		if(I)
-			possible_tools.Cut(I, I+1)
-			i--
-		else
-			break
-	return !i
+	main_loop:
+		for(var/A in R.tools)
+			for(var/I in possible_tools)
+				if(ispath(I,A))
+					possible_tools -= I
+					continue main_loop
+			return 0
+	return 1
 
 /obj/structure/table/proc/construct_item(mob/user, datum/table_recipe/R)
 	check_table()
 	if(check_contents(R) && check_tools(user, R))
-		if(do_after(user, R.time))
+		if(do_after(user, R.time, target = src))
 			if(!check_contents(R) || !check_tools(user, R))
 				return 0
 			var/atom/movable/I = new R.result (loc)
+			if(istype(I, /obj/item/weapon/reagent_containers/food/snacks))
+				var/obj/item/weapon/reagent_containers/food/snacks/S = I
+				S.create_reagents(S.volume)
 			var/list/parts = del_reqs(R, I)
 			for(var/A in parts)
 				if(istype(A, /obj/item))
 					var/atom/movable/B = A
 					B.loc = I
+					B.pixel_x = initial(B.pixel_x)
+					B.pixel_y = initial(B.pixel_y)
 				else
 					if(!I.reagents)
 						I.reagents = new /datum/reagents()
@@ -166,7 +176,7 @@
 	return Deletion
 
 /obj/structure/table/interact(mob/user)
-	if(user.stat || user.lying || !Adjacent(user))
+	if(user.incapacitated() || user.lying || !Adjacent(user))
 		return
 	check_table()
 	if(!table_contents.len)
@@ -233,7 +243,7 @@
 		busy = 1
 		interact(usr)
 		if(construct_item(usr, TR))
-			usr << "<span class='notice'>[TR.name] constructed.</span>"
+			usr << "<span class='notice'>[TR.name] done.</span>"
 		else
 			usr << "<span class ='warning'>Construction failed.</span>"
 		busy = 0

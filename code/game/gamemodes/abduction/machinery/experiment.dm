@@ -7,7 +7,8 @@
 	anchored = 1
 	state_open = 1
 	var/points = 0
-	var/list/history = new
+	var/list/history = list()
+	var/list/abductee_minds = list()
 	var/flash = " - || - "
 	var/obj/machinery/abductor/console/console
 
@@ -139,12 +140,13 @@
 	if(H.stat == DEAD)
 		say("Specimen deceased - please provide fresh sample.")
 		return "<span class='bad'>Specimen Deceased</span>"
-	var/obj/item/gland/GlandTest = locate() in H
-	if(!GlandTest)
+	var/datum/organ/internal/heart/HE = H.get_organdatum("heart")
+	if(!istype(HE.organitem, /obj/item/organ/internal/heart/gland))
 		say("Experimental dissection not detected!")
 		return "<span class='bad'>No glands detected!</span>"
 	if(H.mind != null && H.ckey != null)
 		history += H
+		abductee_minds += H.mind
 		say("Processing Specimen...")
 		sleep(5)
 		switch(text2num(type))
@@ -165,9 +167,12 @@
 			H << "<B>Objective #[obj_count]</B>: [objective.explanation_text]"
 			obj_count++
 
-		for(var/obj/item/gland/G in H)
-			G.Start()
-			point_reward++
+		var/datum/organ/internal/heart/heart = H.get_organdatum("heart")
+		if(heart && heart.exists())
+			if(istype(heart.organitem, /obj/item/organ/internal/heart/gland))
+				var/obj/item/organ/internal/heart/gland/G = heart.organitem
+				G.Start()
+				point_reward++
 		if(point_reward > 0)
 			open_machine()
 			SendBack(H)
@@ -201,6 +206,3 @@
 		icon_state = "experiment-open"
 	else
 		icon_state = "experiment"
-
-/obj/machinery/abductor/experiment/say_quote(text)
-	return "beeps, \"[text]\""

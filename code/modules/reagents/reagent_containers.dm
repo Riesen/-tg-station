@@ -26,7 +26,7 @@
 	..()
 	if (!possible_transfer_amounts)
 		src.verbs -= /obj/item/weapon/reagent_containers/verb/set_APTFT
-	if (vol > 0)
+	if (isnum(vol) && vol > 0)
 		volume = vol
 	create_reagents(volume)
 	if(spawned_disease)
@@ -67,7 +67,7 @@
 			return 1
 
 	if(!isnull(cover))
-		if((cover.flags & HEADCOVERSMOUTH) || (cover.flags & MASKCOVERSMOUTH))
+		if(cover.body_parts_covered & MOUTH)
 			var/who = (isnull(user) || eater == user) ? "your" : "their"
 
 			if(istype(cover, /obj/item/clothing/mask/))

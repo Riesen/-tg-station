@@ -25,6 +25,7 @@
 
 #ifdef USE_BYGEX
 
+
 #ifndef LIBREGEX_LIBRARY
 	#define LIBREGEX_LIBRARY "bin/bygex"
 #endif

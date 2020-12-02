@@ -157,8 +157,8 @@
 			user << "<span class='notice'>The endoskeleton must be assembled before debugging can begin.</span>"
 
 	if(istype(W, /obj/item/device/mmi))
-		if(user && ismommi(user))
-			var/mob/living/silicon/robot/mommi/R = user
+		if(user && issilicon(user))
+			var/mob/living/silicon/R = user
 			if(R.keeper)
 				user << "Your laws forbid you from doing this"
 				return
@@ -185,7 +185,7 @@
 				user << "<span class='warning'>Sticking a dead brain into the frame would sort of defeat the purpose!</span>"
 				return
 
-			if((BM.mind in ticker.mode.head_revolutionaries) || (BM.mind in ticker.mode.A_bosses) || (BM.mind in ticker.mode.B_bosses))
+			if(BM.mind in (ticker.mode.head_revolutionaries|ticker.mode.get_gang_bosses()))
 				user << "<span class='warning'>The frame's firmware lets out a shrill sound, and flashes 'Abnormal Memory Engram'. It refuses to accept the MMI!</span>"
 				return
 

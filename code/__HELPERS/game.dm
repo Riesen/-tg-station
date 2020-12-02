@@ -14,9 +14,8 @@
 
 /proc/get_area_master(O)
 	var/area/A = get_area(O)
-	if(A && A.master)
-		A = A.master
-	return A
+	if(isarea(A))
+		return A
 
 /proc/get_area_name(N) //get area by its name
 	for(var/area/A in world)
@@ -29,6 +28,18 @@
 		return 1
 
 	return 0 //not in range and not telekinetic
+
+/proc/mobs_in_area(var/area/the_area, var/client_needed=0, var/moblist=mob_list)
+	//writepanic("[__FILE__].[__LINE__] (no type)([usr ? usr.ckey : ""])  \\/proc/mobs_in_area() called tick#: [world.time]")
+	var/list/mobs_found[0]
+	var/area/our_area = get_area_master(the_area)
+	for(var/mob/M in moblist)
+		if(client_needed && !M.client)
+			continue
+		if(our_area != get_area_master(M))
+			continue
+		mobs_found += M
+	return mobs_found
 
 // Like view but bypasses luminosity check
 
@@ -54,17 +65,10 @@
 	return 1
 
 
-//Magic constants obtained by using linear regression on right-angled triangles of sides 0<x<1, 0<y<1
-//They should approximate pythagoras theorem well enough for our needs.
-#define k1 0.934
-#define k2 0.427
-/proc/cheap_hypotenuse(Ax,Ay,Bx,By) // T is just the second atom to check distance to center with
-	var/dx = abs(Ax - Bx)	//sides of right-angled triangle
-	var/dy = abs(Ay - By)
-	if(dx>=dy)	return (k1*dx) + (k2*dy)	//No sqrt or powers :)
-	else		return (k2*dx) + (k1*dy)
-#undef k1
-#undef k2
+//We used to use linear regression to approximate the answer, but Mloc realized this was actually faster.
+//And lo and behold, it is, and it's more accurate to boot.
+/proc/cheap_hypotenuse(Ax,Ay,Bx,By)
+	return sqrt(abs(Ax - Bx)**2 + abs(Ay - By)**2) //A squared + B squared = C squared
 
 /proc/circlerange(center=usr,radius=3)
 
@@ -331,9 +335,15 @@
 /proc/flick_overlay(image/I, list/show_to, duration)
 	for(var/client/C in show_to)
 		C.images += I
-	sleep(duration)
-	for(var/client/C in show_to)
-		C.images -= I
+	spawn(duration)
+		for(var/client/C in show_to)
+			C.images -= I
+
+
+/client/proc/show_image(image/I, duration)
+	images += I
+	spawn(duration)
+		images -= I
 
 /proc/get_active_player_count()
 	// Get active players who are playing in the round

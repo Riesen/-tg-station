@@ -36,7 +36,7 @@ var/datum/subsystem/vote/SSvote
 				client_popup.open(0)
 
 
-/datum/subsystem/vote/proc/reset()
+/datum/subsystem/vote/proc/reset(var/user)
 	initiator = null
 	time_remaining = 0
 	mode = null
@@ -44,11 +44,16 @@ var/datum/subsystem/vote/SSvote
 	choices.Cut()
 	voted.Cut()
 	voting.Cut()
+	if(user)		//This is done so regular usage of this proc doesn't cause the message to appear
+					//Maybe this additional logging should be put in another proc?
+		log_game("[key_name(usr)] has reset voting")
+		world << "\n<font color='purple'>Voting has been reset</font>"
 
 /datum/subsystem/vote/proc/get_result()
 	//get the highest number of votes
 	var/greatest_votes = 0
 	var/total_votes = 0
+	var/winners
 	for(var/option in choices)
 		var/votes = choices[option]
 		total_votes += votes
@@ -68,16 +73,17 @@ var/datum/subsystem/vote/SSvote
 					if(choices[master_mode] >= greatest_votes)
 						greatest_votes = choices[master_mode]
 	//get all options with that many votes and return them in a list
-	. = list()
+	winners = list()
 	if(greatest_votes)
 		for(var/option in choices)
 			if(choices[option] == greatest_votes)
-				. += option
-	return .
+				winners += option
+	return winners
 
 /datum/subsystem/vote/proc/announce_result()
 	var/list/winners = get_result()
 	var/text
+	var/result
 	if(winners.len > 0)
 		if(question)	text += "<b>[question]</b>"
 		else			text += "<b>[capitalize(mode)] Vote</b>"
@@ -90,41 +96,37 @@ var/datum/subsystem/vote/SSvote
 				text = "\n<b>Vote Tied Between:</b>"
 				for(var/option in winners)
 					text += "\n\t[option]"
-			. = pick(winners)
-			text += "\n<b>Vote Result: [.]</b>"
+			result = pick(winners)
+			text += "\n<b>Vote Result: [result]</b>"
 		else
 			text += "\n<b>Did not vote:</b> [clients.len-voted.len]"
 	else
 		text += "<b>Vote Result: Inconclusive - No Votes!</b>"
 	log_vote(text)
 	world << "\n<font color='purple'>[text]</font>"
-	return .
+	return result
 
 /datum/subsystem/vote/proc/result()
-	. = announce_result()
+	var/result = announce_result()
 	var/restart = 0
-	if(.)
+	if(result)
 		switch(mode)
 			if("restart")
-				if(. == "Restart Round")
+				if(result == "Restart Round")
 					restart = 1
 			if("gamemode")
-				if(master_mode != .)
-					world.save_mode(.)
+				if(master_mode != result)
+					world.save_mode(result)
 					if(ticker && ticker.mode)
 						restart = 1
 					else
-						master_mode = .
+						master_mode = result
 
 	if(restart)
-		world << "World restarting due to vote..."
-		feedback_set_details("end_error","restart vote")
-		if(blackbox)	blackbox.save_all_data_to_sql()
-		sleep(50)
-		log_game("Rebooting due to restart vote")
-		world.Reboot()
+		spawn(5)
+			world.Reboot("Restart vote successful.", "end_error", "restart vote")
 
-	return .
+	return result
 
 /datum/subsystem/vote/proc/submit_vote(var/vote)
 	if(mode)
@@ -142,6 +144,7 @@ var/datum/subsystem/vote/SSvote
 		if(started_time != null)
 			var/next_allowed_time = (started_time + config.vote_delay)
 			if(next_allowed_time > world.time)
+				usr << "<span class='notice'>Voting is on cooldown. [(next_allowed_time - world.time) / 10] seconds left until the cooldown expires.</span>"
 				return 0
 
 		reset()
@@ -155,7 +158,9 @@ var/datum/subsystem/vote/SSvote
 					var/option = capitalize(stripped_input(usr,"Please enter an option or hit cancel to finish"))
 					if(!option || mode || !usr.client)	break
 					choices.Add(option)
-			else			return 0
+			else
+				usr << "<span class='notice'>Invalid voting mode selected.</span>"
+				return 0
 		mode = vote_type
 		initiator = initiator_key
 		started_time = world.time
@@ -166,6 +171,7 @@ var/datum/subsystem/vote/SSvote
 		world << "\n<font color='purple'><b>[text]</b>\nType <b>vote</b> or click <a href='?src=\ref[src]'>here</a> to place your votes.\nYou have [config.vote_period/10] seconds to vote.</font>"
 		time_remaining = round(config.vote_period/10)
 		return 1
+	usr << "<span class='notice'>There is already an active vote happening.</span>"
 	return 0
 
 /datum/subsystem/vote/proc/interface(var/client/C)
@@ -175,7 +181,7 @@ var/datum/subsystem/vote/SSvote
 	if(C.holder)
 		admin = 1
 		if(check_rights_for(C, R_ADMIN))
-			trialmin = 1
+			trialmin = 1				//nice variable names nerds
 	voting |= C
 
 	if(mode)
@@ -225,7 +231,7 @@ var/datum/subsystem/vote/SSvote
 			return
 		if("cancel")
 			if(usr.client.holder)
-				reset()
+				reset(usr)
 		if("toggle_restart")
 			if(usr.client.holder)
 				config.allow_vote_restart = !config.allow_vote_restart

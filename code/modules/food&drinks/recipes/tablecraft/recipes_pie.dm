@@ -18,7 +18,7 @@
 		/datum/reagent/consumable/blackpepper = 1,
 		/datum/reagent/consumable/sodiumchloride = 1,
 		/obj/item/weapon/reagent_containers/food/snacks/pie/plain = 1,
-		/obj/item/weapon/reagent_containers/food/snacks/meatsteak/plain = 1
+		/obj/item/weapon/reagent_containers/food/snacks/meat/steak/plain = 1
 	)
 	result = /obj/item/weapon/reagent_containers/food/snacks/pie/meatpie
 
@@ -34,7 +34,7 @@
 	name = "Xeno pie"
 	reqs = list(
 		/obj/item/weapon/reagent_containers/food/snacks/pie/plain = 1,
-		/obj/item/weapon/reagent_containers/food/snacks/cutlet/xeno = 1
+		/obj/item/weapon/reagent_containers/food/snacks/meat/cutlet/xeno = 1
 	)
 	result = /obj/item/weapon/reagent_containers/food/snacks/pie/xemeatpie
 
@@ -113,7 +113,7 @@
 	reqs = list(
 		/datum/reagent/consumable/vanilla = 5,
 		/datum/reagent/water = 5,
-		/obj/item/weapon/reagent_containers/food/snacks/grown/sweetpotato = 2
+		/obj/item/weapon/reagent_containers/food/snacks/grown/potato/sweet = 2
 	)
 	result = /obj/item/weapon/reagent_containers/food/snacks/pie/dulcedebatata
 

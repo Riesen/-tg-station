@@ -26,7 +26,7 @@ var/list/chatchannels = list(default_ntrc_chatroom.name = default_ntrc_chatroom)
 	MS.send_chat_message(nick,name,message)
 
 	if(findtext(message,"/",1,2))
-		var/list/cmd=text2list(message, " ")
+		var/list/cmd=splittext(message, " ")
 		switch(cmd[1])
 			if("/register")
 				if(cmd.len == 1)
@@ -66,7 +66,7 @@ var/list/chatchannels = list(default_ntrc_chatroom.name = default_ntrc_chatroom)
 /datum/chatroom/proc/send_message(client,nick,message) //standard message
 	if(!message)
 		return 0
-	logs.Insert(1,"[strip_html_properly(nick)]> [strip_html_properly(message)]")
+	logs.Insert(1,"[html_encode(nick)]> [html_encode(message)]")
 	log_chat("[usr]/([usr.ckey]) as [nick] sent to [name]: [message]")
 	events.fireEvent("msg_chat",name,nick,message)
 	return 1

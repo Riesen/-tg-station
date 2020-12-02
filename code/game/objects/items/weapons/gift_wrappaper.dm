@@ -44,22 +44,24 @@
 		/obj/item/weapon/book/manual/barman_recipes,
 		/obj/item/weapon/book/manual/chef_recipes,
 		/obj/item/weapon/bikehorn,
-		/obj/item/weapon/beach_ball,
-		/obj/item/weapon/beach_ball/holoball,
+		/obj/item/toy/beach_ball,
+		/obj/item/toy/beach_ball/holoball,
 		/obj/item/weapon/banhammer,
 		/obj/item/weapon/reagent_containers/food/snacks/grown/ambrosia/deus,
 		/obj/item/weapon/reagent_containers/food/snacks/grown/ambrosia/vulgaris,
 		/obj/item/device/paicard,
-		/obj/item/device/violin,
+		/obj/item/device/instrument/violin,
+		/obj/item/device/instrument/guitar,
 		/obj/item/weapon/storage/belt/utility/full,
 		/obj/item/clothing/tie/horrible,
 		/obj/item/clothing/suit/jacket/leather,
 		/obj/item/clothing/suit/poncho,
 		/obj/item/clothing/suit/poncho/green,
-		/obj/item/clothing/suit/poncho/red)
+		/obj/item/clothing/suit/poncho/red,
+		/obj/item/weapon/deck)
 
 	gift_type_list += typesof(/obj/item/clothing/head/collectable) - /obj/item/clothing/head/collectable
-	gift_type_list += typesof(/obj/item/toy) - (((typesof(/obj/item/toy/cards) - /obj/item/toy/cards/deck) + /obj/item/toy/ammo) + /obj/item/toy) //All toys, except for abstract types and syndicate cards.
+	gift_type_list += ((typesof(/obj/item/toy/cards) + /obj/item/toy/ammo) + /obj/item/toy) //All toys, except for abstract types and cards.
 
 	var/gift_type = pick(gift_type_list)
 

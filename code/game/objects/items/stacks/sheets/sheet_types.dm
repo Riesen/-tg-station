@@ -31,6 +31,7 @@ var/global/list/datum/stack_recipe/metal_recipes = list ( \
 	new/datum/stack_recipe("machine frame", /obj/machinery/constructable_frame/machine_frame, 5, time = 25, one_per_turf = 1, on_floor = 1), \
 	new/datum/stack_recipe("turret frame", /obj/machinery/porta_turret_construct, 5, time = 25, one_per_turf = 1, on_floor = 1), \
 	null, \
+	new/datum/stack_recipe("meatspike frame", /obj/machinery/kitchenspike_frame, 5, time = 25, one_per_turf = 1, on_floor = 1), \
 	new/datum/stack_recipe("grenade casing", /obj/item/weapon/grenade/chem_grenade), \
 	new/datum/stack_recipe("light fixture frame", /obj/item/light_fixture_frame, 2), \
 	new/datum/stack_recipe("small light fixture frame", /obj/item/light_fixture_frame/small, 1), \
@@ -47,13 +48,14 @@ var/global/list/datum/stack_recipe/metal_recipes = list ( \
 	desc = "Sheets made out of metal."
 	singular_name = "metal sheet"
 	icon_state = "sheet-metal"
-	m_amt = MINERAL_MATERIAL_AMOUNT
+	materials = list(MAT_METAL=MINERAL_MATERIAL_AMOUNT)
 	throwforce = 10.0
 	flags = CONDUCT
 	origin_tech = "materials=1"
+	grind_reagents = list("iron" = 20)
 
 /obj/item/stack/sheet/metal/cyborg
-	m_amt = 0
+	materials = list()
 	is_cyborg = 1
 	cost = 500
 
@@ -75,10 +77,11 @@ var/global/list/datum/stack_recipe/plasteel_recipes = list ( \
 	desc = "This sheet is an alloy of iron and plasma."
 	icon_state = "sheet-plasteel"
 	item_state = "sheet-metal"
-	m_amt = 6000
+	materials = list(MAT_METAL=6000, MAT_PLASMA=6000)
 	throwforce = 10.0
 	flags = CONDUCT
 	origin_tech = "materials=2"
+	grind_reagents = list("plasma" = 20, "iron" = 20)
 
 /obj/item/stack/sheet/plasteel/New(var/loc, var/amount=null)
 		recipes = plasteel_recipes
@@ -108,6 +111,7 @@ var/global/list/datum/stack_recipe/wood_recipes = list ( \
 	icon = 'icons/obj/items.dmi'
 	origin_tech = "materials=1;biotech=1"
 	sheettype = "wood"
+	grind_reagents = list("carbon" = 20)
 
 /obj/item/stack/sheet/mineral/wood/New(var/loc, var/amount=null)
 	recipes = wood_recipes

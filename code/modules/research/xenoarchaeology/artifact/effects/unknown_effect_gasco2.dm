@@ -16,7 +16,7 @@
 /datum/artifact_effect/gasco2/DoEffectTouch(var/mob/user)
 	if(holder)
 		var/datum/gas_mixture/env = holder.loc.return_air()
-		if(env)
+		if(env && env.total_moles() < max_pressure)
 			env.carbon_dioxide += rand(2,15)
 			holder.air_update_turf(0)
 

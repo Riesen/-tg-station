@@ -13,7 +13,7 @@
 /datum/artifact_effect/gasplasma/DoEffectTouch(var/mob/user)
 	if(holder)
 		var/datum/gas_mixture/env = holder.loc.return_air()
-		if(env)
+		if(env && env.total_moles() < max_pressure)
 			env.toxins += rand(2,15)
 			holder.air_update_turf(0)
 

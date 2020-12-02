@@ -59,7 +59,7 @@
 	density = 0
 	anchored = 1
 	layer = 2
-	luminosity = 1
+	light_range = 1
 	icon = 'icons/effects/effects.dmi'
 	icon_state = "greenglow"
 
@@ -103,6 +103,22 @@
 	random_icon_states = list("vomit_1", "vomit_2", "vomit_3", "vomit_4")
 	var/list/viruses = list()
 
+/obj/effect/decal/cleanable/vomit/attack_hand(var/mob/user)
+	if(istype(user,/mob/living/carbon/human))
+		var/mob/living/carbon/human/H = user
+		if(H.dna.species.id == "fly")
+			playsound(get_turf(src), 'sound/items/drink.ogg', 50, 1) //slurp
+			H.visible_message("<span class='alert'>[H] extends a small proboscis into the vomit pool, sucking it with a slurping sound.</span>")
+			if(reagents)
+				for(var/datum/reagent/R in reagents.reagent_list)
+					if (istype(R, /datum/reagent/consumable))
+						var/datum/reagent/consumable/nutri_check = R
+						if(nutri_check.nutriment_factor >0)
+							H.nutrition += nutri_check.nutriment_factor * nutri_check.volume
+							reagents.remove_reagent(nutri_check.id,nutri_check.volume)
+			reagents.trans_to(H, reagents.total_volume)
+			Destroy()
+
 /obj/effect/decal/cleanable/vomit/Destroy()
 	for(var/datum/disease/D in viruses)
 		D.cure(0)
@@ -117,6 +133,13 @@
 	layer = 2
 	icon = 'icons/effects/tomatodecal.dmi'
 	random_icon_states = list("tomato_floor1", "tomato_floor2", "tomato_floor3")
+
+/obj/effect/decal/cleanable/plant_smudge
+	name = "plant smudge"
+	density = 0
+	layer = 2
+	icon = 'icons/effects/tomatodecal.dmi'
+	random_icon_states = list("smashed_plant")
 
 /obj/effect/decal/cleanable/egg_smudge
 	name = "smashed egg"

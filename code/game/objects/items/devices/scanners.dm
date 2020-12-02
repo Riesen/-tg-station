@@ -13,16 +13,19 @@ MASS SPECTROMETER
 	desc = "A terahertz-ray emitter and scanner used to detect underfloor objects such as cables and pipes."
 	icon_state = "t-ray0"
 	var/on = 0
+	var/invis_objects = list()
 	slot_flags = SLOT_BELT
 	w_class = 2
 	item_state = "electronic"
-	m_amt = 150
+	materials = list(MAT_METAL=150)
 	origin_tech = "magnets=1;engineering=1"
 
 /obj/item/device/t_scanner/attack_self(mob/user)
 
 	on = !on
 	icon_state = copytext(icon_state, 1, length(icon_state))+"[on]"
+
+	invis_update()
 
 	if(on)
 		SSobj.processing |= src
@@ -36,30 +39,31 @@ MASS SPECTROMETER
 
 /obj/item/device/t_scanner/proc/scan()
 
-	for(var/turf/T in range(2, src.loc.loc) )
+	for(var/turf/T in range(2, get_turf(src)))
+		if(!T || !istype(T))
+			continue
 
 		if(!T.intact)
 			continue
 
 		for(var/obj/O in T.contents)
-
 			if(O.level != 1)
 				continue
 
 			if(O.invisibility == 101)
 				O.invisibility = 0
-				spawn(10)
-					if(O)
-						var/turf/U = O.loc
-						if(U.intact)
-							O.invisibility = 101
+				invis_objects += O
+		spawn(5)
+			invis_update()
 
-		var/mob/living/M = locate() in T
-		if(M && M.invisibility == 2)
-			M.invisibility = 0
-			spawn(2)
-				if(M)
-					M.invisibility = INVISIBILITY_LEVEL_TWO
+
+/obj/item/device/t_scanner/proc/invis_update()
+	for(var/obj/O in invis_objects)
+		if(!on || !(O in range(2, get_turf(src))))
+			invis_objects -= O
+			var/turf/T = O.loc
+			if(T && T.intact)
+				O.invisibility = 101
 
 
 /obj/item/device/healthanalyzer
@@ -73,7 +77,7 @@ MASS SPECTROMETER
 	w_class = 1.0
 	throw_speed = 3
 	throw_range = 7
-	m_amt = 200
+	materials = list(MAT_METAL=200)
 	origin_tech = "magnets=1;biotech=1"
 	var/mode = 1
 	var/scanchems = 0
@@ -112,6 +116,9 @@ MASS SPECTROMETER
 // Used by the PDA medical scanner too
 /proc/healthscan(var/mob/living/user, var/mob/living/M, var/mode = 1)
 
+	if(!ishuman(M) && !ismonkey(M)) //Must be human/monkey to properly get scanned
+		return
+
 	//Damage specifics
 	var/oxy_loss = M.getOxyLoss()
 	var/tox_loss = M.getToxLoss()
@@ -147,10 +154,22 @@ MASS SPECTROMETER
 	if(istype(M, /mob/living/carbon/human) && mode == 1)
 		var/mob/living/carbon/human/H = M
 		var/list/damaged = H.get_damaged_organs(1,1)
+		var/list/destroyed = list()
+		for(var/datum/organ/limb/LI in H.get_limbs())
+			if (!LI.exists())
+				destroyed += LI
 		user.show_message("<span class='notice'>Localized Damage, <font color='#FF8000'>Burn</font>/<font color='red'>Brute</font>:</span>",1)
+		if(length(destroyed)>0)
+			for(var/datum/organ/limb/LI in destroyed)
+				if(LI.status & ORGAN_REMOVED)
+					user.show_message("<span class='notice'>[capitalize(LI.getDisplayName())] has been surgically removed.</span>")
+				else if(LI.status & ORGAN_DESTROYED)
+					user.show_message("<span class='notice'><font color='red'>[capitalize(LI.getDisplayName())] has been brutally removed and the stump is bleeding profusely!</font></span>")
+				else if(LI.status & ORGAN_NOBLEED)
+					user.show_message("<span class='notice'><font color='#FF8000'>[capitalize(LI.getDisplayName())] has been violently removed, but the wound seems cauterized.</font></span>")
 		if(length(damaged)>0)
 			for(var/obj/item/organ/limb/org in damaged)
-				user.show_message(text("<span class='notice'>\t []: []-[]", capitalize(org.getDisplayName()), (org.burn_dam > 0) ? "<font color='#FF8000'>[org.burn_dam]</font>" : 0, (org.brute_dam > 0) ? "<font color='red'>[org.brute_dam]</font></span>" : 0), 1)
+				user.show_message(text("<span class='notice'>\t []: []-[]", capitalize(org.name), (org.burn_dam > 0) ? "<font color='#FF8000'>[org.burn_dam]</font>" : 0, (org.brute_dam > 0) ? "<font color='red'>[org.brute_dam]</font></span>" : 0), 1)
 		else
 			user.show_message("<span class='notice'>\t Limbs are OK.</span>",1)
 
@@ -172,7 +191,8 @@ MASS SPECTROMETER
 		user.show_message("<span class='notice'>Bloodstream Analysis located [M.reagents:get_reagent_amount("inaprovaline")] units of rejuvenation chemicals.</span>", 1)
 	if (M.has_brain_worms())
 		user.show_message("<span class='warning'>Subject suffering from aberrant brain activity. Recommend further scanning.</span>", 1)
-	if (M.getBrainLoss() >= 100 || !M.getorgan(/obj/item/organ/brain))
+
+	if (M.getBrainLoss() >= 100 || !M.exists("brain"))	//Monkeys won't show as brainless unless they get an organsystem. Matters little, though
 		user.show_message("<span class='warning'>Subject brain function is non-existant.</span>", 1)
 	else if (M.getBrainLoss() >= 60)
 		user.show_message("<span class='warning'>Severe brain damage detected. Subject likely to have mental retardation.</span>", 1)
@@ -196,22 +216,33 @@ MASS SPECTROMETER
 			else
 				user.show_message("<span class='notice'>Blood Level Normal: [blood_percent]% [blood_volume]cl. Type: [blood_type]</span>")
 
+		var/implant_detect
+		for(var/datum/organ/internal/cyberimp/CI in H.get_all_internal_organs())
+			if(CI.exists())
+				implant_detect += "[H.name] is modified with a [CI.organitem.name].<br>"
+		if(implant_detect)
+			user.show_message("<span class='notice'>Detected cybernetic modifications:</span>")
+			user.show_message("<span class='notice'>[implant_detect]</span>")
+
+
 /proc/chemscan(var/mob/living/user, var/mob/living/M)
-	if(ishuman(M))
-		var/mob/living/carbon/human/H = M
-		if(H.reagents)
-			if(H.reagents.reagent_list.len)
+	if(iscarbon(M))
+		var/mob/living/carbon/C = M
+		if(C.reagents)
+			if(C.reagents.reagent_list.len)
 				user.show_message("<span class='notice'>Subject contains the following reagents:</span>")
-				for(var/datum/reagent/R in H.reagents.reagent_list)
+				for(var/datum/reagent/R in C.reagents.reagent_list)
 					user.show_message("<span class='notice'>[R.volume]u of [R.name][R.overdosed == 1 ? "</span> - <span class = 'userdanger'>OVERDOSING</span>" : ".</span>"]")
 			else
 				user.show_message("<span class = 'notice'>Subject contains no reagents.</span>")
-			if(H.reagents.addiction_list.len)
-				user.show_message("<span class='userdanger'>Subject is addicted to the following reagents:</span>")
-				for(var/datum/reagent/R in H.reagents.addiction_list)
-					user.show_message("<span class='danger'>[R.name]</span>")
-			else
-				user.show_message("<span class='notice'>Subject is not addicted to any reagents.</span>")
+			if(ishuman(C))
+				var/mob/living/carbon/human/H = C
+				if(H.reagents.addiction_list.len)
+					user.show_message("<span class='userdanger'>Subject is addicted to the following reagents:</span>")
+					for(var/datum/reagent/R in H.reagents.addiction_list)
+						user.show_message("<span class='danger'>[R.name]</span>")
+				else
+					user.show_message("<span class='notice'>Subject is not addicted to any reagents.</span>")
 
 /obj/item/device/healthanalyzer/verb/toggle_mode()
 	set name = "Switch Verbosity"
@@ -239,8 +270,7 @@ MASS SPECTROMETER
 	throwforce = 0
 	throw_speed = 3
 	throw_range = 7
-	m_amt = 30
-	g_amt = 20
+	materials = list(MAT_METAL=30, MAT_GLASS=20)
 	origin_tech = "magnets=1;engineering=1"
 
 /obj/item/device/analyzer/attack_self(mob/user as mob)
@@ -262,35 +292,41 @@ MASS SPECTROMETER
 		user.show_message("<span class='info'> Pressure: [round(pressure,0.1)] kPa</span>", 1)
 	else
 		user.show_message("<span class='warning'> Pressure: [round(pressure,0.1)] kPa</span>", 1)
+	user.show_message("<span class='info'> Total Moles: [round(total_moles,0.01)] mol</span>", 1)
 	if(total_moles)
 		var/o2_concentration = environment.oxygen/total_moles
 		var/n2_concentration = environment.nitrogen/total_moles
 		var/co2_concentration = environment.carbon_dioxide/total_moles
 		var/plasma_concentration = environment.toxins/total_moles
+		var/o2_moles = environment.oxygen
+		var/n2_moles = environment.nitrogen
+		var/co2_moles = environment.carbon_dioxide
+		var/plasma_moles = environment.toxins
 
+		var/unknown_moles = total_moles-(o2_moles+n2_moles+co2_moles+plasma_moles)
 		var/unknown_concentration =  1-(o2_concentration+n2_concentration+co2_concentration+plasma_concentration)
 		if(abs(n2_concentration - N2STANDARD) < 20)
-			user.show_message("<span class='info'> Nitrogen: [round(n2_concentration*100,0.1)]%</span>", 1)
+			user.show_message("<span class='info'> Nitrogen: [round(n2_concentration*100,0.1)]% [round(n2_moles,0.01)] mol</span>", 1)
 		else
-			user.show_message("<span class='warning'> Nitrogen: [round(n2_concentration*100,0.1)]%</span>", 1)
+			user.show_message("<span class='warning'> Nitrogen: [round(n2_concentration*100,0.1)]% [round(n2_moles,0.01)] mol</span>", 1)
 
 		if(abs(o2_concentration - O2STANDARD) < 2)
-			user.show_message("<span class='info'> Oxygen: [round(o2_concentration*100,0.1)]%</span>", 1)
+			user.show_message("<span class='info'> Oxygen: [round(o2_concentration*100,0.1)]% [round(o2_moles,0.01)] mol</span>", 1)
 		else
-			user.show_message("<span class='warning'> Oxygen: [round(o2_concentration*100,0.1)]%</span>", 1)
+			user.show_message("<span class='warning'> Oxygen: [round(o2_concentration*100,0.1)]% [round(o2_moles,0.01)] mol</span>", 1)
 
 		if(co2_concentration > 0.01)
-			user.show_message("<span class='warning'> CO2: [round(co2_concentration*100,0.1)]%</span>", 1)
+			user.show_message("<span class='warning'> CO2: [round(co2_concentration*100,0.1)]% [round(co2_moles,0.01)] mol</span>", 1)
 		else
-			user.show_message("<span class='info'> CO2: [round(co2_concentration*100,0.1)]%</span>", 1)
+			user.show_message("<span class='info'> CO2: [round(co2_concentration*100,0.1)]% [round(co2_moles,0.01)] mol</span>", 1)
 
 		if(plasma_concentration > 0.01)
-			user.show_message("<span class='info'> Plasma: [round(plasma_concentration*100,0.1)]%</span>", 1)
+			user.show_message("<span class='info'> Plasma: [round(plasma_concentration*100,0.1)]% [round(plasma_moles,0.01)] mol</span>", 1)
 
 		if(unknown_concentration > 0.01)
-			user.show_message("<span class='warning'> Unknown: [round(unknown_concentration*100,0.1)]%</span>", 1)
+			user.show_message("<span class='warning'> Unknown: [round(unknown_concentration*100,0.1)]% [round(unknown_moles,0.01)] mol</span>", 1)
 
-		user.show_message("<span class='info'> Temperature: [round(environment.temperature-T0C,0.1)]&deg;C</span>", 1)
+		user.show_message("<span class='info'> Temperature: [round(environment.temperature,0.1)] K ([round(environment.temperature-T0C,0.1)]&deg;C)</span>", 1)
 
 	src.add_fingerprint(user)
 	return
@@ -306,8 +342,7 @@ MASS SPECTROMETER
 	throwforce = 0
 	throw_speed = 3
 	throw_range = 7
-	m_amt = 30
-	g_amt = 20
+	materials = list(MAT_METAL=30, MAT_GLASS=20)
 	origin_tech = "magnets=2;biotech=2"
 	var/details = 0
 	var/recent_fail = 0
@@ -381,8 +416,7 @@ MASS SPECTROMETER
 	throwforce = 0
 	throw_speed = 3
 	throw_range = 7
-	m_amt = 30
-	g_amt = 20
+	materials = list(MAT_METAL=30, MAT_GLASS=20)
 
 /obj/item/device/slime_scanner/attack(mob/living/M as mob, mob/living/user as mob)
 	if (!isslime(M))

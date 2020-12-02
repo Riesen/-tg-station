@@ -42,7 +42,7 @@
 	playsound(src.loc, 'sound/machines/click.ogg', 75, 1)
 	var/constrdir = usr.dir
 	var/constrloc = usr.loc
-	if (!do_after(usr, 30))
+	if (!do_after(usr, 30, target = src))
 		return
 	switch(fixture_type)
 		if("bulb")
@@ -100,7 +100,7 @@
 		if (src.stage == 1)
 			playsound(src.loc, 'sound/items/Ratchet.ogg', 75, 1)
 			usr << "You begin deconstructing [src]."
-			if (!do_after(usr, 30))
+			if (!do_after(usr, 30, target = src))
 				return
 			new /obj/item/stack/sheet/metal( get_turf(src.loc), sheets_refunded )
 			user.visible_message("[user.name] deconstructs [src].", \
@@ -197,7 +197,9 @@
 	var/on = 0					// 1 if on, 0 if off
 	var/on_gs = 0
 	var/static_power_used = 0
-	var/brightness = 8			// luminosity when on, also used in power calculation
+	var/brightness_range = 8	// luminosity when on, also used in power calculation
+	var/brightness_power = 4
+	var/brightness_color = null
 	var/status = LIGHT_OK		// LIGHT_OK, _EMPTY, _BURNED or _BROKEN
 	var/flickering = 0
 	var/light_type = /obj/item/weapon/light/tube		// the type of light item
@@ -213,7 +215,8 @@
 	icon_state = "bulb1"
 	base_state = "bulb"
 	fitting = "bulb"
-	brightness = 4
+	brightness_range = 6
+	brightness_power = 2
 	desc = "A small lighting fixture."
 	light_type = /obj/item/weapon/light/bulb
 
@@ -239,14 +242,15 @@
 	spawn(2)
 		switch(fitting)
 			if("tube")
-				brightness = 8
+				brightness_range = 8
 				if(prob(2))
 					broken(1)
 			if("bulb")
-				brightness = 4
+				brightness_range = 6
 				if(prob(5))
 					broken(1)
 		spawn(1)
+			seton(1)
 			update(0)
 
 /obj/machinery/light/Destroy()
@@ -277,7 +281,7 @@
 
 	update_icon()
 	if(on)
-		if(luminosity != brightness)
+		if(light_range != brightness_range || light_power != brightness_power || light_color != brightness_color)
 			switchcount++
 			if(rigged)
 				if(status == LIGHT_OK && trigger)
@@ -287,19 +291,19 @@
 					status = LIGHT_BURNED
 					icon_state = "[base_state]-burned"
 					on = 0
-					SetLuminosity(0)
+					set_light(0)
 			else
 				use_power = 2
-				SetLuminosity(brightness)
+				set_light(brightness_range, brightness_power, brightness_color)
 	else
 		use_power = 1
-		SetLuminosity(0)
+		set_light(0)
 
 	active_power_usage = (luminosity * 10)
 	if(on != on_gs)
 		on_gs = on
 		if(on)
-			static_power_used = luminosity * 20 //20W per unit luminosity
+			static_power_used = brightness_range * 20 //20W per unit luminosity
 			addStaticPower(static_power_used, STATIC_LIGHT)
 		else
 			removeStaticPower(static_power_used, STATIC_LIGHT)
@@ -351,7 +355,11 @@
 				user << "You insert the [L.name]."
 				switchcount = L.switchcount
 				rigged = L.rigged
-				brightness = L.brightness
+				brightness_range = L.brightness_range
+				brightness_power = L.brightness_power
+				brightness_color = L.brightness_color
+				//base_state = L.base_state
+				light_type = L.type
 				on = has_power()
 				update()
 
@@ -368,6 +376,7 @@
 		//If xenos decide they want to smash a light bulb with a toolbox, who am I to stop them? /N
 
 	else if(status != LIGHT_BROKEN && status != LIGHT_EMPTY)
+		user.changeNext_move(CLICK_CD_MELEE)
 
 		user.do_attack_animation(src)
 		if(W.damtype == STAMINA)
@@ -423,7 +432,7 @@
 // true if area has power and lightswitch is on
 /obj/machinery/light/proc/has_power()
 	var/area/A = src.loc.loc
-	return A.master.lightswitch && A.master.power_light
+	return A.lightswitch && A.power_light
 
 /obj/machinery/light/proc/flicker(var/amount = rand(10, 20))
 	if(flickering) return
@@ -470,6 +479,7 @@
 // if hands aren't protected and the light is on, burn the player
 
 /obj/machinery/light/attack_hand(mob/living/carbon/human/user)
+	user.changeNext_move(CLICK_CD_MELEE)
 
 	add_fingerprint(user)
 
@@ -496,20 +506,24 @@
 		else if(istype(user) && user.dna.check_mutation(TK))
 			user << "You telekinetically remove the light [fitting]."
 		else
-			user << "You try to remove the light [fitting], but you burn your hand on it!"
+			user << "You remove the light [fitting], but you burn your hand on it!"
 
-			var/obj/item/organ/limb/affecting = H.get_organ("[user.hand ? "l" : "r" ]_arm")
-			if(affecting.take_damage( 0, 5 ))		// 5 burn damage
-				H.update_damage_overlays(0)
-			H.updatehealth()
-			return				// if burned, don't remove the light
+			var/datum/organ/limb/L = H.get_organdatum("[user.hand ? "l" : "r" ]_arm")
+			if(L && L.exists())
+				var/obj/item/organ/limb/affecting = L.organitem
+				if(affecting.take_damage( 0, 10 ))		// 10 burn damage
+					H.update_damage_overlays(0)
+				H.updatehealth()
+			//return				// if burned, don't remove the light
 	else
 		user << "You remove the light [fitting]."
 	// create a light tube/bulb item and put it in the user's hand
 	var/obj/item/weapon/light/L = new light_type()
 	L.status = status
 	L.rigged = rigged
-	L.brightness = brightness
+	L.brightness_range = brightness_range
+	L.brightness_power = brightness_power
+	L.brightness_color = brightness_color
 
 	// light item inherits the switchcount, then zero it
 	L.switchcount = switchcount
@@ -534,7 +548,9 @@
 	var/obj/item/weapon/light/L = new light_type()
 	L.status = status
 	L.rigged = rigged
-	L.brightness = brightness
+	L.brightness_range = brightness_range
+	L.brightness_power = brightness_power
+	L.brightness_color = brightness_color
 
 	// light item inherits the switchcount, then zero it
 	L.switchcount = switchcount
@@ -567,7 +583,8 @@
 	if(status == LIGHT_OK)
 		return
 	status = LIGHT_OK
-	brightness = initial(brightness)
+	brightness_range = initial(brightness_range)
+	brightness_power = initial(brightness_power)
 	on = 1
 	update()
 
@@ -596,7 +613,6 @@
 // called when area power state changes
 /obj/machinery/light/power_change()
 	var/area/A = get_area(src)
-	A = A.master
 	seton(A.lightswitch && A.power_light)
 
 // called when on fire
@@ -628,9 +644,11 @@
 	var/status = 0		// LIGHT_OK, LIGHT_BURNED or LIGHT_BROKEN
 	var/base_state
 	var/switchcount = 0	// number of times switched
-	m_amt = 60
+	materials = list(MAT_METAL=60, MAT_GLASS= 100)
 	var/rigged = 0		// true if rigged to explode
-	var/brightness = 2 //how much light it gives off
+	var/brightness_range = 2 //how much light it gives off
+	var/brightness_power = 1
+	var/brightness_color = null
 
 /obj/item/weapon/light/tube
 	name = "light tube"
@@ -638,8 +656,9 @@
 	icon_state = "ltube"
 	base_state = "ltube"
 	item_state = "c_tube"
-	g_amt = 100
-	brightness = 8
+	materials = list(MAT_METAL=60, MAT_GLASS= 100)
+	brightness_range = 8
+	brightness_power = 4
 
 /obj/item/weapon/light/bulb
 	name = "light bulb"
@@ -647,8 +666,9 @@
 	icon_state = "lbulb"
 	base_state = "lbulb"
 	item_state = "contvapour"
-	g_amt = 100
-	brightness = 4
+	materials = list(MAT_METAL=60, MAT_GLASS= 100)
+	brightness_range = 6
+	brightness_power = 2
 
 /obj/item/weapon/light/throw_impact(atom/hit_atom)
 	..()

@@ -7,8 +7,8 @@
 	var/fingerprintslast = null
 	var/list/blood_DNA
 	var/last_bumped = 0
-	var/throwpass = 0
 	var/explosion_block = 0
+	var/allow_spin = 1
 
 	///Chemistry.
 	var/datum/reagents/reagents = null
@@ -38,6 +38,19 @@
 
 	//finally check for centcom itself
 	return istype(T.loc,/area/centcom)
+
+/atom/proc/onSyndieBase()
+	var/turf/T = get_turf(src)
+	if(!T)
+		return 0
+
+	if(T.z != ZLEVEL_CENTCOM)//if not, don't bother
+		return 0
+
+	if(istype(T.loc,/area/shuttle/syndicate) || istype(T.loc,/area/syndicate_mothership))
+		return 1
+
+	return 0
 
 /atom/proc/throw_impact(atom/hit_atom)
 	if(istype(hit_atom,/mob/living))
@@ -357,7 +370,13 @@ var/list/blood_splatter_icons = list()
 		var/obj/effect/decal/cleanable/vomit/this = new /obj/effect/decal/cleanable/vomit(src)
 
 		if(M.reagents)
-			M.reagents.trans_to(this, M.reagents.total_volume / 10)
+			M.reagents.trans_to(this, M.reagents.total_volume / 10) // Drop 1/10th of overall reagents. Below, drop all of anything nutritive.
+			for(var/datum/reagent/R in M.reagents.reagent_list)	//clears the stomach of anything that might be digested as food
+				if (istype(R, /datum/reagent/consumable))
+					var/datum/reagent/consumable/nutri_check = R
+					if(nutri_check.nutriment_factor >0)
+						this.reagents.add_reagent(R.id,R.volume)
+						M.reagents.remove_reagent(R.id,R.volume)
 
 		// Make toxins vomit look different
 		if(toxvomit)
@@ -378,7 +397,7 @@ var/list/blood_splatter_icons = list()
 				B = locate(/obj/effect/decal/cleanable/blood) in contents
 			B.blood_DNA[M.dna.unique_enzymes] = M.dna.blood_type
 		else if(istype(M, /mob/living/carbon/alien))
-			var/obj/effect/decal/cleanable/xenoblood/B = locate() in contents
+			var/obj/effect/decal/cleanable/blood/xeno/B = locate() in contents
 			if(!B)	B = new(src)
 			B.blood_DNA["UNKNOWN BLOOD"] = "X*"
 		else if(istype(M, /mob/living/silicon/robot))
@@ -389,23 +408,6 @@ var/list/blood_splatter_icons = list()
 	if(istype(blood_DNA, /list))
 		blood_DNA = null
 		return 1
-
-
-/atom/proc/get_global_map_pos()
-	if(!islist(global_map) || isemptylist(global_map)) return
-	var/cur_x = null
-	var/cur_y = null
-	var/list/y_arr = null
-	for(cur_x=1,cur_x<=global_map.len,cur_x++)
-		y_arr = global_map[cur_x]
-		cur_y = y_arr.Find(src.z)
-		if(cur_y)
-			break
-//	world << "X = [cur_x]; Y = [cur_y]"
-	if(cur_x && cur_y)
-		return list("x"=cur_x,"y"=cur_y)
-	else
-		return 0
 
 /atom/proc/isinspace()
 	if(istype(get_turf(src), /turf/space))
@@ -434,3 +436,13 @@ var/list/blood_splatter_icons = list()
 	return
 /atom/proc/rift_act()
 	return 0
+
+/atom/proc/SinguloCanEat()
+	return 1
+
+
+/atom/proc/storage_contents_dump_act(obj/item/weapon/storage/src_object, mob/user)
+	return 0
+
+/atom/proc/on_mob_move()
+	return

@@ -6,6 +6,7 @@
 	icon_state = "orebox"
 	name = "ore box"
 	desc = "It's heavy"
+	pressure_resistance = 5*ONE_ATMOSPHERE
 	density = 1
 
 /obj/structure/ore_box/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
@@ -83,6 +84,6 @@
 	src.updateUsrDialog()
 	return
 
-obj/structure/ore_box/ex_act(severity, target)
+/obj/structure/ore_box/ex_act(severity, target)
 	if(prob(100 / severity) && severity < 3)
 		qdel(src) //nothing but ores can get inside unless its a bug and ores just return nothing on ex_act, not point in calling it on them

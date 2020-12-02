@@ -67,7 +67,7 @@ ALERT_BLUE_UPTO The station has received reliable information about possible hos
 ALERT_BLUE_DOWNTO The immediate threat has passed. Security may no longer have weapons drawn at all times, but may continue to have them visible. Random searches are still allowed.
 ALERT_RED_UPTO There is an immediate serious threat to the station. Security may have weapons unholstered at all times. Random searches are allowed and advised.
 ALERT_RED_DOWNTO The self-destruct mechanism has been deactivated, there is still however an immediate serious threat to the station. Security may have weapons unholstered at all times, random searches are allowed and advised.
-ALERT_DELTA The station's self-destruct mechanism has been engaged. All crew are instructed to obey all instructions given by heads of staff. Any violations of these orders can be punished by death. This is not a drill.
+ALERT_DELTA Destruction of the station is imminent. All crew are instructed to obey all instructions given by heads of staff. Any violations of these orders can be punished by death. This is not a drill.
 
 
 
@@ -78,18 +78,18 @@ ALERT_DELTA The station's self-destruct mechanism has been engaged. All crew are
 ## Set to 0 to disable that mode.
 
 PROBABILITY TRAITOR 4
-PROBABILITY TRAITORCHAN 1
-PROBABILITY DOUBLE_AGENTS 3
+PROBABILITY TRAITORCHAN 3
+PROBABILITY DOUBLE_AGENTS 1
 PROBABILITY NUCLEAR 4
 PROBABILITY REVOLUTION 1
-PROBABILITY GANG 2
+PROBABILITY GANG 1
 PROBABILITY CULT 3
-PROBABILITY CHANGELING 3
+PROBABILITY CHANGELING 2
 PROBABILITY WIZARD 4
 PROBABILITY MALFUNCTION 4
-PROBABILITY BLOB 4
+PROBABILITY BLOB 3
 PROBABILITY SHADOWLING 3
-PROBABILITY MONKEY 2
+PROBABILITY MONKEY 0
 PROBABILITY ABDUCTION 0
 PROBABILITY RAGINMAGES 0
 PROBABILITY METEOR 0
@@ -98,12 +98,48 @@ PROBABILITY EXTENDED 0
 ## You probably want to keep sandbox off by default for secret and random.
 PROBABILITY SANDBOX 0
 
-## Uncomment to make rounds which end instantly (Rev, Wizard, Malf) continue until
-## the shuttle is called or the station is nuked.
-## Malf and Rev will let the shuttle be called when the antags/protags are dead.
-#CONTINUOUS_ROUND_REV
-CONTINUOUS_ROUND_WIZ
-#CONTINUOUS_ROUND_MALF
+## Toggles for continuous modes.
+## Modes that aren't continuous will end the instant all antagonists are dead.
+
+CONTINUOUS TRAITOR
+CONTINUOUS TRAITORCHAN
+CONTINUOUS DOUBLE_AGENTS
+#CONTINUOUS NUCLEAR
+#CONTINUOUS REVOLUTION
+CONTINUOUS SHADOWLING
+#CONTINUOUS GANG
+CONTINUOUS CULT
+CONTINUOUS CHANGELING
+#CONTINUOUS WIZARD
+#CONTINUOUS MALFUNCTION
+#CONTINUOUS BLOB
+#CONTINUOUS RAGINMAGES
+#CONTINUOUS MONKEY
+
+##Note: do not toggle continuous off for these modes, as they have no antagonists and would thus end immediately!
+
+CONTINUOUS METEOR
+CONTINUOUS EXTENDED
+
+
+## Toggles for allowing midround antagonists (aka mulligan antagonists).
+## In modes that are continuous, if all antagonists should die then a new set of antagonists will be created.
+
+MIDROUND_ANTAG TRAITOR
+MIDROUND_ANTAG TRAITORCHAN
+MIDROUND_ANTAG DOUBLE_AGENTS
+#MIDROUND_ANTAG  NUCLEAR
+#MIDROUND_ANTAG  REVOLUTION
+#MIDROUND_ANTAG  SHADOWLING
+#MIDROUND_ANTAG  GANG
+#MIDROUND_ANTAG CULT
+MIDROUND_ANTAG CHANGELING
+MIDROUND_ANTAG WIZARD
+#MIDROUND_ANTAG MALFUNCTION
+MIDROUND_ANTAG BLOB
+#MIDROUND_ANTAG  RAGINMAGES
+#MIDROUND_ANTAG  MONKEY
+
 
 ## The amount of time it takes for the emergency shuttle to be called, from round start.
 SHUTTLE_REFUEL_DELAY 9000
@@ -117,7 +153,7 @@ CHANGELING_SCALING_COEFF 8
 ## Variables calculate how number of open security officer positions will scale to population.
 ## Used as (Officers = Population / Coeff)
 ## Set to 0 to disable scaling and use default numbers instead.
-SECURITY_SCALING_COEFF 8
+SECURITY_SCALING_COEFF 6
 
 # The number of objectives traitors get.
 # Not including escaping/hijacking.
@@ -234,3 +270,6 @@ MIDROUND_ANTAG_TIME_CHECK 90
 
 ## A ratio of living to total crew members, the lower this is, the more people will have to die in order for midround antag to be skipped
 MIDROUND_ANTAG_LIFE_CHECK 0.6 
+
+##If being in crit should fully blind or just use the old partial blind effect
+#CRIT_FULL_BLIND

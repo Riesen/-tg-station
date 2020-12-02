@@ -39,12 +39,12 @@
 	var/list/temp_list
 	if(!id_with_upload.len)
 		temp_list = list()
-		temp_list = text2list(id_with_upload_string, ";")
+		temp_list = splittext(id_with_upload_string, ";")
 		for(var/N in temp_list)
 			id_with_upload += text2num(N)
 	if(!id_with_download.len)
 		temp_list = list()
-		temp_list = text2list(id_with_download_string, ";")
+		temp_list = splittext(id_with_download_string, ";")
 		for(var/N in temp_list)
 			id_with_download += text2num(N)
 
@@ -177,7 +177,8 @@
 /obj/machinery/computer/rdservercontrol
 	name = "R&D Server Controller"
 	desc = "Used to manage access to research and manufacturing databases."
-	icon_state = "rdcomp"
+	icon_screen = "rdcomp"
+	icon_keyboard = "rd_key"
 	var/screen = 0
 	var/obj/machinery/r_n_d/server/temp_server
 	var/list/servers = list()
@@ -256,9 +257,15 @@
 	return
 
 /obj/machinery/computer/rdservercontrol/attack_hand(mob/user as mob)
-	if (ismommi(user))
+	if(ismommi(user))
 		user << "You cannot interface with this console"
 		return
+	if(user && issilicon(user))
+		var/mob/living/silicon/R = user
+		if(R.keeper)
+			user << "Your laws forbid you from doing this"
+			return
+
 	if(..())
 		return
 	user.set_machine(src)

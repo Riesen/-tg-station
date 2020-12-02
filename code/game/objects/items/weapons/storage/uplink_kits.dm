@@ -2,7 +2,7 @@
 
 /obj/item/weapon/storage/box/syndicate/New()
 	..()
-	switch (pickweight(list("bloodyspai" = 1, "stealth" = 1, "bond" = 1, "screwed" = 1, "guns" = 1, "murder" = 1, "implant" = 1, "hacker" = 1, "lordsingulo" = 1, "darklord" = 1)))
+	switch (pickweight(list("bloodyspai" = 1, "stealth" = 1, "bond" = 1, "screwed" = 1, "guns" = 1, "murder" = 1, "implant" = 1, "hacker" = 1, "lordsingulo" = 1, "darklord" = 1, "dubs" = 1)))
 		if("bloodyspai")
 			new /obj/item/clothing/under/chameleon(src)
 			new /obj/item/clothing/mask/gas/voice(src)
@@ -53,17 +53,11 @@
 			return
 
 		if("implant")
-			var/obj/item/weapon/implanter/F = new /obj/item/weapon/implanter(src)
-			F.imp = new /obj/item/weapon/implant/freedom(F)
-			var/obj/item/weapon/implanter/U = new /obj/item/weapon/implanter(src)
-			U.imp = new /obj/item/weapon/implant/uplink(U)
-			var/obj/item/weapon/implanter/C = new /obj/item/weapon/implanter(src)
-			C.imp = new /obj/item/weapon/implant/emp(C)
-			var/obj/item/weapon/implanter/K = new /obj/item/weapon/implanter(src)
-			K.imp = new /obj/item/weapon/implant/adrenalin(K)
-			var/obj/item/weapon/implanter/S = new /obj/item/weapon/implanter(src)
-			S.imp = new /obj/item/weapon/implant/explosive(S)
-			S.name += " (explosive)"
+			new /obj/item/weapon/implanter/freedom(src)
+			new /obj/item/weapon/implanter/uplink(src)
+			new /obj/item/weapon/implanter/emp(src)
+			new /obj/item/weapon/implanter/adrenalin(src)
+			new /obj/item/weapon/implanter/explosive(src)
 			return
 
 		if("hacker")
@@ -86,6 +80,17 @@
 			new /obj/item/weapon/dnainjector/telemut/darkbundle(src)
 			new /obj/item/clothing/suit/hooded/chaplain_hoodie(src)
 			new /obj/item/weapon/card/id/syndicate(src)
+			return
+
+		if("dubs")
+			new /obj/item/clothing/suit/raincoat(src)
+			new /obj/item/clothing/under/suit_jacket(src)
+			new /obj/item/weapon/soap/syndie(src)
+			new /obj/item/clothing/mask/gas/voice(src)
+			new /obj/item/weapon/card/id/syndicate(src)
+			new /obj/item/weapon/card/emag(src)
+			new /obj/item/weapon/newspaper(src)
+			new /obj/item/weapon/twohanded/fireaxe(src)
 			return
 
 /obj/item/weapon/storage/box/syndie_kit
@@ -163,8 +168,8 @@
 	..()
 	new /obj/item/weapon/grenade/empgrenade(src)
 	new /obj/item/weapon/grenade/empgrenade(src)
-	new /obj/item/weapon/implanter/emp/(src)
-	new /obj/item/device/flashlight/emp/(src)
+	new /obj/item/weapon/implanter/emp(src)
+	new /obj/item/device/flashlight/emp(src)
 	return
 
 /obj/item/weapon/storage/box/syndie_kit/chemical
@@ -178,4 +183,11 @@
 	new /obj/item/weapon/reagent_containers/glass/bottle/formaldehyde(src)
 	new /obj/item/weapon/reagent_containers/glass/bottle/cyanide(src)
 	new /obj/item/weapon/reagent_containers/glass/bottle/histamine(src)
+	new /obj/item/weapon/reagent_containers/glass/bottle/initropidril(src)
+	new /obj/item/weapon/reagent_containers/glass/bottle/pancuronium(src)
+	new /obj/item/weapon/reagent_containers/glass/bottle/sodium_thiopental(src)
+	new /obj/item/weapon/reagent_containers/glass/bottle/coniine(src)
+	new /obj/item/weapon/reagent_containers/glass/bottle/curare(src)
+	new /obj/item/weapon/reagent_containers/glass/bottle/amanitin(src)
 	return
+

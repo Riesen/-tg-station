@@ -143,6 +143,7 @@
 /obj/machinery/porta_turret/Destroy()
 	//deletes its own cover with it
 	qdel(cover)
+	cover = null
 	..()
 
 
@@ -416,9 +417,13 @@
 
 	if(check_anomalies)	//if it's set to check for xenos/simpleanimals
 		for(var/mob/living/simple_animal/SA in turretview)
-			if(!SA.stat && (!SA.has_unlimited_silicon_privilege || !(faction in SA.faction)) ) //don't target dead animals or NT maint drones.
+			if(!on)
+				continue
+			if(!SA.stat && (!SA.has_unlimited_silicon_privilege || !(faction in SA.faction))  ) //don't target dead animals or NT maint drones.
 				targets += SA
 		for(var/mob/living/carbon/monkey/M in turretview)
+			if(!on)
+				continue
 			if(!M.stat)
 				targets += M
 
@@ -427,7 +432,7 @@
 			targets += C
 			continue
 
-		if(C.stat || C.handcuffed || C.lying)	//if the perp is handcuffed or lying or dead/dying, no need to bother really
+		if(C.stat || C.handcuffed || C.lying || !on)	//if the perp is handcuffed or lying or dead/dying, no need to bother really //we also shouldn't bother if we're offline
 			continue
 
 		if(ai)	//If it's set to attack all nonsilicons, target them!
@@ -447,7 +452,7 @@
 
 	for(var/obj/mecha/M in turretview)
 		if(M.occupant)
-			if(ai || emagged) // we target all occupied mechs if we're emagged or set to attack all non silicons.
+			if((ai && on) || emagged) // we target all occupied mechs if we're emagged or set to attack all non silicons.
 				targets += M
 
 	if(!tryToShootAt(targets))
@@ -475,7 +480,8 @@
 	flick("popup", cover)
 	sleep(10)
 	raising = 0
-	cover.icon_state = "openTurretCover"
+	if(cover)
+		cover.icon_state = "openTurretCover"
 	raised = 1
 	layer = 4
 
@@ -679,7 +685,7 @@
 					return
 
 				playsound(loc, pick('sound/items/Welder.ogg', 'sound/items/Welder2.ogg'), 50, 1)
-				if(do_after(user, 20))
+				if(do_after(user, 20, target = src))
 					if(!src || !WT.remove_fuel(5, user)) return
 					build_step = 1
 					user << "You remove the turret's interior metal armor."
@@ -754,7 +760,7 @@
 					user << "<span class='notice'>You need more fuel to complete this task.</span>"
 
 				playsound(loc, pick('sound/items/Welder.ogg', 'sound/items/Welder2.ogg'), 50, 1)
-				if(do_after(user, 30))
+				if(do_after(user, 30, target = src))
 					if(!src || !WT.remove_fuel(5, user))
 						return
 					build_step = 8
@@ -1028,9 +1034,7 @@ Status: []<BR>"},
 	..()
 	if(!control_area)
 		var/area/CA = get_area(src)
-		if(CA.master && CA.master != CA)
-			control_area = CA.master
-		else
+		if(CA)
 			control_area = CA
 	else if(istext(control_area))
 		for(var/area/A in world)
@@ -1038,6 +1042,7 @@ Status: []<BR>"},
 				control_area = A
 				break
 	power_change() //Checks power and initial settings
+	updateTurrets()
 	//don't have to check if control_area is path, since get_area_all_atoms can take path.
 	return
 

@@ -4,6 +4,7 @@
 /obj/item/weapon/reagent_containers/food
 	possible_transfer_amounts = null
 	volume = 50	//Sets the default container amount for all food items.
+	grind_reagents = list()
 
 /obj/item/weapon/reagent_containers/food/New()
 		..()

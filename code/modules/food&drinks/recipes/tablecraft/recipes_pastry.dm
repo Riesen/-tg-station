@@ -68,7 +68,7 @@
 	name = "Soylent green"
 	reqs = list(
 		/obj/item/weapon/reagent_containers/food/snacks/pastrybase = 2,
-		/obj/item/weapon/reagent_containers/food/snacks/meat/human = 2
+		/obj/item/weapon/reagent_containers/food/snacks/meat/slab/human = 2
 	)
 	result = /obj/item/weapon/reagent_containers/food/snacks/soylentgreen
 
@@ -133,6 +133,16 @@
 	)
 	result = /obj/item/weapon/reagent_containers/food/snacks/chawanmushi
 
+/datum/table_recipe/nuffin
+	time = 15
+	name = "Nuffin"
+	reqs = list(
+		/datum/reagent/consumable/sugar = 5,
+		/obj/item/weapon/reagent_containers/food/snacks/pastrybase = 1,
+		/obj/item/weapon/reagent_containers/food/snacks/monkeycube = 1
+	)
+	result = /obj/item/weapon/reagent_containers/food/snacks/dindu
+
 ////////////////////////////////////////////OTHER////////////////////////////////////////////
 
 /datum/table_recipe/hotdog
@@ -179,7 +189,7 @@
 	time = 15
 	name = "Poppy pretzel"
 	reqs = list(
-		/obj/item/seeds/poppyseed = 1,
+		/obj/item/seeds/poppy = 1,
 		/obj/item/weapon/reagent_containers/food/snacks/pastrybase = 1
 	)
 	result = /obj/item/weapon/reagent_containers/food/snacks/poppypretzel

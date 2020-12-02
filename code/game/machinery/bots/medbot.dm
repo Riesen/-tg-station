@@ -33,7 +33,7 @@
 	radio_frequency = MED_FREQ //Medical frequency
 	//Setting which reagents to use to treat what by default. By id.
 	var/treatment_brute = "bicaridine"
-	var/treatment_oxy = "dexaline"
+	var/treatment_oxy = "dexalin"
 	var/treatment_fire = "kelotane"
 	var/treatment_tox = "anti_toxin"
 	var/treatment_virus = "spaceacillin"
@@ -478,8 +478,9 @@
 			if ((get_dist(src, patient) <= 1) && (on))
 				if(reagent_id == "internal_beaker")
 					if(use_beaker && reagent_glass && reagent_glass.reagents.total_volume)
+						var/fraction = min(injection_amount/reagent_glass.reagents.total_volume, 1)
+						reagent_glass.reagents.reaction(patient, INGEST, fraction)
 						reagent_glass.reagents.trans_to(patient,injection_amount) //Inject from beaker instead.
-						reagent_glass.reagents.reaction(patient, INGEST)
 				else
 					patient.reagents.add_reagent(reagent_id,injection_amount)
 				C.visible_message("<span class='danger'>[src] injects [patient] with the syringe!</span>", \

@@ -27,6 +27,7 @@
 	var/lightfail = 0
 	var/charge_tick = 0
 	modifystate = 0
+	can_charge = 0
 	can_flashlight = 0
 	pin = null
 
@@ -125,5 +126,5 @@
 	can_flashlight = 0
 	trigger_guard = 0
 
-obj/item/weapon/gun/energy/gun/turret/update_icon()
+/obj/item/weapon/gun/energy/gun/turret/update_icon()
 	icon_state = initial(icon_state)

@@ -17,14 +17,7 @@
 	projectilesound = 'sound/weapons/Gunshot.ogg'
 	projectiletype = /obj/item/projectile/hivebotbullet
 	faction = list("hivebot")
-	min_oxy = 0
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 0
-	min_co2 = 0
-	max_co2 = 0
-	min_n2 = 0
-	max_n2 = 0
+	atmos_requirements = list("min_oxy" = 0, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
 	minbodytemp = 0
 
 /mob/living/simple_animal/hostile/hivebot/range
@@ -46,8 +39,8 @@
 	health = 80
 	ranged = 1
 
-/mob/living/simple_animal/hostile/hivebot/Die()
-	..()
+/mob/living/simple_animal/hostile/hivebot/death(gibbed)
+	..(gibbed)
 	visible_message("<b>[src]</b> blows apart!")
 	new /obj/effect/decal/cleanable/robot_debris(src.loc)
 	var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
@@ -78,7 +71,7 @@
 
 	New()
 		..()
-		var/datum/effect/effect/system/harmless_smoke_spread/smoke = new /datum/effect/effect/system/harmless_smoke_spread()
+		var/datum/effect/effect/system/smoke_spread/smoke = new /datum/effect/effect/system/smoke_spread()
 		smoke.set_up(5, 0, src.loc)
 		smoke.start()
 		visible_message("<span class='userdanger'>The [src] warps in!</span>")

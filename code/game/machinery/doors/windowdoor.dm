@@ -22,6 +22,7 @@
 	density = 0
 	if(health == 0)
 		playsound(src, "shatter", 70, 1)
+	electronics = null
 	..()
 
 
@@ -185,7 +186,6 @@
 /obj/machinery/door/window/hitby(AM as mob|obj)
 
 	..()
-	visible_message("<span class='danger'>\The [src] was hit by \the [AM].</span>")
 	var/tforce = 0
 	if(ismob(AM))
 		tforce = 40
@@ -247,7 +247,7 @@
 
 /obj/machinery/door/window/emag_act(mob/user as mob)
 	if(density && !emagged)
-		operating = -1
+		operating = 0
 		flick("[src.base_state]spark", src)
 		sleep(6)
 		desc += "<BR><span class='warning'>Its access panel is smoking slightly.</span>"
@@ -276,7 +276,7 @@
 			playsound(src.loc, 'sound/items/Crowbar.ogg', 100, 1)
 			user.visible_message("<span class='warning'>[user] removes the electronics from the [src.name].</span>", \
 								 "You start to remove electronics from the [src.name].")
-			if(do_after(user,40))
+			if(do_after(user,40, target = src))
 				if(src.p_open && !src.density && !src.operating && src.loc)
 					var/obj/structure/windoor_assembly/WA = new /obj/structure/windoor_assembly(src.loc)
 					switch(base_state)
@@ -334,11 +334,11 @@
 	if(src.density && istype(I, /obj/item/weapon) && !istype(I, /obj/item/weapon/card) )
 		user.changeNext_move(CLICK_CD_MELEE)
 		user.do_attack_animation(src)
+		playsound(src.loc, 'sound/effects/Glasshit.ogg', 75, 1)
+		visible_message("<span class='danger'>[user] has hit \the [src] with [I].</span>")
 		if( (I.flags&NOBLUDGEON) || !I.force )
 			return
 		var/aforce = I.force
-		playsound(src.loc, 'sound/effects/Glasshit.ogg', 75, 1)
-		visible_message("<span class='danger'>[user] has hit \the [src] with [I].</span>")
 		if(I.damtype == BURN || I.damtype == BRUTE)
 			take_damage(aforce)
 		return
@@ -357,6 +357,11 @@
 		flick("[src.base_state]deny", src)
 
 	return
+
+/obj/machinery/door/window/temperature_expose(datum/gas_mixture/air, exposed_temperature, exposed_volume)
+	if(exposed_temperature > T0C + 800)
+		take_damage(round(exposed_volume / 200))
+	..()
 
 
 

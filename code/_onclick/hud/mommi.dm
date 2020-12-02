@@ -21,7 +21,7 @@
 		var/mob/living/silicon/robot/mommi/M = usr
 		M.toggle_module(INV_SLOT_TOOL)
 
-obj/screen/robot/mommi/hat
+/obj/screen/robot/mommi/hat
 	name = "hat"
 	icon = 'icons/mob/screen_plasmafire.dmi'
 	icon_state = "head"
@@ -166,13 +166,6 @@ obj/screen/robot/mommi/hat
 	mymob.pullin.update_icon(mymob)
 	mymob.pullin.screen_loc = ui_borg_pull
 
-	mymob.blind = new /obj/screen()
-	mymob.blind.icon = 'icons/mob/screen_full.dmi'
-	mymob.blind.icon_state = "blackimageoverlay"
-	mymob.blind.name = " "
-	mymob.blind.screen_loc = "CENTER-7,CENTER-7"
-	mymob.blind.layer = 0
-
 	mymob.flash = new /obj/screen()
 	mymob.flash.icon = 'icons/mob/screen_gen.dmi'
 	mymob.flash.icon_state = "blank"
@@ -184,10 +177,11 @@ obj/screen/robot/mommi/hat
 	mymob.zone_sel.icon = 'icons/mob/screen_cyborg.dmi'
 	mymob.zone_sel.update_icon()
 
-	mymob.client.screen = null
+	mymob.client.screen = list()
 
-	mymob.client.screen += list(mymob.zone_sel, mymob.healths, mymob.pullin, mymob.blind, mymob.flash) //, mymob.rest, mymob.sleep, mymob.mach, m)
+	mymob.client.screen += list(mymob.zone_sel, mymob.healths, mymob.pullin, mymob.flash)
 	mymob.client.screen += adding + other
+	mymob.client.screen += mymob.client.void
 
 	return
 

@@ -13,11 +13,15 @@
 	throwforce = 0
 	throw_range = 7
 	throw_speed = 3
-	m_amt = 50
-	g_amt = 20
+	materials = list(MAT_METAL=50, MAT_GLASS=20)
 	origin_tech = "magnets=1;engineering=1"
-	var/obj/machinery/telecomms/buffer // simple machine buffer for device linkage
 	hitsound = 'sound/weapons/tap.ogg'
+	var/obj/machinery/buffer // simple machine buffer for device linkage
+
+/obj/item/device/multitool/proc/IsBufferA(var/typepath)
+	if(!buffer)
+		return 0
+	return istype(buffer,typepath)
 
 
 // Syndicate device disguised as a multitool; it will turn red when an AI camera is nearby.

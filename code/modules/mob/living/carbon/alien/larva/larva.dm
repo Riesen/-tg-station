@@ -7,8 +7,7 @@
 
 	maxHealth = 50
 	health = 50
-	storedPlasma = 50
-	max_plasma = 50
+
 
 	var/amount_grown = 0
 	var/max_grown = 200
@@ -16,10 +15,9 @@
 
 //This is fine right now, if we're adding organ specific damage this needs to be updated
 /mob/living/carbon/alien/larva/New()
-	create_reagents(100)
-	if(name == "alien larva")
-		name = "alien larva ([rand(1, 1000)])"
-	real_name = name
+
+	organsystem = new/datum/organsystem/alienlarva(src)
+
 	regenerate_icons()
 	AddAbility(new/obj/effect/proc_holder/alien/hide(null))
 	AddAbility(new/obj/effect/proc_holder/alien/larva_evolve(null))
@@ -31,8 +29,8 @@
 	if(statpanel("Status"))
 		stat(null, "Progress: [amount_grown]/[max_grown]")
 
-/mob/living/carbon/alien/larva/adjustToxLoss(amount)
-	if(stat != DEAD)
+/mob/living/carbon/alien/larva/adjustPlasma(amount)
+	if(stat != DEAD && amount > 0)
 		amount_grown = min(amount_grown + 1, max_grown)
 	..(amount)
 
@@ -84,6 +82,9 @@
 
 /mob/living/carbon/alien/larva/restrained()
 	return 0
+
+/mob/living/carbon/alien/larva/active_hand_exists()
+	return 1
 
 // new damage icon system
 // now constructs damage icon for each organ from mask * damage field

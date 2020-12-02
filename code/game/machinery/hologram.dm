@@ -37,9 +37,26 @@ var/const/HOLOPAD_MODE = RANGE_BASED
 	icon_state = "holopad0"
 	flags = HEAR
 	languages = ROBOT | HUMAN
+	machine_flags = CROWDESTROY | REPLACEPARTS | CROWPRY | WRENCHMOVE | SCREWTOGGLE
+	icon_open = "holopad_open"
+	icon_closed = "holopad0"
 	var/list/masters = list()//List of AIs that use the holopad
 	var/last_request = 0 //to prevent request spam. ~Carn
 	var/holo_range = 5 // Change to change how far the AI can move away from the holopad before deactivating.
+
+/obj/machinery/hologram/holopad/New()
+	..()
+	component_parts = list()
+	component_parts += new /obj/item/weapon/circuitboard/holopad(null)
+	component_parts += new /obj/item/weapon/stock_parts/capacitor(null)
+	RefreshParts()
+
+/obj/machinery/hologram/holopad/RefreshParts()
+	var/holograph_range = 4
+	for(var/obj/item/weapon/stock_parts/capacitor/B in component_parts)
+		holograph_range += 1 * B.rating
+	holo_range = holograph_range
+
 
 /obj/machinery/hologram/holopad/attack_hand(var/mob/living/carbon/human/user) //Carn: Hologram requests.
 	if(!istype(user))
@@ -85,11 +102,11 @@ var/const/HOLOPAD_MODE = RANGE_BASED
 
 /*This is the proc for special two-way communication between AI and holopad/people talking near holopad.
 For the other part of the code, check silicon say.dm. Particularly robot talk.*/
-/obj/machinery/hologram/holopad/Hear(message, atom/movable/speaker, message_langs, raw_message, radio_freq)
+/obj/machinery/hologram/holopad/Hear(message, atom/movable/speaker, message_langs, raw_message, radio_freq, list/spans)
 	if(speaker && masters.len && !radio_freq)//Master is mostly a safety in case lag hits or something. Radio_freq so AIs dont hear holopad stuff through radios.
 		for(var/mob/living/silicon/ai/master in masters)
 			if(masters[master] && speaker != master)
-				raw_message = master.lang_treat(speaker, message_langs, raw_message)
+				raw_message = master.lang_treat(speaker, message_langs, raw_message, spans)
 				var/name_used = speaker.GetVoice()
 				var/rendered = "<i><span class='game say'>Holopad received, <span class='name'>[name_used]</span> <span class='message'>[raw_message]</span></span></i>"
 				master.show_message(rendered, 2)
@@ -101,9 +118,9 @@ For the other part of the code, check silicon say.dm. Particularly robot talk.*/
 	h.layer = FLY_LAYER//Above all the other objects/mobs. Or the vast majority of them.
 	h.anchored = 1//So space wind cannot drag it.
 	h.name = "[A.name] (Hologram)"//If someone decides to right click.
-	h.SetLuminosity(2)	//hologram lighting
+	h.set_light(2)	//hologram lighting
 	masters[A] = h
-	SetLuminosity(2)			//pad lighting
+	set_light(2)			//pad lighting
 	icon_state = "holopad1"
 	A.current = src
 	use_power += HOLOGRAM_POWER_USAGE
@@ -116,7 +133,7 @@ For the other part of the code, check silicon say.dm. Particularly robot talk.*/
 	masters -= user //Discard AI from the list of those who use holopad
 	use_power = max(HOLOPAD_PASSIVE_POWER_USAGE, use_power - HOLOGRAM_POWER_USAGE)//Reduce power usage
 	if (!masters.len)//If no users left
-		SetLuminosity(0)			//pad lighting (hologram lighting will be handled automatically since its owner was deleted)
+		set_light(0)			//pad lighting (hologram lighting will be handled automatically since its owner was deleted)
 		icon_state = "holopad0"
 		use_power = HOLOPAD_PASSIVE_POWER_USAGE
 	return 1
@@ -134,7 +151,7 @@ For the other part of the code, check silicon say.dm. Particularly robot talk.*/
 						var/area/holo_area = get_area(src)
 						var/area/eye_area = get_area(master.eyeobj)
 
-						if(eye_area in holo_area.master.related)
+						if(eye_area in holo_area)
 							return 1
 
 			clear_holo(master)//If not, we want to get rid of the hologram.

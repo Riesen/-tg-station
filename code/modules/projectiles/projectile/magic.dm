@@ -11,6 +11,7 @@
 	icon_state = "pulse1_bl"
 
 /obj/item/projectile/magic/death/on_hit(var/target)
+	. = ..()
 	if(ismob(target))
 		var/mob/M = target
 		M.death(0)
@@ -31,6 +32,7 @@
 	..()
 
 /obj/item/projectile/magic/fireball/on_hit(var/target)
+	. = ..()
 	var/turf/T = get_turf(target)
 	explosion(T, -1, 0, 2, 3, 0, flame_range = 2)
 	if(ismob(target)) //multiple flavors of pain
@@ -46,9 +48,12 @@
 	flag = "magic"
 
 /obj/item/projectile/magic/resurrection/on_hit(var/mob/living/carbon/target)
-
+	. = ..()
 	if(istype(target,/mob))
 		var/old_stat = target.stat
+		if(target.dna)
+			for(var/datum/organ/limb/L in target.get_missing_limbs())
+				L.regenerate_organitem(target.dna)
 		target.revive()
 		target.suiciding = 0
 		if(!target.ckey)
@@ -56,6 +61,7 @@
 				if(target.real_name == ghost.real_name)
 					ghost.reenter_corpse()
 					break
+
 		if(old_stat != DEAD)
 			target << "<span class='notice'>You feel great!</span>"
 		else
@@ -72,6 +78,7 @@
 	var/outer_tele_radius = 6
 
 /obj/item/projectile/magic/teleport/on_hit(var/mob/target)
+	. = ..()
 	var/teleammount = 0
 	var/teleloc = target
 	if(!isturf(target))
@@ -80,7 +87,7 @@
 		if(!stuff.anchored && stuff.loc)
 			teleammount++
 			do_teleport(stuff, stuff, 10)
-			var/datum/effect/effect/system/harmless_smoke_spread/smoke = new /datum/effect/effect/system/harmless_smoke_spread()
+			var/datum/effect/effect/system/smoke_spread/smoke = new /datum/effect/effect/system/smoke_spread()
 			smoke.set_up(max(round(10 - teleammount),1), 0, stuff.loc) //Smoke drops off if a lot of stuff is moved for the sake of sanity
 			smoke.start()
 
@@ -93,6 +100,7 @@
 	flag = "magic"
 
 /obj/item/projectile/magic/door/on_hit(var/atom/target)
+	. = ..()
 	var/atom/T = target.loc
 	if(isturf(target) && target.density)
 		CreateDoor(target)
@@ -101,10 +109,7 @@
 
 /obj/item/projectile/magic/door/proc/CreateDoor(var/turf/T)
 	new /obj/structure/mineral_door/wood(T)
-	if(istype(T,/turf/simulated/shuttle/wall))
-		T.ChangeTurf(/turf/simulated/shuttle/plating)
-	else
-		T.ChangeTurf(/turf/simulated/floor/plating)
+	T.ChangeTurf(/turf/simulated/floor/plating)
 
 
 /obj/item/projectile/magic/change
@@ -116,6 +121,7 @@
 	flag = "magic"
 
 /obj/item/projectile/magic/change/on_hit(var/atom/change)
+	. = ..()
 	wabbajack(change)
 
 proc/wabbajack(mob/living/M)
@@ -149,11 +155,10 @@ proc/wabbajack(mob/living/M)
 					new_mob = new /mob/living/carbon/monkey(M.loc)
 					new_mob.languages |= HUMAN
 				if("robot")
-					var/robot = pick("cyborg","syndiborg","drone")
+					var/robot = pick("cyborg","syndiborg")
 					switch(robot)
 						if("cyborg")		new_mob = new /mob/living/silicon/robot(M.loc)
 						if("syndiborg")		new_mob = new /mob/living/silicon/robot/syndicate(M.loc)
-						if("drone")			new_mob = new /mob/living/simple_animal/drone(M.loc)
 					if(issilicon(new_mob))
 						new_mob.gender = M.gender
 						new_mob.invisibility = 0
@@ -224,8 +229,12 @@ proc/wabbajack(mob/living/M)
 					var/mob/living/carbon/human/H = new_mob
 					ready_dna(H)
 					if(H.dna && prob(50))
-						var/new_species = pick(typesof(/datum/species) - /datum/species)
-						hardset_dna(H, null, null, null, null, new_species)
+						var/list/all_species = list()
+						for(var/speciestype in typesof(/datum/species) - /datum/species)
+							var/datum/species/S = new speciestype()
+							if(!S.dangerous_existence)
+								all_species += speciestype
+						hardset_dna(H, null, null, null, null, pick(all_species))
 					H.update_icons()
 				else
 					return

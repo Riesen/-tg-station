@@ -5,9 +5,12 @@
 	var/up = 0					//	   but seperated to allow items to protect but not impair vision, like space helmets
 	var/visor_flags = 0			// flags that are added/removed when an item is adjusted up/down
 	var/visor_flags_inv = 0		// same as visor_flags, but for flags_inv
+	var/visor_coverage = 0		// same as visor_flags, but for body_parts_covered
 	lefthand_file = 'icons/mob/inhands/clothing_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/clothing_righthand.dmi'
 	var/alt_desc = null
+	var/gang //Is this a gang outfit?
+	var/scan_reagents = 0
 
 //Ears: currently only used for headsets and earmuffs
 /obj/item/clothing/ears
@@ -31,11 +34,12 @@
 	name = "glasses"
 	icon = 'icons/obj/clothing/glasses.dmi'
 	w_class = 2.0
-	flags = GLASSESCOVERSEYES
+	body_parts_covered = EYES
 	slot_flags = SLOT_EYES
 	var/vision_flags = 0
 	var/darkness_view = 2//Base human is 2
 	var/invis_view = SEE_INVISIBLE_LIVING
+	var/invis_override = 0
 	var/emagged = 0
 	var/list/icon/current = list() //the current hud icons
 	strip_delay = 20
@@ -104,6 +108,7 @@ BLIND     // can't see anything
 			src.icon_state = initial(icon_state)
 			gas_transfer_coefficient = initial(gas_transfer_coefficient)
 			permeability_coefficient = initial(permeability_coefficient)
+			body_parts_covered |= visor_coverage
 			flags |= visor_flags
 			flags_inv |= visor_flags_inv
 			user << "You push \the [src] back into place."
@@ -114,6 +119,7 @@ BLIND     // can't see anything
 			user << "You push \the [src] out of the way."
 			gas_transfer_coefficient = null
 			permeability_coefficient = null
+			body_parts_covered &= ~visor_coverage
 			flags &= ~visor_flags
 			flags_inv &= ~visor_flags_inv
 			src.mask_adjusted = 1
@@ -158,7 +164,8 @@ BLIND     // can't see anything
 	name = "space helmet"
 	icon_state = "spaceold"
 	desc = "A special helmet with solar UV shielding to protect your eyes from harmful rays."
-	flags = HEADCOVERSEYES | BLOCKHAIR | HEADCOVERSMOUTH | STOPSPRESSUREDMAGE | THICKMATERIAL
+	body_parts_covered = HEAD | EYES | MOUTH
+	flags = BLOCKHAIR | STOPSPRESSUREDMAGE | THICKMATERIAL
 	item_state = "spaceold"
 	permeability_coefficient = 0.01
 	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 100, rad = 50)
@@ -202,6 +209,7 @@ BLIND     // can't see anything
 	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 0, rad = 0)
 	var/fitted = FEMALE_UNIFORM_FULL // For use in alternate clothing styles for women
 	var/has_sensor = 1//For the crew computer 2 = unable to change mode
+	var/sensor_start_override = 0
 	var/sensor_mode = 0
 	var/can_adjust = 1
 	var/adjusted = 0
@@ -259,7 +267,7 @@ BLIND     // can't see anything
 	if(hastie)
 		user << "\A [hastie] is attached to it."
 
-atom/proc/generate_female_clothing(index,t_color,icon,type)
+/atom/proc/generate_female_clothing(index,t_color,icon,type)
 	var/icon/female_clothing_icon	= icon("icon"=icon, "icon_state"="[t_color]_s")
 	var/icon/female_s				= icon("icon"='icons/mob/uniform.dmi', "icon_state"="[(type == FEMALE_UNIFORM_FULL) ? "female_full" : "female_top"]")
 	female_clothing_icon.Blend(female_s, ICON_MULTIPLY)
@@ -373,7 +381,8 @@ atom/proc/generate_female_clothing(index,t_color,icon,type)
 			H.update_inv_w_uniform(0)
 
 /obj/item/clothing/under/New()
-	sensor_mode = pick(0,1,2,3)
+	if(!sensor_start_override)
+		sensor_mode = pick(0,1,2,3)
 	adjusted = 0
 	suit_color = item_color
 	..()
@@ -384,6 +393,7 @@ atom/proc/generate_female_clothing(index,t_color,icon,type)
 			up = !up
 			flags |= (visor_flags)
 			flags_inv |= (visor_flags_inv)
+			body_parts_covered |= (visor_coverage)
 			icon_state = initial(icon_state)
 			usr << "You pull \the [src] down."
 			flash_protect = initial(flash_protect)
@@ -392,6 +402,7 @@ atom/proc/generate_female_clothing(index,t_color,icon,type)
 			up = !up
 			flags &= ~(visor_flags)
 			flags_inv &= ~(visor_flags_inv)
+			body_parts_covered &= ~(visor_coverage)
 			icon_state = "[initial(icon_state)]up"
 			usr << "You push \the [src] up."
 			flash_protect = 0

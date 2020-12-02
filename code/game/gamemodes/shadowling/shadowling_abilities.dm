@@ -4,6 +4,7 @@
 	panel = "Shadowling Abilities"
 	charge_max = 300
 	clothes_req = 0
+	shadowling_req = 1
 
 /obj/effect/proc_holder/spell/targeted/glare/cast(list/targets)
 	for(var/mob/living/carbon/human/target in targets)
@@ -36,6 +37,7 @@
 	panel = "Shadowling Abilities"
 	charge_max = 250 //Short cooldown because people can just turn the lights back on
 	clothes_req = 0
+	shadowling_req = 1
 	range = 5
 
 /obj/effect/proc_holder/spell/aoe_turf/veil/cast(list/targets)
@@ -55,7 +57,7 @@
 			L.update(0)
 		for(var/obj/item/device/pda/P in T.contents)
 			P.fon = 0
-			P.SetLuminosity(0)
+			P.set_light(0)
 		for(var/obj/effect/glowshroom/G in orange(2, usr)) //Very small radius
 			G.visible_message("<span class='warning'>\The [G] withers away!</span>")
 			qdel(G)
@@ -69,10 +71,10 @@
 				F.update_brightness()
 			for(var/obj/item/device/pda/P in H)
 				P.fon = 0
-				P.SetLuminosity(0) //failsafe
+				P.set_light(0) //failsafe
 			if(H != usr)
 				H << "<span class='boldannounce'>You feel a chill and are plunged into darkness.</span>"
-			H.luminosity = 0 //This is required with the object-based lighting
+		//	H.set_light = 0 //This is required with the object-based lighting Required no longer
 
 
 
@@ -83,6 +85,7 @@
 	charge_max = 600
 	clothes_req = 0
 	range = -1
+	shadowling_req = 1
 	include_user = 1
 
 /obj/effect/proc_holder/spell/targeted/shadow_walk/cast(list/targets)
@@ -108,6 +111,7 @@
 	panel = "Shadowling Abilities"
 	range = 5
 	charge_max = 1200
+	shadowling_req = 1
 	clothes_req = 0
 
 /obj/effect/proc_holder/spell/aoe_turf/flashfreeze/cast(list/targets)
@@ -139,6 +143,7 @@
 	charge_max = 450
 	clothes_req = 0
 	range = 1 //Adjacent to user
+	shadowling_req = 1
 	var/enthralling = 0
 
 /obj/effect/proc_holder/spell/targeted/enthrall/cast(list/targets)
@@ -222,6 +227,7 @@
 	charge_max = 25
 	clothes_req = 0
 	range = -1
+	shadowling_req = 1
 	include_user = 1
 
 /obj/effect/proc_holder/spell/targeted/shadowling_hivemind/cast(list/targets)
@@ -242,6 +248,7 @@
 	charge_max = 600
 	clothes_req = 0
 	range = -1
+	shadowling_req = 1
 	include_user = 1
 
 /obj/effect/proc_holder/spell/targeted/shadowling_regenarmor/cast(list/targets)
@@ -267,6 +274,7 @@
 	clothes_req = 0
 	range = -1
 	include_user = 1
+	shadowling_req = 1
 	var/blind_smoke_acquired
 	var/screech_acquired
 	var/drain_thrall_acquired
@@ -285,7 +293,7 @@
 				thralls++
 				M << "<span class='deadsay'>You feel hooks sink into your mind and pull.</span>"
 
-		if(!do_after(user, 30))
+		if(!do_after(user, 30, target = user))
 			user << "<span class='warning'>Your concentration has been broken. The mental hooks you have sent out now retract into your mind.</span>"
 			return
 
@@ -335,6 +343,7 @@
 	charge_max = 600
 	clothes_req = 0
 	range = -1
+	shadowling_req = 1
 	include_user = 1
 
 /obj/effect/proc_holder/spell/targeted/blindness_smoke/cast(list/targets) //Extremely hacky
@@ -346,7 +355,7 @@
 		B.reagents.clear_reagents() //Just in case!
 		B.icon_state = null //Invisible
 		B.reagents.add_reagent("blindness_smoke", 10)
-		var/datum/effect/effect/system/chem_smoke_spread/S = new /datum/effect/effect/system/chem_smoke_spread
+		var/datum/effect/effect/system/smoke_spread/chem/S = new /datum/effect/effect/system/smoke_spread/chem
 		S.attach(B)
 		if(S)
 			S.set_up(B.reagents, 10, 0, B.loc)
@@ -355,14 +364,14 @@
 			S.start()
 		qdel(B)
 
-datum/reagent/shadowling_blindness_smoke //Blinds non-shadowlings, heals shadowlings/thralls
+/datum/reagent/shadowling_blindness_smoke //Blinds non-shadowlings, heals shadowlings/thralls
 	name = "!(%@ ERROR )!@$"
 	id = "blindness_smoke"
 	description = "<::ERROR::> CANNOT ANALYZE REAGENT <::ERROR::>"
 	color = "#000000" //Complete black (RGB: 0, 0, 0)
 	metabolization_rate = 100 //lel
 
-datum/reagent/shadowling_blindness_smoke/on_mob_life(var/mob/living/M as mob)
+/datum/reagent/shadowling_blindness_smoke/on_mob_life(var/mob/living/M as mob)
 	if(!M) M = holder.my_atom
 	if(!is_shadow_or_thrall(M))
 		M << "<span class='warning'><b>You breathe in the black smoke, and your eyes burn horribly!</b></span>"
@@ -386,6 +395,7 @@ datum/reagent/shadowling_blindness_smoke/on_mob_life(var/mob/living/M as mob)
 	panel = "Shadowling Abilities"
 	range = 7
 	charge_max = 300
+	shadowling_req = 1
 	clothes_req = 0
 
 /obj/effect/proc_holder/spell/aoe_turf/unearthly_screech/cast(list/targets)
@@ -425,6 +435,7 @@ datum/reagent/shadowling_blindness_smoke/on_mob_life(var/mob/living/M as mob)
 	range = 3
 	charge_max = 100
 	clothes_req = 0
+	shadowling_req = 1
 	var/thralls_drained = 0
 	var/list/nearby_thralls = list()
 
@@ -457,6 +468,7 @@ datum/reagent/shadowling_blindness_smoke/on_mob_life(var/mob/living/M as mob)
 	range = -1
 	charge_max = 3000
 	clothes_req = 0
+	shadowling_req = 1
 	include_user = 1
 	var/list/thralls_in_world = list()
 

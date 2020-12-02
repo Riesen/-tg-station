@@ -82,7 +82,6 @@
 			user << "<span class='danger'>[src] blows up in your face!</span>"
 			user.take_organ_damage(0,20)
 			user.drop_item()
-			qdel(src)
 			return fired
 	return ..()
 
@@ -95,7 +94,7 @@
 				afterattack(user, user)	//you know the drill
 				user.visible_message("<span class='danger'>[src] goes off!</span>", "<span class='danger'>[src] goes off in your face!</span>")
 				return
-			if(do_after(user, 30))
+			if(do_after(user, 30, target = src))
 				if(magazine.ammo_count())
 					user << "<span class='notice'>You can't modify it!</span>"
 					return
@@ -108,7 +107,7 @@
 				afterattack(user, user)	//and again
 				user.visible_message("<span class='danger'>[src] goes off!</span>", "<span class='danger'>[src] goes off in your face!</span>")
 				return
-			if(do_after(user, 30))
+			if(do_after(user, 30, target = src))
 				if(magazine.ammo_count())
 					user << "<span class='notice'>You can't modify it!</span>"
 					return
@@ -202,14 +201,21 @@
 			var/obj/item/ammo_casing/AC = chambered
 			if(AC.fire(user, user))
 				playsound(user, fire_sound, 50, 1)
-				var/obj/item/organ/limb/affecting = H.get_organ(check_zone(user.zone_sel.selecting))
-				var/limb_name = affecting.getDisplayName()
-				if(affecting.name == "head" || affecting.name == "eyes" || affecting.name == "mouth")
-					user.apply_damage(300, BRUTE, affecting)
-					user.visible_message("<span class='danger'>[user.name] fires [src] at \his head!</span>", "<span class='userdanger'>You fire [src] at your head!</span>", "You hear a gunshot!")
-				else
-					user.visible_message("<span class='danger'>[user.name] cowardly fires [src] at \his [limb_name]!</span>", "<span class='userdanger'>You cowardly fire [src] at your [limb_name]!</span>", "You hear a gunshot!")
-				return
+				var/datum/organ/limb/L = H.get_organdatum(check_zone(user.zone_sel.selecting))
+				if(L && L.exists())
+					var/obj/item/organ/limb/affecting = L.organitem
+					if(affecting.name == "head" || affecting.name == "eyes" || affecting.name == "mouth")
+						user.apply_damage(300, BRUTE, affecting)
+						user.visible_message("<span class='danger'>[user.name] fires [src] at \his head!</span>", "<span class='userdanger'>You fire [src] at your head!</span>", "You hear a gunshot!")
+					else
+						user.visible_message("<span class='danger'>[user.name] cowardly fires [src] at \his [affecting]!</span>", "<span class='userdanger'>You cowardly fire [src] at your [affecting]!</span>", "You hear a gunshot!")
+					return
 
 		user.visible_message("<span class='danger'>*click*</span>")
 		playsound(user, 'sound/weapons/empty.ogg', 100, 1)
+
+/obj/item/weapon/gun/projectile/revolver/russian/polish
+	name = "Polish Revolver"
+	desc = "Elbth: A family loved spinoff of the classic Russian Roulette."
+	origin_tech = "combat=2;materials=2"
+	mag_type = /obj/item/ammo_box/magazine/internal/cylinder/rus357/polish

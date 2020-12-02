@@ -121,7 +121,7 @@ Get Flat Icon DEMO by DarkCampainger
 
 This is a test for the get flat icon proc, modified approprietly for icons and their states.
 Probably not a good idea to run this unless you want to see how the proc works in detail.
-mob
+/mob
 	icon = 'old_or_unused.dmi'
 	icon_state = "green"
 
@@ -199,7 +199,7 @@ mob
 				getFlatIcon(src)
 			Browse_Icon()
 
-obj/effect/overlayTest
+/obj/effect/overlayTest
 	icon = 'old_or_unused.dmi'
 	icon_state = "blue"
 	pixel_x = -24
@@ -689,6 +689,7 @@ The _flatIcons list is a cache for generated icon files.
 	while(TRUE)
 		if(curIndex<=process.len)
 			current = process[curIndex]
+			curIndex++
 			if(!current)	continue
 			currentLayer = current:layer
 			if(currentLayer<0) // Special case for FLY_LAYER
@@ -708,7 +709,7 @@ The _flatIcons list is a cache for generated icon files.
 			if(cmpIndex>layers.len) // Reached end of list without inserting
 				layers[current]=currentLayer // Place at end
 
-			curIndex++
+
 
 		if(curIndex>process.len)
 			if(pSet == 0) // Switch to overlays

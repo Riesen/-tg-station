@@ -67,10 +67,14 @@
 		return
 
 	if(istype(loc,/obj/mecha))
-		if(!locate(/turf) in list(A,A.loc)) // Prevents inventory from being drilled
-			return
 		var/obj/mecha/M = loc
 		return M.click_action(A,src)
+
+	//This code checks if the mob's active hand actually exists. |- Ricotez
+	if(!active_hand_exists())
+		changeNext_move(CLICK_CD_MELEE) //I dont'really see much reason to use any other timing.
+		NoHandClickOn(A)
+		return
 
 	if(restrained())
 		changeNext_move(CLICK_CD_HANDCUFFED)   //Doing shit in cuffs shall be vey slow
@@ -167,6 +171,19 @@
 */
 /mob/proc/RestrainedClickOn(var/atom/A)
 	return
+
+/*
+	NoHand ClickOn
+
+	Used when you are clicking with a hand you don't have.
+*/
+/mob/proc/NoHandClickOn(var/atom/A)
+	if(hand)
+		client << "You cannot use your left hand!"
+	else
+		client << "You cannot use your right hand!"
+	return
+
 
 /*
 	Middle click
@@ -306,3 +323,20 @@
 	else
 		if(dx > 0)	dir = EAST
 		else		dir = WEST
+
+/obj/screen/click_catcher
+	icon = 'icons/mob/screen_full.dmi'
+	icon_state = "passage0"
+	plane = -99
+	mouse_opacity = 2
+	screen_loc = "CENTER-7,CENTER-7"
+
+/obj/screen/click_catcher/Click(location, control, params)
+	var/list/modifiers = params2list(params)
+	if(modifiers["middle"] && istype(usr, /mob/living/carbon))
+		var/mob/living/carbon/C = usr
+		C.swap_hand()
+	else
+		var/turf/T = screen_loc2turf(modifiers["screen-loc"], get_turf(usr))
+		T.Click(location, control, params)
+	return 1

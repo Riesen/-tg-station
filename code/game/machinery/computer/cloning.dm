@@ -2,8 +2,8 @@
 /obj/machinery/computer/cloning
 	name = "cloning console"
 	desc = "Used to clone people and manage DNA."
-	icon = 'icons/obj/computer.dmi'
-	icon_state = "dna"
+	icon_screen = "dna"
+	icon_keyboard = "med_key"
 	circuit = /obj/item/weapon/circuitboard/cloning
 	req_access = list(access_heads) //Only used for record deletion right now.
 	var/obj/machinery/dna_scannernew/scanner = null //Linked scanner. For scanning.
@@ -352,7 +352,7 @@
 	if (!check_dna_integrity(subject) || !istype(subject))
 		scantemp = "<font class='bad'>Unable to locate valid genetic data.</font>"
 		return
-	if (!subject.getorgan(/obj/item/organ/brain))
+	if (!subject.exists("brain"))
 		scantemp = "<font class='bad'>No signs of intelligence detected.</font>"
 		return
 	if (subject.suiciding == 1)
@@ -397,16 +397,3 @@
 
 	src.records += R
 	scantemp = "Subject successfully scanned."
-
-/obj/machinery/computer/cloning/update_icon()
-	SetLuminosity(brightness_on)
-	if(stat & BROKEN)
-		icon_state = "commb"
-	else
-		if(stat & NOPOWER)
-			src.icon_state = "c_unpowered"
-			stat |= NOPOWER
-			SetLuminosity(0)
-		else
-			icon_state = initial(icon_state)
-			stat &= ~NOPOWER

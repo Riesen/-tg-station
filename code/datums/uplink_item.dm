@@ -141,7 +141,7 @@ var/list/uplink_items = list()
 	desc = "A short bow mounted across a tiller in miniature. Small enough to fit into a pocket or slip into a bag unnoticed. It fires bolts tipped with a paralyzing toxin collected from a rare organism. \
 	The bow generates bolts using an internal power source but must be manually charged between shots."
 	item = /obj/item/weapon/gun/energy/kinetic_accelerator/crossbow
-	cost = 14
+	cost = 13 // This is bait. Can't make a double e-sword if you pick up one of these!
 	excludefrom = list(/datum/game_mode/nuclear)
 	surplus = 50
 
@@ -170,6 +170,22 @@ var/list/uplink_items = list()
 	desc = "The Minibomb is a grenade with a five-second fuse."
 	item = /obj/item/weapon/grenade/syndieminibomb
 	cost = 6
+
+/datum/uplink_item/dangerous/foamsmg
+	name = "Toy Submachine Gun"
+	desc = "A fully-loaded Donksoft bullpup submachine gun that fires riot grade rounds with a 20-round magazine."
+	item = /obj/item/weapon/gun/projectile/automatic/c20r/toy
+	cost = 10
+	gamemodes = list(/datum/game_mode/nuclear)
+	surplus = 0
+
+/datum/uplink_item/dangerous/foammachinegun
+	name = "Toy Machine Gun"
+	desc = "A fully-loaded Donksoft belt-fed machine gun. This weapon has a massive 50-round magazine of devastating riot grade darts, that can briefly incapacitate someone in just one volley."
+	item = /obj/item/weapon/gun/projectile/automatic/l6_saw/toy
+	cost = 25
+	gamemodes = list(/datum/game_mode/nuclear)
+	surplus = 0
 
 /datum/uplink_item/dangerous/viscerators
 	name = "Viscerator Delivery Grenade"
@@ -243,11 +259,23 @@ var/list/uplink_items = list()
 	item = /obj/item/ammo_box/magazine/smgm45
 	cost = 2
 	gamemodes = list(/datum/game_mode/nuclear)
+/datum/uplink_item/ammo/ammobag
+	name = "Ammo Duffelbag - Shotgun Ammo Grab Bag"
+	desc = "A duffelbag filled with Bulldog ammo to kit out an entire team, at a discounted price."
+	item = /obj/item/weapon/storage/backpack/dufflebag/syndieammo/loaded
+	cost = 10 //bulk buyer's discount. Very useful if you're buying a mech and dont have TC left to buy people non-shotgun guns
+	gamemodes = list(/datum/game_mode/nuclear)
 
+/datum/uplink_item/ammo/bullslug
+	name = "Drum Magazine - 12g Slugs"
+	desc = "An additional 8-round slug magazine for use in the Bulldog shotgun. Now 8 times less likely to shoot your pals."
+	item = /obj/item/ammo_box/magazine/m12g
+	cost = 2
+	gamemodes = list(/datum/game_mode/nuclear)
 /datum/uplink_item/ammo/bullbuck
 	name = "Drum Magazine - 12g Buckshot"
 	desc = "An additional 8-round buckshot magazine for use in the Bulldog shotgun. Front towards enemy."
-	item = /obj/item/ammo_box/magazine/m12g
+	item = /obj/item/ammo_box/magazine/m12g/buckshot
 	cost = 2
 	gamemodes = list(/datum/game_mode/nuclear)
 
@@ -258,11 +286,18 @@ var/list/uplink_items = list()
 	cost = 3
 	gamemodes = list(/datum/game_mode/nuclear)
 
+/datum/uplink_item/ammo/bulltoxin
+	name = "Drum Magazine - 12g Bioterror"
+	desc = "An alternative 8-round toxic magazine for use in the Bulldog shotgun. Contains debilitating toxins to make your target die an agonizing death."
+	item = /obj/item/ammo_box/magazine/m12g/bioterror
+	cost = 3
+	gamemodes = list(/datum/game_mode/nuclear)
+
 /datum/uplink_item/ammo/bulldragon
 	name = "Drum Magazine - 12g Dragon's Breath"
 	desc = "An alternative 8-round dragon's breath magazine for use in the Bulldog shotgun. I'm a fire starter, twisted fire starter!"
 	item = /obj/item/ammo_box/magazine/m12g/dragon
-	cost = 3
+	cost = 2
 	gamemodes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/ammo/carbine
@@ -287,11 +322,18 @@ var/list/uplink_items = list()
 	gamemodes = list(/datum/game_mode/nuclear)
 	surplus = 0
 
+/datum/uplink_item/ammo/toydarts
+	name = "Box of Riot Darts"
+	desc = "A box of 40 Donksoft foam riot darts, for reloading any compatible foam dart gun. Don't forget to share!"
+	item = /obj/item/ammo_box/foambox/riot
+	cost = 4
+	gamemodes = list(/datum/game_mode/nuclear)
+	surplus = 0
+
 // STEALTHY WEAPONS
 
 /datum/uplink_item/stealthy_weapons
 	category = "Stealthy and Inconspicuous Weapons"
-
 
 /datum/uplink_item/stealthy_weapons/throwingstars
 	name = "Box of Throwing Stars"
@@ -299,6 +341,14 @@ var/list/uplink_items = list()
 	item = /obj/item/weapon/storage/box/throwing_stars
 	cost = 6
 	excludefrom = list(/datum/game_mode/nuclear)
+
+/datum/uplink_item/stealthy_weapons/foampistol
+	name = "Toy Gun (with Stun Darts)"
+	desc = "An innocent looking toy pistol designed to fire foam darts. Comes loaded with riot grade darts, to incapacitate a target."
+	item = /obj/item/weapon/gun/projectile/automatic/toy/pistol/riot
+	cost = 4
+	surplus = 4
+	excludefrom = list(/datum/game_mode/gang)
 
 /datum/uplink_item/stealthy_weapons/sleepy_pen
 	name = "Sleepy Pen"
@@ -329,6 +379,13 @@ var/list/uplink_items = list()
 	item = /obj/item/weapon/cartridge/syndicate
 	cost = 6
 
+/datum/uplink_item/stealthy_weapons/pizza_bomb
+	name = "Pizza Bomb"
+	desc = "A pizza box with a bomb taped inside of it. The timer needs to be set by opening the box; afterwards, opening the box again will trigger the detonation."
+	item = /obj/item/device/pizza_bomb
+	cost = 6
+	surplus = 8
+
 /datum/uplink_item/stealthy_weapons/suppressor
 	name = "Universal Suppressor"
 	desc = "Fitted for use on any small caliber weapon with a threaded barrel, this suppressor will silence the shots of the weapon for increased stealth and superior ambushing capability."
@@ -336,6 +393,11 @@ var/list/uplink_items = list()
 	cost = 3
 	surplus = 10
 
+/datum/uplink_item/stealthy_weapons/dehy_carp
+	name = "Dehydrated Space Carp"
+	desc = "Just add water to make your very own hostile to everything space carp. It looks just like a plushie."
+	item = /obj/item/toy/carpplushie/dehy_carp
+	cost = 3
 // STEALTHY TOOLS
 
 /datum/uplink_item/stealthy_tools
@@ -419,7 +481,7 @@ var/list/uplink_items = list()
 
 /datum/uplink_item/device_tools/bombvalve
 	name = "Tank Transfer Valve"
-	desc = "A valve that regulates the transfer of air between two tanks. Useful for bomb-making." 
+	desc = "A valve that regulates the transfer of air between two tanks. Useful for bomb-making."
 	item = /obj/item/device/transfer_valve
 	cost = 11
 	surplus = 0
@@ -443,6 +505,16 @@ var/list/uplink_items = list()
 	desc = "The red and black syndicate space suit is less encumbering than Nanotrasen variants, fits inside bags, and has a weapon slot. Nanotrasen crewmembers are trained to report red space suit sightings."
 	item = /obj/item/weapon/storage/box/syndie_kit/space
 	cost = 5
+
+/datum/uplink_item/device_tools/hardsuit
+	name = "Blood-red Hardsuit"
+	desc = "The feared suit of a syndicate nuclear agent. Features slightly better armoring and a built in jetpack that runs off standard atmospheric tanks. \
+	When the built in helmet is deployed your identity will be protected, even in death, as the suit cannot be removed by outside forces. Toggling the suit into combat mode \
+	will allow you all the mobility of a loose fitting uniform without sacrificing armoring. Additionally the suit is collapsible, small enough to fit within a backpack. \
+	Nanotrasen crewmembers are trained to report red space suit sightings, these suits in particular are known to drive employees into a panic."
+	item = /obj/item/clothing/suit/space/hardsuit/syndi
+	cost = 8
+	excludefrom = list(/datum/game_mode/gang)
 
 /datum/uplink_item/device_tools/thermal
 	name = "Thermal Imaging Glasses"
@@ -613,7 +685,13 @@ var/list/uplink_items = list()
 	desc = "A useless red balloon with the syndicate logo on it, which can blow the deepest of covers."
 	item = /obj/item/toy/syndicateballoon
 	cost = 20
-
+	
+/datum/uplink_item/badass/raincoat
+	name = "Raincoat"
+	desc = "It's hip to be square!"
+	item = /obj/item/clothing/suit/raincoat
+	cost = 1
+	
 /datum/uplink_item/badass/random
 	name = "Random Item"
 	desc = "Picking this choice will send you a random item from the list. Useful for when you cannot think of a strategy to finish your objectives with."

@@ -11,18 +11,14 @@
 		if(!ishuman(M.current))	continue
 		var/mob/living/carbon/human/W = M.current
 		var/list/candidates = get_candidates(BE_WIZARD)
-		if(!candidates)	return //Sad Trombone
+		if(!candidates || !candidates.len)	return //Sad Trombone
 		var/client/C = pick(candidates)
 
-		new /obj/effect/effect/harmless_smoke(W.loc)
+		new /obj/effect/effect/smoke(W.loc)
 
 		var/mob/living/carbon/human/I = new /mob/living/carbon/human(W.loc)
-		I.real_name = W.real_name
-		I.dna.unique_enzymes = W.dna.unique_enzymes
+		hardset_dna(I, W.dna.uni_identity, W.dna.struc_enzymes, W.real_name, W.dna.blood_type, W.dna.species, W.dna.mutant_color)
 		I.name = W.real_name
-		I.dna.blood_type = W.dna.blood_type
-		I.dna.uni_identity = W.dna.uni_identity
-		I.dna.struc_enzymes = W.dna.struc_enzymes
 		updateappearance(I)
 		if(W.ears)		I.equip_to_slot_or_del(new W.ears.type, slot_ears)
 		if(W.w_uniform)	I.equip_to_slot_or_del(new W.w_uniform.type	, slot_w_uniform)

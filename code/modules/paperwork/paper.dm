@@ -15,7 +15,7 @@
 	throw_range = 1
 	throw_speed = 1
 	layer = 3
-	pressure_resistance = 1
+	pressure_resistance = 0
 	slot_flags = SLOT_HEAD
 	body_parts_covered = HEAD
 
@@ -81,7 +81,7 @@
 
 /obj/item/weapon/paper/attack_self(mob/user)
 	user.examinate(src)
-	if(rigged && (SSevent.holiday == "April Fool's Day"))
+	if(rigged && (SSevent.holidays && SSevent.holidays[APRIL_FOOLS]))
 		if(spam_flag == 0)
 			spam_flag = 1
 			playsound(loc, 'sound/items/bikehorn.ogg', 50, 1)
@@ -116,27 +116,31 @@
 	var/locid = 0
 	var/laststart = 1
 	var/textindex = 1
-	while(1)	//I know this can cause infinite loops and fuck up the whole server, but the if(istart==0) should be safe as fuck
-		var/istart = 0
+	var/done = 0
+	var/istart = 0
+	var/iend = 0
+	while(!done)	//I know this can cause infinite loops and fuck up the whole server, but the if(istart==0) should be safe as fuck //It wasn't
 		if(links)
 			istart = findtext(info_links, "<span class=\"paper_field\">", laststart)
 		else
 			istart = findtext(info, "<span class=\"paper_field\">", laststart)
 
 		if(istart == 0)
-			return	//No field found with matching id
+			return	//No fields found
 
 		laststart = istart+1
 		locid++
 		if(locid == id)
-			var/iend = 1
 			if(links)
 				iend = findtext(info_links, "</span>", istart)
 			else
 				iend = findtext(info, "</span>", istart)
+			if(iend == 0)
+				return //No end?
 
 			//textindex = istart+26
 			textindex = iend
+			done = 1
 			break
 
 	if(links)
@@ -194,6 +198,14 @@
 		t = replacetext(t, "\[/small\]", "</font>")
 		t = replacetext(t, "\[list\]", "<ul>")
 		t = replacetext(t, "\[/list\]", "</ul>")
+		t = replacetext(t, "\[code\]", "<pre>")
+		t = replacetext(t, "\[/code\]", "</pre>")
+		t = replacetext(t, "\[table\]", "<table>")
+		t = replacetext(t, "\[/table\]", "</table>")
+		t = replacetext(t, "\[tr\]", "<tr>")
+		t = replacetext(t, "\[/tr\]", "</tr>")
+		t = replacetext(t, "\[td\]", "<td>")
+		t = replacetext(t, "\[/td\]", "</td>")
 
 		t = "<font face=\"[PEN_FONT]\" color=[P.colour]>[t]</font>"
 	else // If it is a crayon, and he still tries to use these, make them empty!
@@ -203,6 +215,14 @@
 		t = replacetext(t, "\[/small\]", "")
 		t = replacetext(t, "\[list\]", "")
 		t = replacetext(t, "\[/list\]", "")
+		t = replacetext(t, "\[code\]", "")
+		t = replacetext(t, "\[/code\]", "")
+		t = replacetext(t, "\[table\]", "")
+		t = replacetext(t, "\[/table\]", "")
+		t = replacetext(t, "\[tr\]", "")
+		t = replacetext(t, "\[/tr\]", "")
+		t = replacetext(t, "\[td\]", "")
+		t = replacetext(t, "\[/td\]", "")
 
 		t = "<font face=\"[CRAYON_FONT]\" color=[P.colour]><b>[t]</b></font>"
 
@@ -238,7 +258,11 @@
 		\[small\] - \[/small\] : Decreases the <font size = \"1\">size</font> of the text.<br>
 		\[list\] - \[/list\] : A list.<br>
 		\[*\] : A dot used for lists.<br>
-		\[hr\] : Adds a horizontal rule.
+		\[hr\] : Adds a horizontal rule.<br>
+		\[code\] : Writes text in a monospace font.<br>
+		\[table\] : Creates tabular data.<br>
+		\[tr\] : Creates a table row.<br>
+		\[td\] : Delimits table cells.
 	</BODY></HTML>"}, "window=paper_help")
 
 

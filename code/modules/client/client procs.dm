@@ -1,7 +1,6 @@
 	////////////
 	//SECURITY//
 	////////////
-#define TOPIC_SPAM_DELAY	2		//2 ticks is about 2/10ths of a second; it was 4 ticks, but that caused too many clicks to be lost due to lag
 #define UPLOAD_LIMIT		10485760	//Restricts client uploads to the server to 10MB
 #define MIN_CLIENT_VERSION	0		//Just an ambiguously low version for now, I don't want to suddenly stop people playing.
 									//I would just like the code ready should it ever need to be used.
@@ -24,14 +23,14 @@
 	if(!usr || usr != mob)	//stops us calling Topic for somebody else's client. Also helps prevent usr=null
 		return
 
-	//Reduces spamming of links by dropping calls that happen during the delay period
-	if(next_allowed_topic_time > world.time)
-		return
-	next_allowed_topic_time = world.time + TOPIC_SPAM_DELAY
-
 	//Admin PM
 	if(href_list["priv_msg"])
+		if (href_list["ahelp_reply"])
+			cmd_ahelp_reply(href_list["priv_msg"])
+			return
 		cmd_admin_pm(href_list["priv_msg"],null)
+
+
 		return
 
 	//Logs all hrefs
@@ -166,12 +165,27 @@ var/next_external_rsc = 0
 
 	send_resources()
 
+	if(!void)
+		void = new()
+	screen += void
+
 	if(prefs.lastchangelog != changelog_hash) //bolds the changelog button on the interface so we know there are updates.
 		src << "<span class='info'>You have unread updates in the changelog.</span>"
 		if(config.aggressive_changelog)
 			src.changes()
 		else
 			winset(src, "rpane.changelogb", "background-color=#eaeaea;font-style=bold")
+
+	if (ckey in clientmessages)
+		for (var/message in clientmessages[ckey])
+			src << message
+		clientmessages.Remove(ckey)
+		
+	holder = admin_datums[ckey]
+	if(holder)
+		player_anonyname = "Admin ([rand(1, 1000)])"
+	else
+		player_anonyname = "Player ([rand(1, 1000)])"
 
 	//////////////
 	//DISCONNECT//
@@ -229,6 +243,12 @@ var/next_external_rsc = 0
 	while (query_cid.NextRow())
 		related_accounts_cid += "[query_cid.item[1]], "
 
+	var/DBQuery/query_watch = dbcon.NewQuery("SELECT ckey, reason FROM [format_table_name("watch")] WHERE (ckey = '[sql_ckey]')")
+	query_watch.Execute()
+	if(query_watch.NextRow())
+		message_admins("<font color='red'><B>Notice: </B></font><font color='blue'>[key_name_admin(src)] is flagged for watching and has just connected - Reason: [query_watch.item[2]]</font>")
+		send2irc_adminless_only("Watchlist", "[key_name(src)] is flagged for watching and has just connected - Reason: [query_watch.item[2]]")
+
 
 	var/admin_rank = "Player"
 	if (src.holder && src.holder.rank)
@@ -264,6 +284,19 @@ var/next_external_rsc = 0
 
 //send resources to the client. It's here in its own proc so we can move it around easiliy if need be
 /client/proc/send_resources()
+
+	spawn
+		// Preload the HTML interface. This needs to be done due to BYOND bug http://www.byond.com/forum/?post=1487244
+		var/datum/html_interface/hi
+		for (var/type in typesof(/datum/html_interface))
+			hi = new type(null)
+			hi.sendResources(src)
+
+	// Preload the crew monitor. This needs to be done due to BYOND bug http://www.byond.com/forum/?post=1487244
+	spawn
+		if (crewmonitor && crewmonitor.initialized)
+			crewmonitor.sendResources(src)
+
 	//Send nanoui files to client
 	SSnano.send_resources(src)
 	getFiles(

@@ -101,7 +101,7 @@
 ////////////////////////////Proc for moving soul in and out off stone//////////////////////////////////////
 
 
-/obj/item/device/soulstone/proc/transfer_soul(var/choice as text, var/target, var/mob/U as mob).
+/obj/item/device/soulstone/proc/transfer_soul(var/choice as text, var/target, var/mob/U as mob)
 	switch(choice)
 		if("FORCE")
 			if(!iscarbon(target))		//TO-DO: Add sacrifice stoning for non-organics, just because you have no body doesnt mean you dont have a soul
@@ -169,6 +169,8 @@
 			var/mob/living/simple_animal/shade/A = locate() in C
 			if(A)
 				var/construct_class = alert(U, "Please choose which type of construct you wish to create.",,"Juggernaut","Wraith","Artificer")
+				if(!T || !T.loc)
+					return
 				switch(construct_class)
 					if("Juggernaut")
 						makeNewConstruct(/mob/living/simple_animal/construct/armored, A, U)

@@ -17,6 +17,7 @@ var/datum/subsystem/ticker/ticker
 	var/event = 0
 
 	var/login_music							//music played in pregame lobby
+	var/round_end_sound						//music/jingle played when the world reboots
 
 	var/list/datum/mind/minds = list()		//The characters in the game. Used for objective tracking.
 
@@ -46,11 +47,13 @@ var/datum/subsystem/ticker/ticker
 /datum/subsystem/ticker/New()
 	NEW_SS_GLOBAL(ticker)
 
-	login_music = pickweight(list('sound/ambience/title2.ogg' = 49, 'sound/ambience/title1.ogg' = 49, 'sound/ambience/clown.ogg' = 2)) // choose title music!
-	if(SSevent.holiday == "April Fool's Day")
+	login_music = pickweight(list('sound/ambience/title2.ogg' = 31, 'sound/ambience/title1.ogg' = 31, 'sound/ambience/title3.ogg' = 31, 'sound/ambience/clown.ogg' = 7)) // choose title music!
+	if(SSevent.holidays && SSevent.holidays[APRIL_FOOLS])
 		login_music = 'sound/ambience/clown.ogg'
 
-/datum/subsystem/ticker/Initialize()
+/datum/subsystem/ticker/Initialize(timeofday, zlevel)
+	if (zlevel)
+		return ..()
 	if(!syndicate_code_phrase)		syndicate_code_phrase	= generate_code_phrase()
 	if(!syndicate_code_response)	syndicate_code_response	= generate_code_phrase()
 	setupGenetics()
@@ -75,9 +78,11 @@ var/datum/subsystem/ticker/ticker
 					++totalPlayersReady
 
 			//countdown
+			if(timeLeft < 0)
+				return
 			timeLeft -= wait
 
-			if(timeLeft <= 30 && !tipped)
+			if(timeLeft <= 300 && !tipped)
 				send_random_tip()
 				tipped = 1
 
@@ -95,32 +100,18 @@ var/datum/subsystem/ticker/ticker
 			if(!mode.explosion_in_progress && mode.check_finished() || force_ending)
 				current_state = GAME_STATE_FINISHED
 				auto_toggle_ooc(1) // Turn it on
-				declare_completion()
+				declare_completion(force_ending)
 				spawn(50)
-					if(mode.station_was_nuked)
-						feedback_set_details("end_proper","nuke")
-						if(!delay_end)
-							world << "\blue <B>Rebooting due to destruction of station in [restart_timeout/10] seconds</B>"
-					else
-						feedback_set_details("end_proper","proper completion")
-						if(!delay_end)
-							world << "\blue <B>Restarting in [restart_timeout/10] seconds</B>"
 
-
-					if(blackbox)
-						blackbox.save_all_data_to_sql()
-
-					if(delay_end)
-						world << "\blue <B>An admin has delayed the round end</B>"
-					else
-						sleep(restart_timeout)
-						kick_clients_in_lobby("\red The round came to an end with you in the lobby.", 1) //second parameter ensures only afk clients are kicked
-
-						if(config.hook_round_end == 1)
+/*					if(config.hook_round_end == 1) //Can be used to execute updates etc.
 							world.log << "SHELL CALL: ROUND END"
-							shell("cd hooks/onRoundEnd/ && python onRoundEnd.py >> shell.log 2>&1")
+							shell("cd hooks/onRoundEnd/ && python2 onRoundEnd.py >> shell.log 2>&1")
+*/
+					if(mode.station_was_nuked)
+						world.Reboot("Station destroyed by Nuclear Device.", "end_proper", "nuke")
 
-						world.Reboot()
+					else
+						world.Reboot("Round ended.", "end_proper", "proper completion")
 
 
 /datum/subsystem/ticker/proc/setup()
@@ -140,9 +131,10 @@ var/datum/subsystem/ticker/ticker
 
 		if(!mode)
 			if(!runnable_modes.len)
-				world << "<B>Unable to choose playable game mode.</B> Reverting to pre-game lobby."
-				return 0
-			mode = pickweight(runnable_modes)
+				message_admins("\blue <B>Unable to choose playable game mode.</B> Defaulting to extended.")
+				mode = new /datum/game_mode/extended()
+			else
+				mode = pickweight(runnable_modes)
 
 	else
 		mode = config.pick_mode(master_mode)
@@ -157,13 +149,10 @@ var/datum/subsystem/ticker/ticker
 	can_continue = src.mode.pre_setup()		//Choose antagonists
 	SSjob.DivideOccupations() 				//Distribute jobs
 
-
 	if(!Debug2)
 		if(!can_continue)
-			world << "<B>Error setting up [master_mode].</B> Reverting to pre-game lobby."
-			log_admin("The gamemode setup for [mode.name] errored out.")
-			world.log << "The gamemode setup for [mode.name] errored out."
 			del(mode)
+			world << "<B>Error setting up [master_mode].</B> Reverting to pre-game lobby."
 			SSjob.ResetOccupations()
 			return 0
 	else
@@ -187,17 +176,18 @@ var/datum/subsystem/ticker/ticker
 	create_characters() //Create player characters and transfer them
 	collect_minds()
 	equip_characters()
-	data_core.manifest()
 
-	master_controller.roundHasStarted()
+	Master.RoundStart()
 
 
 	world << "<FONT color='blue'><B>Welcome to [station_name()], enjoy your stay!</B></FONT>"
-	world << sound('sound/AI/welcome.ogg') // Skie
-	//Holiday Round-start stuff	~Carn
-	if(SSevent.holiday)
+	world << sound('sound/AI/welcome.ogg')
+
+	if(SSevent.holidays)
 		world << "<font color='blue'>and...</font>"
-		world << "<h4>Happy [SSevent.holiday] Everybody!</h4>"
+		for(var/holidayname in SSevent.holidays)
+			var/datum/holiday/holiday = SSevent.holidays[holidayname]
+			world << "<h4>[holiday.greet()]</h4>"
 
 
 	spawn(0)//Forking here so we dont have to wait for this to finish
@@ -217,6 +207,10 @@ var/datum/subsystem/ticker/ticker
 	//Plus it provides an easy way to make cinematics for other events. Just use this as a template
 /datum/subsystem/ticker/proc/station_explosion_cinematic(var/station_missed=0, var/override = null)
 	if( cinematic )	return	//already a cinematic in progress!
+
+	for (var/datum/html_interface/hi in html_interfaces)
+		hi.closeAll()
+
 	auto_toggle_ooc(1) // Turn it on
 	//initialise our cinematic screen object
 	cinematic = new /obj/screen{icon='icons/effects/station_explosion.dmi';icon_state="station_intact";layer=20;mouse_opacity=0;screen_loc="1,0";}(src)
@@ -296,10 +290,9 @@ var/datum/subsystem/ticker/ticker
 					cinematic.icon_state = "summary_selfdes"
 	//If its actually the end of the round, wait for it to end.
 	//Otherwise if its a verb it will continue on afterwards.
-	sleep(300)
-
-	if(cinematic)	qdel(cinematic)		//end the cinematic
-	if(temp_buckle)	qdel(temp_buckle)	//release everybody
+	spawn(300)
+		if(cinematic)	qdel(cinematic)		//end the cinematic
+		if(temp_buckle)	qdel(temp_buckle)	//release everybody
 	return
 
 
@@ -330,8 +323,9 @@ var/datum/subsystem/ticker/ticker
 		if(player && player.mind && player.mind.assigned_role)
 			if(player.mind.assigned_role == "Captain")
 				captainless=0
-			if(player.mind.assigned_role != "MODE")
+			if(player.mind.assigned_role != player.mind.special_role)
 				SSjob.EquipRank(player, player.mind.assigned_role, 0)
+				data_core.manifest_inject(player)
 	if(captainless)
 		for(var/mob/M in player_list)
 			if(!istype(M,/mob/new_player))
@@ -367,7 +361,7 @@ var/datum/subsystem/ticker/ticker
 	//Round statistics report
 	var/datum/station_state/end_state = new /datum/station_state()
 	end_state.count()
-	var/station_integrity = round( 100.0 *  start_state.score(end_state), 0.1)
+	var/station_integrity = min(round( 100.0 *  start_state.score(end_state), 0.1), 100.0)
 
 	world << "<BR>[TAB]Shift Duration: <B>[round(world.time / 36000)]:[add_zero("[world.time / 600 % 60]", 2)]:[world.time / 100 % 6][world.time / 100 % 10]</B>"
 	world << "<BR>[TAB]Station Integrity: <B>[mode.station_was_nuked ? "<font color='red'>Destroyed</font>" : "[station_integrity]%"]</B>"
@@ -388,6 +382,8 @@ var/datum/subsystem/ticker/ticker
 			world << "<b>[aiPlayer.name] (Played by: [aiPlayer.mind.key])'s laws when it was deactivated were:</b>"
 			aiPlayer.show_laws(1)
 
+//		world << "<b>Total law changes: [aiPlayer.law_change_counter]</b>"
+
 		if (aiPlayer.connected_robots.len)
 			var/robolist = "<b>[aiPlayer.real_name]'s minions were:</b> "
 			for(var/mob/living/silicon/robot/robo in aiPlayer.connected_robots)
@@ -396,8 +392,8 @@ var/datum/subsystem/ticker/ticker
 				robolist += "[robo.name][robo.stat?" (Deactivated) (Played by: [robo.mind.key]), ":" (Played by: [robo.mind.key]), "]"
 			world << "[robolist]"
 	for (var/mob/living/silicon/robot/robo in mob_list)
-		if (!robo.connected_ai && robo.mind)
-			if(!robo || !robo.mind)
+		if (robo && !robo.connected_ai && robo.mind)
+			if (!robo || !robo.mind)
 				continue
 			if (robo.stat != 2)
 				world << "<b>[robo.name] (Played by: [robo.mind.key]) survived as an AI-less [ismommi(robo)?"MoMMI":"borg"]! Its laws were:</b>"
@@ -412,7 +408,7 @@ var/datum/subsystem/ticker/ticker
 	//calls auto_declare_completion_* for all modes
 	for(var/handler in typesof(/datum/game_mode/proc))
 		if (findtext("[handler]","auto_declare_completion_"))
-			call(mode, handler)()
+			call(mode, handler)(force_ending)
 
 	//Print a list of antagonists to the server log
 	var/list/total_antagonists = list()
@@ -436,5 +432,4 @@ var/datum/subsystem/ticker/ticker
 /datum/subsystem/ticker/proc/send_random_tip()
 	var/list/randomtips = file2list("config/tips.txt")
 	if(randomtips.len)
-		world << "<font color='purple'><b>Tip of the round: </b>[strip_html_properly(pick(randomtips))]</font>"
-
+		world << "<font color='purple'><b>Tip of the round: </b>[html_encode(pick(randomtips))]</font>"

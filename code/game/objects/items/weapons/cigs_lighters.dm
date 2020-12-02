@@ -107,7 +107,7 @@ CIGARETTE PACKETS ARE IN FANCY.DM
 	var/icon_off = "cigoff"
 	var/type_butt = /obj/item/weapon/cigbutt
 	var/lastHolder = null
-	var/smoketime = 300
+	var/smoketime = 1000
 	var/chem_volume = 30
 
 /obj/item/clothing/mask/cigarette/suicide_act(mob/user)
@@ -202,14 +202,16 @@ CIGARETTE PACKETS ARE IN FANCY.DM
 
 
 /obj/item/clothing/mask/cigarette/proc/handle_reagents()
-	if(iscarbon(loc))
-		var/mob/living/carbon/C = loc
-		if (src == C.wear_mask) // if it's in the human/monkey mouth, transfer reagents to the mob
-			if(prob(15)) // so it's not an instarape in case of acid
-				reagents.reaction(C, INGEST)
-			reagents.trans_to(C, REAGENTS_METABOLISM)
-			return
-	reagents.remove_any(REAGENTS_METABOLISM)
+	if(reagents.total_volume)
+		if(iscarbon(loc))
+			var/mob/living/carbon/C = loc
+			if (src == C.wear_mask) // if it's in the human/monkey mouth, transfer reagents to the mob
+				if(prob(15)) // so it's not an instarape in case of acid
+					var/fraction = min(REAGENTS_METABOLISM/reagents.total_volume, 1)
+					reagents.reaction(C, INGEST, fraction)
+				reagents.trans_to(C, REAGENTS_METABOLISM)
+				return
+		reagents.remove_any(REAGENTS_METABOLISM)
 
 
 /obj/item/clothing/mask/cigarette/process()
@@ -305,8 +307,8 @@ CIGARETTE PACKETS ARE IN FANCY.DM
 	type_butt = /obj/item/weapon/cigbutt/cigarbutt
 	throw_speed = 0.5
 	item_state = "cigaroff"
-	smoketime = 1500
-	chem_volume = 20
+	smoketime = 10000
+	chem_volume = 40
 
 /obj/item/clothing/mask/cigarette/cigar/cohiba
 	name = "\improper Cohiba Robusto cigar"
@@ -314,6 +316,8 @@ CIGARETTE PACKETS ARE IN FANCY.DM
 	icon_state = "cigar2off"
 	icon_on = "cigar2on"
 	icon_off = "cigar2off"
+	smoketime = 10000
+	chem_volume = 100
 
 /obj/item/clothing/mask/cigarette/cigar/havana
 	name = "premium Havanian cigar"
@@ -321,8 +325,8 @@ CIGARETTE PACKETS ARE IN FANCY.DM
 	icon_state = "cigar2off"
 	icon_on = "cigar2on"
 	icon_off = "cigar2off"
-	smoketime = 7200
-	chem_volume = 30
+	smoketime = 10000
+	chem_volume = 50
 
 /obj/item/weapon/cigbutt
 	name = "cigarette butt"
@@ -500,10 +504,11 @@ CIGARETTE PACKETS ARE IN FANCY.DM
 					user.visible_message("<span class='notice'>After a few attempts, [user] manages to light [src].</span>")
 				else
 					user << "<span class='warning'>You burn yourself while lighting the lighter.</span>"
-					user.adjustFireLoss(5)
+					var/hitzone = user.r_hand == src ? "r_hand" : "l_hand"
+					user.apply_damage(5, BURN, hitzone)
 					user.visible_message("<span class='notice'>After a few attempts, [user] manages to light [src], they however burn their finger in the process.</span>")
 
-			user.AddLuminosity(1)
+			set_light(2)
 			SSobj.processing |= src
 		else
 			lit = 0
@@ -516,7 +521,7 @@ CIGARETTE PACKETS ARE IN FANCY.DM
 			else
 				user.visible_message("<span class='notice'>[user] quietly shuts off [src].")
 
-			user.AddLuminosity(-1)
+			set_light(0)
 			SSobj.processing.Remove(src)
 	else
 		return ..()
@@ -544,18 +549,6 @@ CIGARETTE PACKETS ARE IN FANCY.DM
 		location.hotspot_expose(700, 5)
 	return
 
-/obj/item/weapon/lighter/pickup(mob/user)
-	if(lit)
-		SetLuminosity(0)
-		user.AddLuminosity(1)
-	return
-
-
-/obj/item/weapon/lighter/dropped(mob/user)
-	if(lit)
-		user.AddLuminosity(-1)
-		SetLuminosity(1)
-	return
 
 
 ///////////

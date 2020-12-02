@@ -2,6 +2,7 @@
 	name = "cabinet"
 	desc = "Old will forever be in fashion."
 	icon_state = "cabinet"
+	weldable = 0
 
 
 /obj/structure/closet/acloset
@@ -39,7 +40,6 @@
 	name = "tacticool gear closet"
 	desc = "It's a storage unit for Tacticool gear."
 
-
 /obj/structure/closet/gimmick/tacticool/New()
 	..()
 	new /obj/item/clothing/glasses/eyepatch(src)
@@ -52,8 +52,8 @@
 	new /obj/item/clothing/mask/gas/sechailer/swat(src)
 	new /obj/item/clothing/shoes/combat/swat(src)
 	new /obj/item/clothing/shoes/combat/swat(src)
-	new /obj/item/clothing/suit/space/deathsquad(src)
-	new /obj/item/clothing/suit/space/deathsquad(src)
+	new /obj/item/clothing/suit/space/hardsuit/deathsquad(src)
+	new /obj/item/clothing/suit/space/hardsuit/deathsquad(src)
 	new /obj/item/clothing/under/syndicate/tacticool(src)
 	new /obj/item/clothing/under/syndicate/tacticool(src)
 

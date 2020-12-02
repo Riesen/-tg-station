@@ -29,7 +29,8 @@
 	world.update_status()
 
 	client.images = null				//remove the images such as AIs being unable to see runes
-	client.screen = null				//remove hud items just in case
+	client.screen = list()				//remove hud items just in case
+	client.screen += client.void
 	if(hud_used)	del(hud_used)		//remove the hud objects
 	hud_used = new /datum/hud(src)
 
@@ -51,6 +52,7 @@
 
 	//readd this mob's HUDs (antag, med, etc)
 	reload_huds()
+	reload_fullscreen() //fix the fullscreens
 	if(ckey in deadmins)
 		verbs += /client/proc/readmin
 
@@ -58,7 +60,7 @@
 // Calling it in the overriden Login, such as /mob/living/Login() doesn't cause this.
 /mob/proc/update_interface()
 	if(client)
-		if(winget(src, "mainwindow.hotkey_toggle", "is-checked") == "true")
+		if(winget(client, "mainwindow.hotkey_toggle", "is-checked") == "true")
 			update_hotkey_mode()
 		else
 			update_normal_mode()

@@ -10,10 +10,11 @@
 	origin_tech = "combat=2"
 	attack_verb = list("beaten")
 	var/stunforce = 7
+	var/throw_stun_chance = 100
 	var/status = 0
 	var/obj/item/weapon/stock_parts/cell/high/bcell = null
 	var/hitcost = 1000
-	var/losspertick = 5
+	var/losspertick = 0
 
 /obj/item/weapon/melee/baton/suicide_act(mob/user)
 	user.visible_message("<span class='suicide'>[user] is putting the live [name] in \his mouth! It looks like \he's trying to commit suicide.</span>")
@@ -152,15 +153,21 @@
 
 
 /obj/item/weapon/melee/baton/proc/baton_stun(mob/living/L, mob/user)
-	user.lastattacked = L
-	L.lastattacker = user
+	if(user)
+		user.lastattacked = L
+		L.lastattacker = user
+		L.visible_message("<span class='danger'>[user] has stunned [L] with [src]!</span>", \
+						"<span class='userdanger'>[user] has stunned you with [src]!</span>")
+		add_logs(user, L, "stunned")
+	else
+		L.visible_message("<span class='danger'>[L] has been stunned by [src]!</span>", \
+						"<span class='userdanger'>You have been stunned by [src]!</span>")
 
 	L.Stun(stunforce)
 	L.Weaken(stunforce)
-	L.apply_effect(STUTTER, stunforce)
+	L.apply_effect(stunforce, STUTTER)
 
-	L.visible_message("<span class='danger'>[user] has stunned [L] with [src]!</span>", \
-							"<span class='userdanger'>[user] has stunned you with [src]!</span>")
+
 	playsound(loc, 'sound/weapons/Egloves.ogg', 50, 1, -1)
 
 	if(isrobot(loc))
@@ -174,7 +181,7 @@
 		var/mob/living/carbon/human/H = L
 		H.forcesay(hit_appends)
 
-	add_logs(user, L, "stunned")
+
 
 /obj/item/weapon/melee/baton/emp_act(severity)
 	if(bcell)
@@ -182,6 +189,14 @@
 		if(bcell.reliability != 100 && prob(50/severity))
 			bcell.reliability -= 10 / severity
 	..()
+
+/obj/item/weapon/melee/baton/throw_impact(atom/hit_atom)
+	if(iscarbon(hit_atom) && status)
+		var/mob/living/carbon/C = hit_atom
+		if(prob(throw_stun_chance)) //not all baton throws will result in a stun
+			baton_stun(C)
+	..()
+
 
 //Makeshift stun baton. Replacement for stun gloves.
 /obj/item/weapon/melee/baton/cattleprod
@@ -193,4 +208,6 @@
 	throwforce = 5
 	stunforce = 5
 	hitcost = 2500
+	losspertick = 5
+	throw_stun_chance = 100
 	slot_flags = null

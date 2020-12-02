@@ -22,6 +22,7 @@ var/list/icons_to_ignore_at_floor_init = list("damaged1","damaged2","damaged3","
 
 	var/icon_regular_floor = "floor" //used to remember what icon the tile should have by default
 	var/icon_plating = "plating"
+	icon_state = "floor" //fuck it
 	thermal_conductivity = 0.040
 	heat_capacity = 10000
 	intact = 1
@@ -50,20 +51,20 @@ var/list/icons_to_ignore_at_floor_init = list("damaged1","damaged2","damaged3","
 /turf/simulated/floor/ex_act(severity, target)
 	..()
 	if(target == src)
-		src.ChangeTurf(src.baseturf)
+		src.ChangeTurf(baseturf)
 	if(target != null)
 		ex_act(3)
 		return
 	switch(severity)
 		if(1.0)
-			src.ChangeTurf(src.baseturf)
+			src.ChangeTurf(baseturf)
 		if(2.0)
 			switch(pick(1,2;75,3))
 				if(1)
 					src.ReplaceWithLattice()
 					if(prob(33)) new /obj/item/stack/sheet/metal(src)
 				if(2)
-					src.ChangeTurf(src.baseturf)
+					src.ChangeTurf(baseturf)
 				if(3)
 					if(prob(80))
 						src.break_tile_to_plating()
@@ -95,7 +96,8 @@ var/list/icons_to_ignore_at_floor_init = list("damaged1","damaged2","damaged3","
 
 /turf/simulated/floor/proc/break_tile_to_plating()
 	var/turf/simulated/floor/plating/T = make_plating()
-	T.break_tile()
+	if(T)
+		T.break_tile()
 
 /turf/simulated/floor/proc/break_tile()
 	if(broken)

@@ -16,8 +16,9 @@
  */
 /obj/machinery/computer/libraryconsole
 	name = "library visitor console"
-	icon = 'icons/obj/computer.dmi'
-	icon_state = "library"
+	icon_state = "oldcomp"
+	icon_screen = "library"
+	icon_keyboard = null
 	circuit = /obj/item/weapon/circuitboard/libraryconsole
 	var/screenstate = 0
 	var/title
@@ -112,7 +113,7 @@
 /*
  * Borrowbook datum
  */
-datum/borrowbook // Datum used to keep track of who has borrowed what when and for how long.
+/datum/borrowbook // Datum used to keep track of who has borrowed what when and for how long.
 	var/bookname
 	var/mobname
 	var/getdate
@@ -121,7 +122,7 @@ datum/borrowbook // Datum used to keep track of who has borrowed what when and f
 /*
  * Cachedbook datum
  */
-datum/cachedbook // Datum used to cache the SQL DB books locally in order to achieve a performance gain.
+/datum/cachedbook // Datum used to cache the SQL DB books locally in order to achieve a performance gain.
 	var/id
 	var/title
 	var/author
@@ -162,6 +163,9 @@ var/global/list/datum/cachedbook/cachedbooks // List of our cached book datums
 	name = "book inventory management console"
 	var/arcanecheckout = 0
 	screenstate = 0 // 0 - Main Menu, 1 - Inventory, 2 - Checked Out, 3 - Check Out a Book
+	verb_say = "beeps"
+	verb_ask = "beeps"
+	verb_exclaim = "beeps"
 	var/buffer_book
 	var/buffer_mob
 	var/upload_category = "Fiction"
@@ -430,8 +434,6 @@ var/global/list/datum/cachedbook/cachedbooks // List of our cached book datums
 	src.updateUsrDialog()
 	return
 
-/obj/machinery/computer/libraryconsole/bookmanagement/say_quote(text)
-	return "flashes, \"[text]\""
 
 
 

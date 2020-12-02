@@ -31,7 +31,8 @@
 	changelog_hash = md5('html/changelog.html')					//used for telling if the changelog has changed recently
 
 	make_datum_references_lists()	//initialises global lists for referencing frequently used datums (so that we only ever do it once)
-
+	initialize_integrated_circuits_list()
+	
 	load_configuration()
 	load_mode()
 	load_motd()
@@ -62,7 +63,7 @@
 
 
 	spawn(-1)
-		master_controller.setup()
+		Master.Setup()
 
 	process_teleport_locs()			//Sets up the wizard teleport locations
 	process_ghost_teleport_locs()	//Sets up ghost teleport locations.
@@ -135,7 +136,26 @@
 						C << "<span class='announce'>PR: [input["announce"]]</span>"
 #undef CHAT_PULLR
 
-/world/Reboot(var/reason)
+/world/Reboot(var/reason, var/feedback_c, var/feedback_r, var/time)
+	var/delay
+
+	if(time)
+		delay = time
+	else
+		delay = ticker.restart_timeout
+	if(ticker.delay_end)
+		world << "<span class='boldannounce'>An admin has delayed the round end.</span>"
+		return
+	world << "<span class='boldannounce'>Rebooting World in [delay/10] [delay > 10 ? "seconds" : "second"]. [reason]</span>"
+	sleep(delay)
+	if(blackbox)
+		blackbox.save_all_data_to_sql()
+	if(ticker.delay_end)
+		world << "<span class='boldannounce'>Reboot was cancelled by an admin.</span>"
+		return
+	feedback_set_details("[feedback_c]","[feedback_r]")
+	log_game("<span class='boldannounce'>Rebooting World. [reason]</span>")
+	kick_clients_in_lobby("<span class='boldannounce'>The round came to an end with you in the lobby.</span>", 1) //second parameter ensures only afk clients are kicked
 #ifdef dellogging
 	var/log = file("data/logs/del.log")
 	log << time2text(world.realtime)
@@ -154,7 +174,7 @@
 
 	// Note: all clients automatically connect to the world after it restarts
 
-	..(reason)
+	..(0)
 
 
 /world/proc/load_mode()
@@ -234,7 +254,7 @@
 		features += "hosted by <b>[config.hostedby]</b>"
 
 	if (features)
-		s += ": [list2text(features, ", ")]"
+		s += ": [splittext(features, ", ")]"
 
 	/* does this help? I do not know */
 	if (src.status != s)

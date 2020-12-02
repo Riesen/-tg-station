@@ -127,9 +127,48 @@
 	return 1
 
 
+/mob/living/carbon/brain/update_sight()
+
+	if(stat == DEAD)
+		sight |= SEE_TURFS
+		sight |= SEE_MOBS
+		sight |= SEE_OBJS
+		see_in_dark = 8
+		see_invisible = SEE_INVISIBLE_LEVEL_TWO
+	else
+		sight &= ~(SEE_TURFS)
+		sight &= ~(SEE_MOBS)
+		sight &= ~(SEE_OBJS)
+		see_in_dark =  2
+		see_invisible =  SEE_INVISIBLE_LIVING
+
+
+/mob/living/carbon/brain/handle_disabilities()
+		//Eyes
+	if(stat)
+		eye_blind = max(eye_blind, 5)
+	if(!(disabilities & BLIND))	//blindness from disability or unconsciousness doesn't get better on its own
+		if(eye_blind)			//blindness, heals slowly over time
+			eye_blind = max(eye_blind-1,0)
+		else if(eye_blurry)			//blurry eyes heal slowly
+			eye_blurry = max(eye_blurry-1, 0)
+	else
+		eye_blind = max(eye_blind,1) //Force blindness if user is actually blind
+	//Ears
+	if(disabilities & DEAF)		//disabled-deaf, doesn't get better on its own
+		setEarDamage(-1, max(ear_deaf, 1))
+	else
+		// deafness heals slowly over time, unless ear_damage is over 100
+		if(ear_damage < 100)
+			adjustEarDamage(-0.05,-1)
+
+
+
 /mob/living/carbon/brain/handle_regular_hud_updates()
 
 	handle_vision()
+
+	update_action_buttons()
 
 	handle_hud_icons_health()
 

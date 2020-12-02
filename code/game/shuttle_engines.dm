@@ -3,10 +3,32 @@
 	name = "shuttle"
 	icon = 'icons/turf/shuttle.dmi'
 
+/obj/structure/shuttle/CanAtmosPass(turf/T)
+	return 0
+
 /obj/structure/shuttle/engine
 	name = "engine"
 	density = 1
 	anchored = 1.0
+	var/active = 0
+	var/brightness_strength = 1
+	var/brightness_radius = 2
+	var/brightness_color = "#ffffff"
+
+/obj/structure/shuttle/engine/proc/toggle_light()
+	if(active)
+		set_light(0)
+		active = 0
+	else
+		set_light(brightness_radius, brightness_strength, brightness_color)
+		active = 1
+
+/obj/structure/shuttle/engine/proc/set_active(bool)
+	if(bool)
+		set_light(brightness_radius, brightness_strength, brightness_color)
+	else
+		set_light(0)
+
 
 /obj/structure/shuttle/engine/heater
 	name = "heater"

@@ -71,7 +71,7 @@
 // set what is displayed
 
 /obj/machinery/status_display/proc/update()
-	if(friendc && mode!=4) //Makes all status displays except supply shuttle timer display the eye -- Urist
+	if(friendc && (mode!=4 && mode != 3)) //Makes all status displays except supply shuttle timer or pictures display the eye -- Urist
 		set_picture("ai_friend")
 		return
 
@@ -121,6 +121,8 @@
 				if(index2 > message2_len)
 					index2 -= message2_len
 			update_display(line1, line2)
+
+
 		if(4)				// supply shuttle timer
 			var/line1
 			var/line2
@@ -279,7 +281,6 @@
 				set_picture("ai_sal")
 			if("Red Glow")
 				set_picture("ai_hal")
-
 		return
 
 	if(mode==2)	// BSOD

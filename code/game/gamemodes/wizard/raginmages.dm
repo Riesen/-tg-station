@@ -1,7 +1,7 @@
 /datum/game_mode/wizard/raginmages
 	name = "ragin' mages"
 	config_tag = "raginmages"
-	required_players = 20
+	required_players = 15
 	use_huds = 1
 	var/max_mages = 0
 	var/making_mage = 0
@@ -60,7 +60,7 @@
 	else
 		if(mages_made >= max_mages)
 			finished = 1
-			return 1
+			return ..()
 		else
 			make_more_mages()
 	return ..()

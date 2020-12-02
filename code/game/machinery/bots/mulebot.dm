@@ -78,7 +78,7 @@ var/global/mulebot_count = 0
 			suffix = "#[mulebot_count]"
 		name = "\improper Mulebot ([suffix])"
 
-obj/machinery/bot/mulebot/bot_reset()
+/obj/machinery/bot/mulebot/bot_reset()
 	..()
 	reached_target = 0
 
@@ -422,6 +422,10 @@ obj/machinery/bot/mulebot/bot_reset()
 	if(istype(crate))
 		crate.close()
 
+	var/obj/O = C
+	if(istype(O) && O.buckled_mob)
+		O.unbuckle_mob()
+
 	C.loc = loc
 	sleep(2)
 	if(C.loc != loc) //To prevent you from going onto more thano ne bot.
@@ -436,6 +440,8 @@ obj/machinery/bot/mulebot/bot_reset()
 
 	if(ismob(C))
 		var/mob/M = C
+		if(M.buckled)
+			M.buckled.unbuckle_mob()
 		if(M.client)
 			M.client.perspective = EYE_PERSPECTIVE
 			M.client.eye = src
@@ -740,7 +746,7 @@ obj/machinery/bot/mulebot/bot_reset()
 				M.stop_pulling()
 				M.Stun(8)
 				M.Weaken(5)
-	..()
+	return ..()
 
 /obj/machinery/bot/mulebot/alter_health()
 	return get_turf(src)
@@ -753,13 +759,12 @@ obj/machinery/bot/mulebot/bot_reset()
 					"<span class='userdanger'>[src] drives over you!<span>")
 	playsound(loc, 'sound/effects/splat.ogg', 50, 1)
 
-	var/damage = rand(5,15)
-	H.apply_damage(2*damage, BRUTE, "head")
-	H.apply_damage(2*damage, BRUTE, "chest")
-	H.apply_damage(0.5*damage, BRUTE, "l_leg")
-	H.apply_damage(0.5*damage, BRUTE, "r_leg")
-	H.apply_damage(0.5*damage, BRUTE, "l_arm")
-	H.apply_damage(0.5*damage, BRUTE, "r_arm")
+	H.apply_damage(12, BRUTE, "head")
+	H.apply_damage(12, BRUTE, "chest")
+	H.apply_damage(9, BRUTE, "l_leg")
+	H.apply_damage(9, BRUTE, "r_leg")
+	H.apply_damage(9, BRUTE, "l_arm")
+	H.apply_damage(9, BRUTE, "r_arm")
 
 	var/obj/effect/decal/cleanable/blood/B = new(loc)
 	B.blood_DNA[H.dna.unique_enzymes] = H.dna.blood_type

@@ -13,7 +13,7 @@
 	var/w_class = 3.0
 	var/slot_flags = 0		//This is used to determine on which slots an item can fit.
 	pass_flags = PASSTABLE
-	pressure_resistance = 5
+	pressure_resistance = 3
 	var/obj/item/master = null
 
 	var/heat_protection = 0 //flags which determine which body parts are protected from heat. Use the HEAD, CHEST, GROIN, etc. flags. See setup.dm
@@ -36,12 +36,12 @@
 	var/siemens_coefficient = 1 // for electrical admittance/conductance (electrocution checks and shit)
 	var/slowdown = 0 // How much clothing is slowing you down. Negative values speeds you up
 	var/list/armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 0, rad = 0)
+	var/armour_penetration = 0 //percentage of armour effectiveness to remove
 	var/list/allowed = null //suit storage stuff.
 	var/obj/item/device/uplink/hidden/hidden_uplink = null // All items can have an uplink hidden inside, just remember to add the triggers.
 	var/strip_delay = 40
 	var/put_on_delay = 20
-	var/m_amt = 0	// metal
-	var/g_amt = 0	// glass
+	var/list/materials = list()
 	var/reliability = 100	//Used by SOME devices to determine how reliable they are.
 	var/origin_tech = null	//Used by R&D to determine what research bonuses it grants.
 
@@ -51,6 +51,7 @@
 	var/suittoggled = 0
 	var/hooded = 0
 	var/sharp = 0 //Not sharp/Sharp/Very sharp
+	var/needs_permit = 0			//Used by security bots to determine if this item is safe for public use.
 
 	//So items can have custom embedd values
 	//Because customisation is king
@@ -62,6 +63,7 @@
 	var/embedded_impact_pain_multiplier = EMBEDDED_IMPACT_PAIN_MULTIPLIER //The coefficient of multiplication for the damage this item does when first embedded (this*w_class)
 	var/embedded_unsafe_removal_pain_multiplier = EMBEDDED_UNSAFE_REMOVAL_PAIN_MULTIPLIER //The coefficient of multiplication for the damage removing this without surgery causes (this*w_class)
 	var/embedded_unsafe_removal_time = EMBEDDED_UNSAFE_REMOVAL_TIME //A time in ticks, multiplied by the w_class.
+	var/block_chance = 0
 
 	var/list/can_be_placed_into = list(
 		/obj/structure/table,
@@ -74,6 +76,8 @@
 		/obj/machinery/r_n_d/experimentor,
 		/obj/machinery/autolathe
 	)
+	var/list/grind_reagents //used for despaghettifying the all-in-one grinder
+	var/list/juice_reagents
 /obj/item/proc/check_allowed_items(atom/target, not_inside)
 	if((src in target) || ((!istype(target.loc, /turf)) && (!istype(target, /turf)) && (not_inside)) || is_type_in_list(target, can_be_placed_into))
 		return 0
@@ -174,10 +178,9 @@
 /obj/item/attack_paw(mob/user as mob)
 
 	if (istype(src.loc, /obj/item/weapon/storage))
-		for(var/mob/M in range(1, src.loc))
-			if (M.s_active == src.loc)
-				if (M.client)
-					M.client.screen -= src
+		//If the item is in a storage item, take it out
+		var/obj/item/weapon/storage/S = src.loc
+		S.remove_from_storage(src, user.loc)
 	src.throwing = 0
 	if (src.loc == user)
 		if(!user.unEquip(src))
@@ -201,7 +204,7 @@
 		return
 	attack_paw(A)
 
-/obj/item/attack_ai(mob/user as mob)
+/obj/item/attack_ai(mob/user)
 	if (istype(src.loc, /obj/item/weapon/robot_module))
 		//If the item is part of a cyborg module, equip it
 		if(!isrobot(user)) return
@@ -211,7 +214,7 @@
 
 // Due to storage type consolidation this should get used more now.
 // I have cleaned it up a little, but it could probably use more.  -Sayu
-/obj/item/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
+/obj/item/attackby(obj/item/weapon/W , mob/user, params)
 	if(istype(W,/obj/item/weapon/storage))
 		var/obj/item/weapon/storage/S = W
 		if(S.use_to_pickup)
@@ -252,7 +255,7 @@
 
 // afterattack() and attack() prototypes moved to _onclick/item_attack.dm for consistency
 
-/obj/item/proc/talk_into(mob/M as mob, text)
+/obj/item/proc/talk_into(mob/M, input, channel, spans)
 	return
 
 /obj/item/proc/dropped(mob/user as mob)
@@ -330,16 +333,14 @@
 	if(ishuman(M))
 		is_human_victim = 1
 		var/mob/living/carbon/human/H = M
-		if((H.head && H.head.flags & HEADCOVERSEYES) || \
-			(H.wear_mask && H.wear_mask.flags & MASKCOVERSEYES) || \
-			(H.glasses && H.glasses.flags & GLASSESCOVERSEYES))
+		if(H.check_part_covered("eyes"))
 			// you can't stab someone in the eyes wearing a mask!
 			user << "<span class='danger'>You're going to need to remove that mask/helmet/glasses first!</span>"
 			return
 
 	if(ismonkey(M))
 		var/mob/living/carbon/monkey/Mo = M
-		if(Mo.wear_mask && Mo.wear_mask.flags & MASKCOVERSEYES)
+		if(Mo.check_part_covered("eyes"))
 			// you can't stab someone in the eyes wearing a mask!
 			user << "<span class='danger'>You're going to need to remove that mask/helmet/glasses first!</span>"
 			return
@@ -356,6 +357,8 @@
 
 	src.add_fingerprint(user)
 
+	playsound(loc, src.hitsound, 30, 1, -1)
+
 	if(M != user)
 		M.visible_message("<span class='danger'>[user] has stabbed [M] in the eye with [src]!</span>", \
 							"<span class='userdanger'>[user] stabs you in the eye with [src]!</span>")
@@ -366,9 +369,11 @@
 		)
 	if(is_human_victim)
 		var/mob/living/carbon/human/U = M
-		var/obj/item/organ/limb/affecting = U.get_organ("head")
-		if(affecting.take_damage(7))
-			U.update_damage_overlays(0)
+		var/datum/organ/limb/L = U.get_organdatum("head")
+		if(L && L.exists())
+			var/obj/item/organ/limb/affecting = L.organitem
+			if(affecting.take_damage(7))
+				U.update_damage_overlays(0)
 
 	else
 		M.take_organ_damage(7)
@@ -377,9 +382,11 @@
 	M.eye_stat += rand(2,4)
 	if (M.eye_stat >= 10)
 		M.eye_blurry += 15+(0.1*M.eye_blurry)
-		M.disabilities |= NEARSIGHT
 		if(M.stat != 2)
 			M << "<span class='danger'>Your eyes start to bleed profusely!</span>"
+		if (!(M.disabilities & (NEARSIGHT | BLIND)))
+			M.disabilities |= NEARSIGHT
+			M << "<span class='danger'>You become nearsighted!</span>"
 		if(prob(50))
 			if(M.stat != 2)
 				M << "<span class='danger'>You drop what you're holding and clutch at your eyes!</span>"
@@ -387,7 +394,7 @@
 			M.eye_blurry += 10
 			M.Paralyse(1)
 			M.Weaken(2)
-		if (prob(M.eye_stat - 10 + 1))
+		if (prob(M.eye_stat - 10 + 1) && !(M.disabilities & BLIND))
 			if(M.stat != 2)
 				M << "<span class='danger'>You go blind!</span>"
 			M.disabilities |= BLIND
@@ -414,43 +421,70 @@
 			throw_at(S,14,3)
 		else ..()
 
-/obj/item/acid_act(var/acidpwr, var/toxpwr, var/acid_volume)
+
+/obj/item/acid_act(acidpwr, toxpwr, acid_volume)
 	. = 1
-	if(unacidable) //wew lad
+
+	if(unacidable)
+		return
+
+	var/meltingpwr = acid_volume*acidpwr
+	var/melting_threshold = 100
+	if(meltingpwr < melting_threshold) // so a single unit can't melt items. You need 5+ unit for ply and 10+ for sulphuric
 		return
 	for(var/V in armor)
 		if(armor[V] > 0)
 			.-- //it survives the acid...
 			break
-	if(.)
+	if(. && prob(min(meltingpwr/10,90))) //chance to melt depends on acid power and volume.
 		var/turf/T = get_turf(src)
 		if(T)
-			T.visible_message("<span class='danger'>[src] melts away!</span>")
 			var/obj/effect/decal/cleanable/molten_item/I = new (T)
 			I.pixel_x = rand(-16,16)
 			I.pixel_y = rand(-16,16)
 			I.desc = "Looks like this was \an [src] some time ago."
+		if(istype(src,/obj/item/weapon/storage))
+			var/obj/item/weapon/storage/S = src
+			S.do_quick_empty() //melted storage item drops its content.
+		visible_message("<span class='notice'>[src] melts!</span>")
 		qdel(src)
 	else
 		for(var/armour_value in armor) //but is weakened
-			armor[armour_value] = max(armor[armour_value]-acidpwr,0)
+			armor[armour_value] = max(armor[armour_value]-min(acidpwr,meltingpwr/10),0)
 		if(!findtext(desc, "it looks slightly melted...")) //it looks slightly melted... it looks slightly melted... it looks slightly melted... etc.
 			desc += " it looks slightly melted..." //needs a space at the start, formatting
 
 
 
 /obj/item/throw_impact(A)
+	if(iscarbon(A))
+		var/mob/living/carbon/C = A
+		var/zone = pick(C.list_limbs())
+		if(C.try_dismember(src, zone))
+			var/volume = vol_by_throwforce_and_or_w_class(src)	//Copypasted throw sound code
+			if (throwhitsound)
+				playsound(loc, throwhitsound, volume, 1, -1)
+			else if(hitsound)
+				playsound(loc, hitsound, volume, 1, -1)
+			else
+				playsound(loc, 'sound/weapons/genhit.ogg',volume, 1, -1)
+			return
+
 	if(throw_speed >= EMBED_THROWSPEED_THRESHOLD)
 		if(istype(A, /mob/living/carbon/human))
 			var/mob/living/carbon/human/H = A
 			if(can_embed(src))
 				if(prob(embed_chance))
-					var/obj/item/organ/limb/L = pick(H.organs)
+					var/list/organlist = null
+					for(var/datum/organ/limb/LI in H.get_limbs())
+						if(LI.exists())
+							organlist += LI.organitem
+					var/obj/item/organ/limb/L = pick(organlist)
 					L.embedded_objects |= src
 					add_blood(H)//it embedded itself in you, of course it's bloody!
 					loc = H
 					L.take_damage(w_class*embedded_impact_pain_multiplier)
-					H.visible_message("<span class='danger'>\the [name] embeds itself in [H]'s [L.getDisplayName()]!</span>","<span class='userdanger'>\the [name] embeds itself in your [L.getDisplayName()]!</span>")
+					H.visible_message("<span class='danger'>\the [name] embeds itself in [H]'s [L.name]!</span>","<span class='userdanger'>\the [name] embeds itself in your [L.name]!</span>")
 					return
 
 	//Reset regardless of if we hit a human.

@@ -39,23 +39,23 @@
 	if (src.cell)
 		if(src.cell.charge <= 0)
 			uneq_all()
-			src.stat = 1
+			stat = 1
 		else if (src.cell.charge <= 100)
 			uneq_all()
-			src.cell.use(1)
+			cell.use(1)
 		else
 			if(src.module_state_1)
-				src.cell.use(5)
+				cell.use(5)
 			if(src.module_state_2)
-				src.cell.use(5)
+				cell.use(5)
 			if(src.module_state_3)
-				src.cell.use(5)
-			src.cell.use(1)
-			src.eye_blind = 0
-			src.stat = 0
+				cell.use(5)
+			cell.use(1)
+			eye_blind = 0
+			stat = 0
 	else
 		uneq_all()
-		src.stat = 1
+		stat = 1
 
 
 /mob/living/silicon/robot/handle_regular_status_updates()
@@ -111,13 +111,13 @@
 
 	if (src.stuttering) src.stuttering--
 
-	if (src.eye_blind)
-		src.eye_blind--
+	if (eye_blind)
+		eye_blind--
 
 	src.density = !( src.lying )
 
 	if (src.disabilities & BLIND)
-		src.eye_blind = max(1, eye_blind)
+		src.eye_blind= max(1, eye_blind)
 
 	if (src.eye_blurry > 0)
 		src.eye_blurry--
@@ -212,21 +212,6 @@
 	else
 		throw_alert("charge","nocell")
 
-	client.screen.Remove(global_hud.blurry,global_hud.druggy,global_hud.vimpaired)
-
-	if ((src.blind && src.stat != 2))
-		if(src.eye_blind)
-			src.blind.layer = 18
-		else
-			src.blind.layer = 0
-			if (src.disabilities & NEARSIGHT)
-				src.client.screen += global_hud.vimpaired
-
-			if (src.eye_blurry)
-				src.client.screen += global_hud.blurry
-
-			if (src.druggy)
-				src.client.screen += global_hud.druggy
 
 	if (src.stat != 2)
 		if (src.machine)
@@ -235,6 +220,10 @@
 		else
 			if(!client.adminobs)
 				reset_view(null)
+	if(eye_blind)
+		overlay_fullscreen("blind", /obj/screen/fullscreen/blind)
+	else
+		clear_fullscreen("blind")
 
 	return 1
 

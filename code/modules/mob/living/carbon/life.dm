@@ -6,56 +6,16 @@
 		return
 	if(!loc)
 		return
-	var/datum/gas_mixture/environment = loc.return_air()
 
-	if(stat != DEAD)
-
-		//Breathing, if applicable
-		handle_breathing()
-
-		//Updates the number of stored chemicals for powers
-		handle_changeling()
-
-		//Mutations and radiation
-		handle_mutations_and_radiation()
-
-		//Chemicals in the body
-		handle_chemicals_in_body()
-
-		//Blud
-		handle_blood()
-
-		//Random events (vomiting etc)
-		handle_random_events()
-
-		handle_actions()
-
-		update_action_buttons()
-
+	if(..())
 		. = 1
+		for(var/datum/organ/internal/OR in get_all_internal_organs())
+			if(OR && OR.exists())
+				var/obj/item/organ/internal/O = OR.organitem
+				O.on_life()
 
-	//Handle temperature/pressure differences between body and environment
-	handle_environment(environment)
-
-	handle_fire()
-
-	//stuff in the stomach
-	handle_stomach()
-
-	update_canmove()
-
-	update_gravity(mob_has_gravity())
-
-	for(var/obj/item/weapon/grab/G in src)
-		G.process()
-
-	handle_regular_status_updates() // Status updates, death etc.
-
-	if(client)
-		handle_regular_hud_updates()
-	handle_heart()
-
-	return .
+	//Updates the number of stored chemicals for powers
+	handle_changeling()
 
 
 
@@ -74,9 +34,9 @@
 
 //Second link in a breath chain, calls check_breath()
 /mob/living/carbon/proc/breathe()
-	if(reagents.has_reagent("lexorin"))
+	if(reagents && reagents.has_reagent("lexorin"))
 		return
-	if(istype(loc, /obj/machinery/atmospherics/unary/cryo_cell))
+	if(istype(loc, /obj/machinery/atmospherics/components/unary/cryo_cell))
 		return
 
 	var/datum/gas_mixture/environment
@@ -115,13 +75,13 @@
 
 				//Harmful gasses
 				if(!has_smoke_protection())
-					for(var/obj/effect/effect/chem_smoke/smoke in view(1,src))
-						if(smoke.reagents.total_volume)
-							smoke.reagents.reaction(src,INGEST)
-							spawn(5)
-								if(smoke)
-									smoke.reagents.copy_to(src, 10)
-							break
+					for(var/obj/effect/effect/smoke/chem/S in range(1, src))
+						if(S.reagents.total_volume && S.lifetime)
+							var/fraction = 1/initial(S.lifetime)
+							S.reagents.reaction(src,INGEST, fraction)
+							var/amount = round(S.reagents.total_volume*fraction,0.1)
+							S.reagents.copy_to(src, amount)
+							S.lifetime--
 
 		else //Breathe from loc as obj again
 			if(istype(loc, /obj/))
@@ -334,11 +294,18 @@
 		silent = 0
 	else
 		updatehealth()
-		if(health <= config.health_threshold_dead || !getorgan(/obj/item/organ/brain))
+		if(health <= config.health_threshold_dead)
 			death()
 			eye_blind = max(eye_blind, 1)
 			silent = 0
 			return 1
+		else if(organsystem)
+			var/datum/organ/B = get_organdatum("brain")
+			if(!(B && B.exists()))
+				death()
+				eye_blind = max(eye_blind, 1)
+				silent = 0
+				return 1
 
 		if(getOxyLoss() > 50 || health <= config.health_threshold_crit)
 			Paralyse(3)
@@ -417,22 +384,19 @@
 			druggy = max(druggy-1, 0)
 
 		if(stunned)
-			AdjustStunned(-1)
+			stunned = max(stunned-1,0)
 			if(!stunned)
-				update_icons()
+				update_canmove()
 
 		if(weakened)
 			weakened = max(weakened-1,0)
 			if(!weakened)
-				update_icons()
+				update_canmove()
 
 		if(hallucination)
 			spawn handle_hallucinations()
 
-			if(hallucination<=2)
-				hallucination = 0
-			else
-				hallucination -= 2
+			hallucination = max(hallucination-2,0)
 
 		else
 			for(var/atom/a in hallucinations)
@@ -443,12 +407,15 @@
 
 /mob/living/carbon/handle_disabilities()
 	//Eyes
-	if(!(disabilities & BLIND) && !stat)	//blindness from disability or unconsciousness doesn't get better on its own
+	if(stat)
+		eye_blind = max(eye_blind, 5)
+	if(!(disabilities & BLIND) && exists("eyes"))	//blindness from disability or unconsciousness doesn't get better on its own
 		if(eye_blind)			//blindness, heals slowly over time
 			eye_blind = max(eye_blind-1,0)
 		else if(eye_blurry)			//blurry eyes heal slowly
 			eye_blurry = max(eye_blurry-1, 0)
-
+	else
+		eye_blind = max(eye_blind,1) //Force blindness if user is actually blind
 	//Ears
 	if(disabilities & DEAF)		//disabled-deaf, doesn't get better on its own
 		setEarDamage(-1, max(ear_deaf, 1))
@@ -460,146 +427,54 @@
 
 //this handles hud updates. Calles update_vision() and handle_hud_icons()
 /mob/living/carbon/handle_regular_hud_updates()
-	if(!client)	return 0
-
-
-	if(damageoverlay)
-		if(damageoverlay.overlays)
-			damageoverlay.overlays = list()
-
-		if(stat == UNCONSCIOUS)
-			//Critical damage passage overlay
-			if(health <= config.health_threshold_crit)
-				var/image/I = image("icon" = 'icons/mob/screen_full.dmi', "icon_state" = "passage0")
-				I.blend_mode = BLEND_OVERLAY //damageoverlay is BLEND_MULTIPLY
-				switch(health)
-					if(-20 to -10)
-						I.icon_state = "passage1"
-					if(-30 to -20)
-						I.icon_state = "passage2"
-					if(-40 to -30)
-						I.icon_state = "passage3"
-					if(-50 to -40)
-						I.icon_state = "passage4"
-					if(-60 to -50)
-						I.icon_state = "passage5"
-					if(-70 to -60)
-						I.icon_state = "passage6"
-					if(-80 to -70)
-						I.icon_state = "passage7"
-					if(-90 to -80)
-						I.icon_state = "passage8"
-					if(-95 to -90)
-						I.icon_state = "passage9"
-					if(-INFINITY to -95)
-						I.icon_state = "passage10"
-				damageoverlay.overlays += I
-		else
-			//Oxygen damage overlay
-			if(oxyloss)
-				var/image/I = image("icon" = 'icons/mob/screen_full.dmi', "icon_state" = "oxydamageoverlay0")
-				switch(oxyloss)
-					if(10 to 20)
-						I.icon_state = "oxydamageoverlay1"
-					if(20 to 25)
-						I.icon_state = "oxydamageoverlay2"
-					if(25 to 30)
-						I.icon_state = "oxydamageoverlay3"
-					if(30 to 35)
-						I.icon_state = "oxydamageoverlay4"
-					if(35 to 40)
-						I.icon_state = "oxydamageoverlay5"
-					if(40 to 45)
-						I.icon_state = "oxydamageoverlay6"
-					if(45 to INFINITY)
-						I.icon_state = "oxydamageoverlay7"
-				damageoverlay.overlays += I
-
-			//Fire and Brute damage overlay (BSSR)
-			var/hurtdamage = src.getBruteLoss() + src.getFireLoss() + damageoverlaytemp
-			damageoverlaytemp = 0 // We do this so we can detect if someone hits us or not.
-			if(hurtdamage)
-				var/image/I = image("icon" = 'icons/mob/screen_full.dmi', "icon_state" = "brutedamageoverlay0")
-				I.blend_mode = BLEND_ADD
-				switch(hurtdamage)
-					if(5 to 15)
-						I.icon_state = "brutedamageoverlay1"
-					if(15 to 30)
-						I.icon_state = "brutedamageoverlay2"
-					if(30 to 45)
-						I.icon_state = "brutedamageoverlay3"
-					if(45 to 70)
-						I.icon_state = "brutedamageoverlay4"
-					if(70 to 85)
-						I.icon_state = "brutedamageoverlay5"
-					if(85 to INFINITY)
-						I.icon_state = "brutedamageoverlay6"
-				var/image/black = image(I.icon, I.icon_state) //BLEND_ADD doesn't let us darken, so this is just to blacken the edge of the screen
-				black.color = "#170000"
-				damageoverlay.overlays += I
-				damageoverlay.overlays += black
-
-
-	handle_vision()
-	handle_hud_icons()
-
-	return 1
-
-/mob/living/carbon/handle_vision()
-
-	client.screen.Remove(global_hud.blurry, global_hud.druggy, global_hud.vimpaired, global_hud.darkMask)
-
-	if(stat == DEAD)
-		sight |= SEE_TURFS
-		sight |= SEE_MOBS
-		sight |= SEE_OBJS
-		see_in_dark = 8
-		see_invisible = SEE_INVISIBLE_LEVEL_TWO
+	if(!client)
+		return 0
+	if(stat == UNCONSCIOUS && health <= config.health_threshold_crit)
+		var/severity = 0
+		switch(health)
+			if(-20 to -10) severity = 1
+			if(-30 to -20) severity = 2
+			if(-40 to -30) severity = 3
+			if(-50 to -40) severity = 4
+			if(-60 to -50) severity = 5
+			if(-70 to -60) severity = 6
+			if(-80 to -70) severity = 7
+			if(-90 to -80) severity = 8
+			if(-95 to -90) severity = 9
+			if(-INFINITY to -95) severity = 10
+		overlay_fullscreen("crit", /obj/screen/fullscreen/crit, severity)
 	else
-		if(!(SEE_TURFS & permanent_sight_flags))
-			sight &= ~SEE_TURFS
-		if(!(SEE_MOBS & permanent_sight_flags))
-			sight &= ~SEE_MOBS
-		if(!(SEE_OBJS & permanent_sight_flags))
-			sight &= ~SEE_OBJS
-
-		if(remote_view)
-			sight |= SEE_TURFS
-			sight |= SEE_MOBS
-			sight |= SEE_OBJS
-
-		see_in_dark = (sight == SEE_TURFS|SEE_MOBS|SEE_OBJS) ? 8 : 2  //Xray flag combo
-		see_invisible = SEE_INVISIBLE_LIVING
-		if(see_override)
-			see_invisible = see_override
-
-		if(blind)
-			if(eye_blind)
-				blind.layer = 18
-			else
-				blind.layer = 0
-
-				if (disabilities & NEARSIGHT)
-					client.screen += global_hud.vimpaired
-
-				if (eye_blurry)
-					client.screen += global_hud.blurry
-
-				if (druggy)
-					client.screen += global_hud.druggy
-
-				if(eye_stat > 20)
-					if(eye_stat > 30)
-						client.screen += global_hud.darkMask
-					else
-						client.screen += global_hud.vimpaired
-
-		if(machine)
-			if (!( machine.check_eye(src) ))
-				reset_view(null)
+		clear_fullscreen("crit")
+		if(oxyloss)
+			var/severity = 0
+			switch(oxyloss)
+				if(10 to 20) severity = 1
+				if(20 to 25) severity = 2
+				if(25 to 30) severity = 3
+				if(30 to 35) severity = 4
+				if(35 to 40) severity = 5
+				if(40 to 45) severity = 6
+				if(45 to INFINITY) severity = 7
+			overlay_fullscreen("oxy", /obj/screen/fullscreen/oxy, severity)
 		else
-			if(!client.adminobs)
-				reset_view(null)
+			clear_fullscreen("oxy")
+		//Fire and Brute damage overlay (BSSR)
+		var/hurtdamage = src.getBruteLoss() + src.getFireLoss() + damageoverlaytemp
+		damageoverlaytemp = 0 // We do this so we can detect if someone hits us or not.
+		if(hurtdamage)
+			var/severity = 0
+			switch(hurtdamage)
+				if(5 to 15) severity = 1
+				if(15 to 30) severity = 2
+				if(30 to 45) severity = 3
+				if(45 to 70) severity = 4
+				if(70 to 85) severity = 5
+				if(85 to INFINITY) severity = 6
+			overlay_fullscreen("brute", /obj/screen/fullscreen/brute, severity)
+		else
+			clear_fullscreen("brute")
+	..()
+	return 1
 
 /mob/living/carbon/handle_hud_icons()
 	return
@@ -627,3 +502,62 @@
 
 /mob/living/carbon/proc/handle_heart()
 	return
+
+
+/mob/living/carbon/update_sight()
+
+	if(stat == DEAD)
+		sight |= SEE_TURFS
+		sight |= SEE_MOBS
+		sight |= SEE_OBJS
+		see_in_dark = 8
+		see_invisible = SEE_INVISIBLE_LEVEL_TWO
+	else
+		if(!(SEE_TURFS & permanent_sight_flags))
+			sight &= ~SEE_TURFS
+		if(!(SEE_MOBS & permanent_sight_flags))
+			sight &= ~SEE_MOBS
+		if(!(SEE_OBJS & permanent_sight_flags))
+			sight &= ~SEE_OBJS
+		if(remote_view)
+			sight |= SEE_TURFS
+			sight |= SEE_MOBS
+			sight |= SEE_OBJS
+		see_in_dark =  2
+		see_invisible =  SEE_INVISIBLE_LIVING
+		if(exists("eyes"))
+			var/datum/organ/internal/eyes/eyedatum = get_organdatum("eyes")
+			var/obj/item/organ/internal/eyes/E = eyedatum.organitem
+			see_in_dark = max(see_in_dark, E.dark_sight)
+			see_invisible = min(see_invisible, E.invis_sight)
+			sight |= E.sight_flags
+		see_in_dark = ((sight & SEE_TURFS) && (sight & SEE_MOBS) && (sight & SEE_OBJS)) ? 8 : see_in_dark  //Xray flag combo
+		see_invisible = ((sight & SEE_TURFS) && (sight & SEE_MOBS) && (sight & SEE_OBJS)) ? SEE_INVISIBLE_MINIMUM : see_invisible //same here
+		if(see_override)
+			see_invisible = see_override
+
+
+/mob/living/carbon/proc/natural_bodytemperature_stabilization(temperature_cold = BODYTEMP_COLD_DAMAGE_LIMIT, temperature_default = 310.15, temperature_hot = BODYTEMP_HEAT_DAMAGE_LIMIT)
+	var/body_temperature_difference = temperature_default - bodytemperature
+	//For some reason switch(bodytemperature) doesn't seem to work
+	if(bodytemperature <= temperature_cold) //260.15 is temperature_default - 50, the temperature where you start to feel effects.
+		if(nutrition >= 2) //If we are very, very cold we'll use up quite a bit of nutriment to heat us up.
+			nutrition -= 2
+		bodytemperature += max((body_temperature_difference * metabolism_efficiency / BODYTEMP_AUTORECOVERY_DIVISOR), BODYTEMP_AUTORECOVERY_MINIMUM)
+	else if(bodytemperature <= temperature_default)
+		bodytemperature += max(body_temperature_difference * metabolism_efficiency / BODYTEMP_AUTORECOVERY_DIVISOR, min(body_temperature_difference, BODYTEMP_AUTORECOVERY_MINIMUM/4))
+	else if(bodytemperature < temperature_hot)
+		bodytemperature += min(body_temperature_difference * metabolism_efficiency / BODYTEMP_AUTORECOVERY_DIVISOR, max(body_temperature_difference, -BODYTEMP_AUTORECOVERY_MINIMUM/4))
+	else //360.15 is temperature_default + 50, the temperature where you start to feel effects.
+		//We totally need a sweat system cause it totally makes sense...~
+		bodytemperature += min((body_temperature_difference / BODYTEMP_AUTORECOVERY_DIVISOR), -BODYTEMP_AUTORECOVERY_MINIMUM)	//We're dealing with negative numbers
+
+
+/mob/living/carbon/handle_actions()
+	..()
+	if(organsystem)
+		for(var/datum/organ/org in get_all_internal_organs())
+			give_action_button(org.organitem)	//Recursion isn't needed in the new organsystem
+		var/datum/organ/cavity/CAV = get_organdatum("cavity")
+		if(CAV && CAV.exists() && !isorgan(CAV.organitem))	//Last one's there so you can't just cavity implant cybernetic implants
+			give_action_button(CAV.organitem)

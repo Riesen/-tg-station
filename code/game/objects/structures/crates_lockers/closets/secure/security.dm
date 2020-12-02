@@ -5,6 +5,8 @@
 
 /obj/structure/closet/secure_closet/captains/New()
 	..()
+	new /obj/item/clothing/head/helmet(src)
+	new /obj/item/clothing/cloak/cap(src)
 	new /obj/item/clothing/suit/hooded/wintercoat/captain(src)
 	if(prob(50))
 		new /obj/item/weapon/storage/backpack/captain(src)
@@ -31,6 +33,7 @@
 
 /obj/structure/closet/secure_closet/hop/New()
 	..()
+	new /obj/item/clothing/head/helmet(src)
 	new /obj/item/clothing/suit/hooded/wintercoat/cargo(src)
 	new /obj/item/clothing/under/rank/head_of_personnel(src)
 	new /obj/item/clothing/head/hopcap(src)
@@ -55,6 +58,8 @@
 
 /obj/structure/closet/secure_closet/hos/New()
 	..()
+	new /obj/item/clothing/head/helmet(src)
+	new /obj/item/clothing/cloak/hos(src)
 	new /obj/item/clothing/suit/hooded/wintercoat/security(src)
 	new /obj/item/weapon/cartridge/hos(src)
 	new /obj/item/device/radio/headset/heads/hos(src)
@@ -85,6 +90,7 @@
 
 /obj/structure/closet/secure_closet/warden/New()
 	..()
+	new /obj/item/clothing/head/helmet(src)
 	new /obj/item/device/radio/headset/headset_sec(src)
 	new /obj/item/clothing/suit/armor/vest/warden/(src)
 	new /obj/item/clothing/head/warden(src)
@@ -112,6 +118,7 @@
 
 /obj/structure/closet/secure_closet/security/New()
 	..()
+	new /obj/item/clothing/head/helmet(src)
 	new /obj/item/clothing/suit/armor/vest(src)
 	new /obj/item/device/radio/headset/headset_sec/alt(src)
 	new /obj/item/clothing/head/beret/sec(src)
@@ -172,6 +179,7 @@
 
 /obj/structure/closet/secure_closet/detective/New()
 	..()
+	new /obj/item/clothing/head/helmet(src)
 	new /obj/item/clothing/under/rank/det(src)
 	new /obj/item/clothing/suit/det_suit(src)
 	new /obj/item/clothing/head/det_hat(src)

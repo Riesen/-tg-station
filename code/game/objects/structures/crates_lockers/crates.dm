@@ -46,13 +46,6 @@
 /obj/structure/closet/crate/rcd
 	desc = "A crate for the storage of the RCD."
 	name = "\improper RCD crate"
-	icon = 'icons/obj/storage.dmi'
-	icon_state = "crate"
-	density = 1
-
-/obj/structure/closet/crate/rcd
-	desc = "A crate for the storage of the RCD."
-	name = "\improper RCD crate"
 
 /obj/structure/closet/crate/rcd/New()
 	..()
@@ -94,7 +87,9 @@
 	icon_crate = "radiation"
 	icon_state = "radiation"
 
-/obj/structure/closet/crate/radiation/New()
+/obj/structure/closet/crate/radiation/suits
+
+/obj/structure/closet/crate/radiation/suits/New()
 	..()
 	new /obj/item/clothing/suit/radiation(src)
 	new /obj/item/clothing/head/radiation(src)
@@ -117,7 +112,7 @@
 	..()
 	new /obj/item/weapon/reagent_containers/spray/plantbgone(src)
 	new /obj/item/weapon/reagent_containers/spray/plantbgone(src)
-	new /obj/item/weapon/minihoe(src)
+	new /obj/item/weapon/cultivator(src)
 
 /obj/structure/closet/crate/secure
 	desc = "A secure crate."

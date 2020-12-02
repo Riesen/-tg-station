@@ -6,15 +6,8 @@
 	return
 
 /datum/hud/proc/brain_hud(ui_style = 'icons/mob/screen_midnight.dmi')
-	mymob.blind = new /obj/screen()
-	mymob.blind.icon = 'icons/mob/screen_full.dmi'
-	mymob.blind.icon_state = "blackimageoverlay"
-	mymob.blind.name = " "
-	mymob.blind.screen_loc = "CENTER-7,CENTER-7"
-	mymob.blind.layer = 0
 
 	mymob.client.screen = null
-	mymob.client.screen += list(mymob.blind)
 
 /datum/hud/proc/blob_hud(ui_style = 'icons/mob/screen_midnight.dmi')
 
@@ -30,6 +23,6 @@
 	blobhealthdisplay.screen_loc = ui_internal
 	blobhealthdisplay.layer = 20
 
-	mymob.client.screen = null
+	mymob.client.screen = list()
 	mymob.client.screen += list(blobpwrdisplay, blobhealthdisplay)
 

@@ -1,13 +1,20 @@
 
 /mob/living/carbon/human/restrained()
-	if (handcuffed)
-		return 1
 	if (istype(wear_suit, /obj/item/clothing/suit/straight_jacket))
 		return 1
+	if (handcuffed)
+		if(organsystem)
+			var/datum/organ/limb/LH = get_organdatum("l_arm")
+			var/datum/organ/limb/RH = get_organdatum("r_arm")
+			return LH.exists() && RH.exists() //Handcuffs only work if you have 2 hands.
+		else
+			return 1
 	return 0
 
 /mob/living/carbon/human/canBeHandcuffed()
-	return 1
+	var/datum/organ/limb/LH = get_organdatum("l_arm")
+	var/datum/organ/limb/RH = get_organdatum("r_arm")
+	return LH.exists() || RH.exists() //You can wear cuffs as long as you have at least 1 hand. (Won't do much good unless you have 2.
 
 //gets assignment from ID or ID inside PDA or PDA itself
 //Useful when player do something with computers
@@ -55,8 +62,11 @@
 		return if_no_face
 	if( head && (head.flags_inv&HIDEFACE) )
 		return if_no_face		//Likewise for hats
-	var/obj/item/organ/limb/O = get_organ("head")
-	if( (status_flags&DISFIGURED) || (O.brutestate+O.burnstate)>2 || cloneloss>50 || !real_name )	//disfigured. use id-name if possible
+	var/datum/organ/limb/H = get_organdatum("head")
+	if(!H.exists())
+		return if_no_face
+	var/obj/item/organ/limb/head/O = H.organitem
+	if(status_flags & DISFIGURED || (O.brutestate+O.burnstate)>2 || cloneloss>50 || !real_name ) //Disfigured or headless, use ID if possible.
 		return if_no_face
 	return real_name
 
@@ -80,7 +90,7 @@
 ///checkeyeprot()
 ///Returns a number between -1 to 2
 /mob/living/carbon/human/check_eye_prot()
-	var/number = 0
+	var/number = ..()
 	if(istype(src.head, /obj/item/clothing/head))			//are they wearing something on their head
 		var/obj/item/clothing/head/HFP = src.head			//if yes gets the flash protection value from that item
 		number += HFP.flash_protect
@@ -90,9 +100,6 @@
 	if(istype(src.wear_mask, /obj/item/clothing/mask))		//mask
 		var/obj/item/clothing/mask/MFP = src.wear_mask
 		number += MFP.flash_protect
-	var/obj/item/cybernetic_implant/eyes/EFP = locate() in src
-	if(EFP)
-		number += EFP.flash_protect
 	return number
 
 /mob/living/carbon/human/check_ear_prot()
@@ -139,3 +146,24 @@
 		return bypass	// if it returns 0, it will run the usual on_mob_life for that reagent. otherwise, it will stop after running handle_chemicals for the species.
 	else
 		return 0
+
+
+/mob/living/carbon/human/get_permeability_protection()
+	var/list/prot = list("hands"=0, "chest"=0, "groin"=0, "legs"=0, "feet"=0, "arms"=0, "head"=0)
+	for(var/obj/item/I in get_equipped_items())
+		if(I.body_parts_covered & HANDS)
+			prot["hands"] = max(1 - I.permeability_coefficient, prot["hands"])
+		if(I.body_parts_covered & CHEST)
+			prot["chest"] = max(1 - I.permeability_coefficient, prot["chest"])
+		if(I.body_parts_covered & GROIN)
+			prot["groin"] = max(1 - I.permeability_coefficient, prot["groin"])
+		if(I.body_parts_covered & LEGS)
+			prot["legs"] = max(1 - I.permeability_coefficient, prot["legs"])
+		if(I.body_parts_covered & FEET)
+			prot["feet"] = max(1 - I.permeability_coefficient, prot["feet"])
+		if(I.body_parts_covered & ARMS)
+			prot["arms"] = max(1 - I.permeability_coefficient, prot["arms"])
+		if(I.body_parts_covered & HEAD)
+			prot["head"] = max(1 - I.permeability_coefficient, prot["head"])
+	var/protection = (prot["head"] + prot["arms"] + prot["feet"] + prot["legs"] + prot["groin"] + prot["chest"] + prot["hands"])/7
+	return protection

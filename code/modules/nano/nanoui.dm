@@ -43,10 +43,12 @@ nanoui is used to open and update nano browser uis
 	var/content = "<div id='mainTemplate'></div>"
 	// initial data, containing the full data structure, must be sent to the ui (the data structure cannot be extended later on)
 	var/list/initial_data[0]
-	// set to 1 to update the ui automatically every master_controller tick
+	// set to x to update the ui automatically every x master_controller ticks
 	var/is_auto_updating = 0
 	// the current status/visibility of the ui
 	var/status = STATUS_INTERACTIVE
+	// current processing tick, used for autoupdate
+	var/autoprocess_tick = 0
 
 	// Only allow users with a certain user.stat to get updates. Defaults to 0 (concious)
 	var/allowed_user_stat = 0 // -1 = ignore, 0 = alive, 1 = unconcious or alive, 2 = dead concious or alive
@@ -131,8 +133,13 @@ nanoui is used to open and update nano browser uis
 			set_status(STATUS_DISABLED, push_update) // no updates, completely disabled (red visibility)
 	else
 		var/dist = get_dist(src_object, user)
+		var/isTK = 0
 
-		if (dist > 4)
+		if(ishuman(user))
+			var/mob/living/carbon/human/H = user
+			isTK = H.dna.check_mutation(TK)
+
+		if (dist > 4 && !isTK)
 			close()
 			return
 
@@ -141,18 +148,18 @@ nanoui is used to open and update nano browser uis
 		else if (user.restrained() || user.lying)
 			set_status(STATUS_UPDATE, push_update) // update only (orange visibility)
 		else if (!(src_object in view(4, user))) // If the src object is not in visable, set status to 0
-			set_status(STATUS_DISABLED, push_update) // interactive (green visibility)
+			set_status(STATUS_DISABLED, push_update) // no updates, completely disabled (red visibility)
 		else if (dist <= 1)
 			set_status(STATUS_INTERACTIVE, push_update) // interactive (green visibility)
-		else if (dist <= 2)
+		else if (dist <= 2 || isTK)
 			set_status(STATUS_UPDATE, push_update) // update only (orange visibility)
 		else if (dist <= 4)
 			set_status(STATUS_DISABLED, push_update) // no updates, completely disabled (red visibility)
 
  /**
-  * Set the ui to auto update (every master_controller tick)
+  * Set the ui to auto update (every [state] master_controller tick(s))
   *
-  * @param state int (bool) Set auto update to 1 or 0 (true/false)
+  * @param state (int) Set auto update to state (delay in ticks, 0 is never)
   *
   * @return nothing
   */
@@ -406,8 +413,13 @@ nanoui is used to open and update nano browser uis
 	if (!src_object || !user)
 		close()
 		return
+	if (status && (!update && is_auto_updating))
+		autoprocess_tick++
+		if(is_auto_updating == autoprocess_tick)
+			autoprocess_tick = 0
+			src_object.ui_interact(user, ui_key, src)
 
-	if (status && (update || is_auto_updating))
+	if (status && update)
 		src_object.ui_interact(user, ui_key, src) // Update the UI (update_status() is called whenever a UI is updated)
 	else
 		update_status(1) // Not updating UI, so lets check here if status has changed

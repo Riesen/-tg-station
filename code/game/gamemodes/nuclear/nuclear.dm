@@ -40,7 +40,7 @@
 		agent_number--
 
 	for(var/datum/mind/synd_mind in syndicates)
-		synd_mind.assigned_role = "MODE"
+		synd_mind.assigned_role = "Syndicate"
 		synd_mind.special_role = "Syndicate"//So they actually have a special role/N
 		log_game("[synd_mind.key] (ckey) has been selected as a nuclear operative")
 	return 1
@@ -155,7 +155,7 @@
 
 
 /datum/game_mode/proc/random_radio_frequency()
-	return 1337 // WHY??? -- Doohl
+	return 1337 // WHY??? -- Doohl //bravo nolan
 
 
 /datum/game_mode/proc/equip_syndicate(mob/living/carbon/human/synd_mob)
@@ -163,6 +163,7 @@
 
 	var/obj/item/device/radio/R = new /obj/item/device/radio/headset/syndicate/alt(synd_mob)
 	R.set_frequency(radio_freq)
+	R.freqlock = 1
 	synd_mob.equip_to_slot_or_del(R, slot_ears)
 
 	synd_mob.equip_to_slot_or_del(new /obj/item/clothing/under/syndicate(synd_mob), slot_w_uniform)
@@ -180,14 +181,10 @@
 	synd_mob.equip_to_slot_or_del(U, slot_in_backpack)
 
 	var/obj/item/weapon/implant/weapons_auth/E = new/obj/item/weapon/implant/weapons_auth(synd_mob)
-	E.imp_in = synd_mob
-	E.implanted = 1
-	E.implanted(synd_mob)
+	E.implant(synd_mob)
 
 	var/obj/item/weapon/implant/explosive/Ex = new/obj/item/weapon/implant/explosive(synd_mob)
-	Ex.imp_in = synd_mob
-	Ex.implanted = 1
-	Ex.implanted(synd_mob)
+	Ex.implant(synd_mob)
 
 	synd_mob.faction |= "syndicate"
 	synd_mob.update_icons()
@@ -206,6 +203,16 @@
 			return 0
 	return 1
 
+
+/datum/game_mode/nuclear/check_finished() //to be called by ticker
+	if(replacementmode && round_converted == 2)
+		return replacementmode.check_finished()
+	if(SSshuttle.emergency.mode >= SHUTTLE_ENDGAME || station_was_nuked)
+		return 1
+	if(are_operatives_dead())
+		if(bomb_set) //snaaaaaaaaaake! It's not over yet!
+			return 0
+	..()
 
 /datum/game_mode/nuclear/declare_completion()
 	var/disk_rescued = 1
@@ -242,7 +249,7 @@
 		world << "<FONT size = 3><B>[syndicate_name()] operatives have earned Darwin Award!</B></FONT>"
 		world << "<B>[syndicate_name()] operatives blew up something that wasn't [station_name()] and got caught in the explosion.</B> Next time, don't lose the disk!"
 
-	else if ( disk_rescued && are_operatives_dead())
+	else if ((disk_rescued || SSshuttle.emergency.mode < SHUTTLE_ENDGAME) && are_operatives_dead())
 		feedback_set_details("round_end_result","loss - evacuation - disk secured - syndi team dead")
 		world << "<FONT size = 3><B>Crew Major Victory!</B></FONT>"
 		world << "<B>The Research Staff has saved the disc and killed the [syndicate_name()] Operatives</B>"
@@ -268,7 +275,6 @@
 		world << "<B>Round was mysteriously interrupted!</B>"
 
 	..()
-	return
 
 
 /datum/game_mode/proc/auto_declare_completion_nuclear()

@@ -126,6 +126,7 @@
 	owner.Trigger()
 	return 1
 
+
 /obj/screen/movable/action_button/proc/UpdateIcon()
 	if(!owner)
 		return
@@ -136,17 +137,21 @@
 	var/image/img
 	if(owner.action_type == AB_ITEM && owner.target)
 		var/obj/item/I = owner.target
-		img = image(I.icon, src , I.icon_state)
+		var/old = I.layer
+		I.layer = FLOAT_LAYER //AAAH
+		overlays += I
+		I.layer = old
 	else if(owner.button_icon && owner.button_icon_state)
 		img = image(owner.button_icon,src,owner.button_icon_state)
-	img.pixel_x = 0
-	img.pixel_y = 0
-	overlays += img
+		img.pixel_x = 0
+		img.pixel_y = 0
+		overlays += img
 
 	if(!owner.IsAvailable())
 		color = rgb(128,0,0,128)
 	else
 		color = rgb(255,255,255,255)
+
 
 //Hide/Show Action Buttons ... Button
 /obj/screen/movable/action_button/hide_toggle
@@ -210,7 +215,7 @@
 
 //Presets for item actions
 /datum/action/item_action
-	check_flags = AB_CHECK_RESTRAINED|AB_CHECK_STUNNED|AB_CHECK_LYING|AB_CHECK_ALIVE|AB_CHECK_INSIDE
+	check_flags = AB_CHECK_RESTRAINED|AB_CHECK_STUNNED|AB_CHECK_ALIVE|AB_CHECK_INSIDE
 
 /datum/action/item_action/CheckRemoval(mob/living/user)
 	return !(target in user)
@@ -246,3 +251,22 @@
 		if(target in owner.mind.spell_list)
 			return 0
 	return !(target in owner.mob_spell_list)
+
+/datum/action/organ_action
+	check_flags = AB_CHECK_ALIVE
+
+/datum/action/organ_action/CheckRemoval(mob/living/carbon/user)
+	if(!iscarbon(user))
+		return 1
+	if(isinternalorgan(target))
+		var/obj/item/organ/internal/ORG = target
+		if(ORG.organdatum == user.get_organdatum(ORG.hardpoint))
+			return 0
+	return 1
+
+
+/datum/action/organ_action/IsAvailable()
+	var/obj/item/organ/internal/I = target
+	if(!I.owner)
+		return 0
+	return ..()

@@ -5,6 +5,7 @@
 	icon_state = "pill"
 	item_state = "pill"
 	possible_transfer_amounts = null
+	grind_reagents = list()
 	volume = 50
 	var/apply_type = INGEST
 	var/apply_method = "swallow"
@@ -45,10 +46,9 @@
 
 	if(reagents.total_volume)
 		reagents.reaction(M, apply_type)
-		spawn(5)
-			reagents.trans_to(M, reagents.total_volume)
-			qdel(src)
-			return 1
+		reagents.trans_to(M, reagents.total_volume)
+		qdel(src)
+		return 1
 	else
 		qdel(src)
 		return 1

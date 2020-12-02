@@ -2,7 +2,8 @@
 	name = "gas mask"
 	desc = "A face-covering mask that can be connected to an air supply. While good for concealing your identity, it isn't good for blocking gas flow." //More accurate
 	icon_state = "gas_alt"
-	flags = MASKCOVERSMOUTH | MASKCOVERSEYES | BLOCK_GAS_SMOKE_EFFECT | MASKINTERNALS
+	body_parts_covered = EYES|MOUTH
+	flags =  BLOCK_GAS_SMOKE_EFFECT | MASKINTERNALS
 	flags_inv = HIDEEARS|HIDEEYES|HIDEFACE
 	w_class = 3.0
 	item_state = "gas_alt"
@@ -15,14 +16,13 @@
 	name = "welding mask"
 	desc = "A gas mask with built-in welding goggles and a face shield. Looks like a skull - clearly designed by a nerd."
 	icon_state = "weldingmask"
-	m_amt = 4000
-	g_amt = 2000
+	materials = list(MAT_METAL=4000, MAT_GLASS= 2000)
 	flash_protect = 2
 	tint = 2
 	armor = list(melee = 10, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 0, rad = 0)
 	origin_tech = "materials=2;engineering=2"
 	action_button_name = "Toggle Welding Mask"
-	visor_flags = MASKCOVERSEYES
+	visor_coverage = EYES
 	visor_flags_inv = HIDEEYES
 
 /obj/item/clothing/mask/gas/welding/attack_self()
@@ -48,9 +48,11 @@
 	var/cooldown = 0
 	var/aggressiveness = 2
 	ignore_maskadjust = 0
-	flags = MASKCOVERSMOUTH | BLOCK_GAS_SMOKE_EFFECT | MASKINTERNALS
+	body_parts_covered = MOUTH
+	flags =  BLOCK_GAS_SMOKE_EFFECT | MASKINTERNALS
 	flags_inv = HIDEFACE
-	visor_flags = MASKCOVERSMOUTH | BLOCK_GAS_SMOKE_EFFECT | MASKINTERNALS
+	visor_coverage = MOUTH
+	visor_flags =  BLOCK_GAS_SMOKE_EFFECT | MASKINTERNALS
 	visor_flags_inv = HIDEFACE
 
 /obj/item/clothing/mask/gas/sechailer/swat
@@ -227,7 +229,7 @@
 	icon_state = "clown"
 	item_state = "clown_hat"
 
-obj/item/clothing/mask/gas/clown_hat/attack_self(mob/user)
+/obj/item/clothing/mask/gas/clown_hat/attack_self(mob/user)
 
 	var/mob/M = usr
 	var/list/options = list()

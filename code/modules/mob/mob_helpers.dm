@@ -131,12 +131,7 @@ proc/isovermind(A)
 		return 1
 	return 0
 
-proc/isdrone(A)
-	if(istype(A, /mob/living/simple_animal/drone))
-		return 1
-	return 0
-
-proc/isorgan(A)
+/proc/islimb(A)
 	if(istype(A, /obj/item/organ/limb))
 		return 1
 	return 0
@@ -193,7 +188,7 @@ proc/isorgan(A)
 		return 0
 
 /proc/stars(n, pr)
-	n = strip_html_properly(n)
+	n = html_encode(n)
 	if (pr == null)
 		pr = 25
 	if (pr <= 0)
@@ -214,6 +209,7 @@ proc/isorgan(A)
 		p++
 	return sanitize(t)
 
+/* keeping this proc incase its needed for some reason
 proc/slur(n)
 	var/phrase = html_decode(n)
 	var/leng = lentext(phrase)
@@ -237,7 +233,7 @@ proc/slur(n)
 			if(20)	newletter+="[newletter][newletter]"
 		newphrase+="[newletter]";counter-=1
 	return newphrase
-
+*/
 /proc/stutter(n)
 	var/te = html_decode(n)
 	var/t = ""//placed before the message. Not really sure what it's for.
@@ -418,16 +414,12 @@ proc/is_special_character(mob/M) // returns 1 for special characters and 2 for h
 	if(!istype(M))
 		return 0
 	if(issilicon(M))
-		if(isrobot(M)) //For cyborgs, returns 1 if the cyborg has a law 0 and special_role. Returns 0 if the borg is merely slaved to an AI traitor.
+		if(isrobot(M)) //For cyborgs, returns 1 if the cyborg has a law 0 and special_role or is slaved to a traitor AI.
 			var/mob/living/silicon/robot/R = M
 			if(R.emagged || R.syndicate) //Count as antags
 				return 1
 			if(R.mind && R.mind.special_role && R.laws && R.laws.zeroth).
-				if(R.connected_ai)
-					if(is_special_character(R.connected_ai) && R.connected_ai.laws && (R.connected_ai.laws.zeroth_borg == R.laws.zeroth || R.connected_ai.laws.zeroth == R.laws.zeroth))
-						return 0 //AI is the real traitor here, so the borg itself is not a traitor
-					return 1 //Slaved but also a traitor
-				return 1 //Unslaved, traitor
+				return 1 //Traitor or slaved to traitor
 		else if(isAI(M))
 			var/mob/living/silicon/ai/A = M
 			if(A.laws && A.laws.zeroth && A.mind && A.mind.special_role)
@@ -479,7 +471,8 @@ proc/is_special_character(mob/M) // returns 1 for special characters and 2 for h
 				O << sound(ghost_sound)
 
 /proc/item_heal_robotic(var/mob/living/carbon/human/H, var/mob/user, var/brute, var/burn)
-	var/obj/item/organ/limb/affecting = H.get_organ(check_zone(user.zone_sel.selecting))
+	var/datum/organ/limb/limbdata = H.get_organdatum(check_zone(user.zone_sel.selecting))
+	var/obj/item/organ/limb/affecting = limbdata.organitem
 
 	var/dam //changes repair text based on how much brute/burn was supplied
 
@@ -488,16 +481,48 @@ proc/is_special_character(mob/M) // returns 1 for special characters and 2 for h
 	else
 		dam = 0
 
-	if(affecting.status == ORGAN_ROBOTIC)
+	if(affecting && affecting.organtype == ORGAN_ROBOTIC)
 		if(brute > 0 && affecting.brute_dam > 0 || burn > 0 && affecting.burn_dam > 0)
 			affecting.heal_damage(brute,burn,1)
 			H.update_damage_overlays(0)
 			H.updatehealth()
-			user.visible_message("<span class='notice'>[user] has fixed some of the [dam ? "dents on" : "burnt wires in"] [H]'s [affecting.getDisplayName()]!</span>")
+			user.visible_message("<span class='notice'>[user] has fixed some of the [dam ? "dents on" : "burnt wires in"] [H]'s [limbdata.getDisplayName()]!</span>")
 			return
 		else
-			user << "<span class='notice'>[H]'s [affecting.getDisplayName()] is already in good condition</span>"
+			user << "<span class='notice'>[H]'s [affecting.name] is already in good condition</span>"
 			return
 	else
 		return
 
+
+
+/proc/get_multitool(mob/user as mob)
+	// Get tool
+	var/obj/item/device/multitool/P
+	if(isrobot(user) || ishuman(user))
+		P = user.get_active_hand()
+	else if(isAI(user))
+		var/mob/living/silicon/ai/AI = user
+		P = AI.aiMulti
+//	else if(isAdminGhost(user))
+//		var/mob/dead/observer/G=user
+//		P = G.ghostMulti
+
+	if(!istype(P))
+		return null
+	return P
+
+mob/proc/active_hand_exists()
+	return 1
+
+//Call with invert = 1 to check inactive hand
+/mob/living/carbon/active_hand_exists(var/invert = 0)	//Partially niggered from NT
+	if(organsystem)
+		var/datum/organ/limb/L
+		if(hand && !invert || !hand && invert)
+			L = get_organdatum("l_arm")
+		else
+			L = get_organdatum("r_arm")
+		if(!(L && L.exists()))
+			return 0
+	return 1

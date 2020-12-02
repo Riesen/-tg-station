@@ -1,19 +1,49 @@
-/obj/item/organ/brain
+/obj/item/organ/internal/brain
 	name = "brain"
+	hardpoint = "brain"
 	desc = "A piece of juicy meat found in a person's head."
-	icon = 'icons/obj/surgery.dmi'
 	icon_state = "brain"
-	force = 1.0
-	w_class = 2.0
-	throwforce = 0
 	throw_speed = 3
 	throw_range = 5
-	origin_tech = "biotech=3"
+	layer = 4.1
+	zone = "head"
+	slot = "brain"
+	vital = 1
+	origin_tech = "biotech=4"
 	attack_verb = list("attacked", "slapped", "whacked")
 	var/mob/living/carbon/brain/brainmob = null
 
+/obj/item/organ/internal/brain/on_insertion()
+	name = "brain"
+	if(brainmob)
+		if(owner.key)
+			owner.ghostize()
 
-/obj/item/organ/brain/New()
+		if(brainmob.mind)
+			brainmob.mind.transfer_to(owner)
+		else
+			owner.key = brainmob.key
+
+		qdel(brainmob)
+
+		//Update the body's icon so it doesnt appear debrained anymore
+		if(ishuman(owner))
+			var/mob/living/carbon/human/H = owner
+			H.update_hair(0)
+	return
+
+/obj/item/organ/internal/brain/Remove(special = 0)
+	..()
+	if(!special)
+		transfer_identity()
+	if(owner && ishuman(owner))
+		var/mob/living/carbon/human/H = owner
+		H.update_hair(0)
+
+/obj/item/organ/internal/brain/prepare_eat()
+	return // Too important to eat.
+
+/obj/item/organ/internal/brain/New()
 	..()
 	//Shifting the brain "mob" over to the brain object so it's easier to keep track of. --NEO
 	spawn(5)
@@ -21,19 +51,29 @@
 			brainmob.client.screen.len = null //clear the hud
 
 
-/obj/item/organ/brain/proc/transfer_identity(mob/living/carbon/H)
-	name = "[H]'s brain"
+/**
+  * Transfers a person from their original mob to a brainmob inside of this brain.
+  * Relies on the organ's owner now, so please call this BEFORE the brain is removed from a mob or the owner var will be set to null.
+ **/
+/obj/item/organ/internal/brain/proc/transfer_identity()
+	if(!owner)
+		return
+	name = "[owner]'s brain"
 	brainmob = new(src)
-	brainmob.name = H.real_name
-	brainmob.real_name = H.real_name
-	brainmob.dna = H.dna
-	brainmob.timeofhostdeath = H.timeofdeath
-	if(H.mind)
-		H.mind.transfer_to(brainmob)
-	brainmob << "<span class='notice'>You feel slightly disoriented. That's normal when you're just a brain.</span>"
+	brainmob.name = owner.real_name
+	brainmob.real_name = owner.real_name
+	brainmob.dna = owner.dna
+	brainmob.timeofhostdeath = owner.timeofdeath
+	if(owner.mind)
+		owner.mind.transfer_to(brainmob)
+	var/datum/organ/P = owner.get_organdatum(organdatum.parent.hardpoint)
+	if(!(P && P.exists())) //If the organdatum is not null, this brain is a suborgan. We check for the parent just in case.
+		brainmob << "<span class='notice'>You feel slightly disoriented. That's normal when you're just \a [organdatum.parent]."
+	else
+		brainmob << "<span class='notice'>You feel slightly disoriented. That's normal when you're just a brain.</span>"
 
 
-/obj/item/organ/brain/examine(mob/user)
+/obj/item/organ/internal/brain/examine(mob/user)
 	..()
 	if(brainmob && brainmob.client)
 		user << "You can feel the small spark of life still left in this one."
@@ -41,7 +81,7 @@
 		user << "This one seems particularly lifeless. Perhaps it will regain some of its luster later."
 
 
-/obj/item/organ/brain/attack(mob/living/carbon/M, mob/user)
+/obj/item/organ/internal/brain/attack(mob/living/carbon/M, mob/user)
 	if(!istype(M))
 		return ..()
 
@@ -51,57 +91,45 @@
 		return ..()
 
 	var/mob/living/carbon/human/H = M
-	if(istype(M, /mob/living/carbon/human) && ((H.head && H.head.flags & HEADCOVERSEYES) || (H.wear_mask && H.wear_mask.flags & MASKCOVERSEYES) || (H.glasses && H.glasses.flags & GLASSESCOVERSEYES)))
-		user << "<span class='notice'>You're going to need to remove their head cover first.</span>"
+	if(istype(M, /mob/living/carbon/human) && get_location_accessible(H, "head"))
+		user << "<span class='warning'>You're going to need to remove their head cover first!</span>"
 		return
 
 //since these people will be dead M != usr
 
-	if(!M.getorgan(/obj/item/organ/brain))
+	var/B = null
+	if(M.organsystem)
+		var/datum/organ/C = M.get_organdatum("brain")
+		B = C.organitem
+	if(!B)
 		user.drop_item()
 		for(var/mob/O in viewers(M, null))
 			if(O == (user || M))
 				continue
 			if(M == user)
-				O << "<span class='notice'>[user] inserts [src] into \his head!</span>"
+				O << "[user] inserts [src] into \his head!"
 			else
-				O << "<span class='notice'>[M] has [src] inserted into \his head by [user].</span>"
+				O << "[M] has [src] inserted into \his head by [user]."
 
 		if(M != user)
-			M << "<span class='notice'>[user] inserts [src] into your head!</span>"
-			user << "<span class='notice'>You insert [src] into [M]'s head!</span>"
+			M << "<span class='notice'>[user] inserts [src] into your head.</span>"
+			user << "<span class='notice'>You insert [src] into [M]'s head.</span>"
 		else
-			user << "<span class='notice'>You insert [src] into your head!</span>"	//LOL
+			user << "<span class='notice'>You insert [src] into your head.</span>"	//LOL
 
-		//this might actually be outdated since barring badminnery, a debrain'd body will have any client sucked out to the brain's internal mob. Leaving it anyway to be safe. --NEO
-		if(M.key)
-			M.ghostize()
-
-		if(brainmob.mind)
-			brainmob.mind.transfer_to(M)
-		else
-			M.key = brainmob.key
-
-		qdel(brainmob)
-
-		M.internal_organs += src
-		loc = null
-
-		//Update the body's icon so it doesnt appear debrained anymore
-		if(ishuman(M))
-			H.update_hair(0)
-
+		Insert(M)
 	else
 		..()
 
-/obj/item/organ/brain/alien
+/obj/item/organ/internal/brain/Destroy() //copypasted from MMIs.
+	if(brainmob)
+		brainmob.ghostize()
+		qdel(brainmob)
+		brainmob = null
+	..()
+
+/obj/item/organ/internal/brain/alien
 	name = "alien brain"
 	desc = "We barely understand the brains of terrestial animals. Who knows what we may find in the brain of such an advanced species?"
 	icon_state = "brain-alien"
 	origin_tech = "biotech=7"
-
-/obj/item/organ/brain/Destroy() //copypasted from MMIs.
-	if(brainmob)
-		qdel(brainmob)
-		brainmob = null
-	..()

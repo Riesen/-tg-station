@@ -1,26 +1,23 @@
 /mob/living/carbon/monkey
 	name = "monkey"
 	voice_name = "monkey"
-	say_message = "chimpers"
+	verb_say = "chimpers"
 	icon = 'icons/mob/monkey.dmi'
 	icon_state = "monkey1"
 	gender = NEUTER
 	pass_flags = PASSTABLE
 	languages = MONKEY
 	ventcrawler = 2
+	type_of_meat = /obj/item/weapon/reagent_containers/food/snacks/meat/slab/monkey
+	unique_name = 1
 
 /mob/living/carbon/monkey/New()
 	create_reagents(1000)
 	verbs += /mob/living/proc/mob_sleep
 	verbs += /mob/living/proc/lay_down
 
-	internal_organs += new /obj/item/organ/appendix
-	internal_organs += new /obj/item/organ/heart
-	internal_organs += new /obj/item/organ/brain
+	organsystem = new/datum/organsystem/humanoid/monkey(src)
 
-	if(name == "monkey")
-		name = text("monkey ([rand(1, 1000)])")
-	real_name = name
 	gender = pick(MALE, FEMALE)
 
 	..()
@@ -255,7 +252,7 @@
 	return 1 // Monkeys can eat, drink, and be forced to do so
 
 
-/mob/living/carbon/monkey/acid_act(var/acidpwr, var/toxpwr, var/acid_volume)
+/mob/living/carbon/monkey/acid_act(acidpwr, toxpwr, acid_volume)
 	if(wear_mask)
 		if(!wear_mask.unacidable)
 			wear_mask.acid_act(acidpwr)
@@ -264,4 +261,20 @@
 			src << "<span class='warning'>Your mask protects you from the acid.</span>"
 		return
 
-	take_organ_damage(min(6*toxpwr, acid_volume * toxpwr))
+	take_organ_damage(min(6*toxpwr, acid_volume * acidpwr/10))
+
+/mob/living/carbon/monkey/check_eye_prot()
+	var/number = ..()
+	if(istype(src.wear_mask, /obj/item/clothing/mask))
+		var/obj/item/clothing/mask/MFP = src.wear_mask
+		number += MFP.flash_protect
+	return number
+
+/mob/living/carbon/monkey/get_permeability_protection()
+	var/protection = 0
+	if(head)
+		protection = 1 - head.permeability_coefficient
+	if(wear_mask)
+		protection = max(1 - wear_mask.permeability_coefficient, protection)
+	protection = protection/7 //the rest of the body isn't covered.
+	return protection

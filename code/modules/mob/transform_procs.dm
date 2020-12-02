@@ -3,15 +3,23 @@
 		return
 	//Handle items on mob
 
-	//first implants
+	//first implants & organs
 	var/list/implants = list()
+
 	if (tr_flags & TR_KEEPIMPLANTS)
 		for(var/obj/item/weapon/implant/W in src)
 			implants += W
 
-	if(tr_flags & TR_KEEPITEMS)
+	//now the rest
+	if (tr_flags & TR_KEEPITEMS)
 		for(var/obj/item/W in (src.contents-implants))
 			unEquip(W)
+			if (client)
+				client.screen -= W
+			if (W)
+				W.loc = loc
+				W.dropped(src)
+				W.layer = initial(W.layer)
 
 	//Make mob invisible and spawn animation
 	regenerate_icons()
@@ -39,11 +47,16 @@
 		O.name = newname
 		O.real_name = newname
 
+	if(organsystem && tr_flags & TR_KEEPORGANS)	//Moving the organsystem
+		O.organsystem = organsystem
+		O.organsystem.set_owner(O)
+
 	//handle DNA and other attributes
 	if(dna)
 		dna.transfer_identity(O)
 		if(tr_flags & TR_KEEPSE)
 			O.dna.struc_enzymes = dna.struc_enzymes
+			//hardset_dna(O, null, dna.struc_enzymes)
 
 	if(suiciding)
 		O.suiciding = suiciding
@@ -55,6 +68,7 @@
 		O.viruses = viruses
 		viruses = list()
 		for(var/datum/disease/D in O.viruses)
+			D.holder = O
 			D.affected_mob = O
 
 	//keep damage?
@@ -79,6 +93,8 @@
 	if (tr_flags & TR_DEFAULTMSG)
 		O << "<B>You are now a monkey.</B>"
 
+	O.update_pipe_vision()
+
 	for(var/A in loc.vars)
 		if(loc.vars[A] == src)
 			loc.vars[A] = O
@@ -97,8 +113,9 @@
 		return
 	//Handle items on mob
 
-	//first implants
+	//first implants & organs
 	var/list/implants = list()
+
 	if (tr_flags & TR_KEEPIMPLANTS)
 		for(var/obj/item/weapon/implant/W in src)
 			implants += W
@@ -136,16 +153,15 @@
 		O.equip_to_appropriate_slot(C)
 	qdel(animation)
 
-	O.gender = (deconstruct_block(getblock(dna.uni_identity, DNA_GENDER_BLOCK), 2)-1) ? FEMALE : MALE
-
 	if(dna)
+		O.gender = (deconstruct_block(getblock(dna.uni_identity, DNA_GENDER_BLOCK), 2)-1) ? FEMALE : MALE
 		dna.transfer_identity(O)
 		O.update_icons()
 		if(tr_flags & TR_KEEPSE)
 			O.dna.struc_enzymes = dna.struc_enzymes
 			domutcheck(O)
 
-	if(!dna.species)
+	if(!dna || !dna.species)
 		hardset_dna(O, null, null, null, null, /datum/species/human)
 	else
 		hardset_dna(O, null, null, null, null, dna.species.type)
@@ -164,11 +180,17 @@
 
 	O.loc = loc
 
+	if(organsystem && tr_flags & TR_KEEPORGANS)	//Moving the organsystem
+		O.organsystem = organsystem
+		O.organsystem.set_dna(O.dna)
+		O.organsystem.set_owner(O)
+
 	//keep viruses?
 	if (tr_flags & TR_KEEPVIRUS)
 		O.viruses = viruses
 		viruses = list()
 		for(var/datum/disease/D in O.viruses)
+			D.holder = O
 			D.affected_mob = O
 		O.med_hud_set_status()
 
@@ -193,6 +215,8 @@
 	O.a_intent = "help"
 	if (tr_flags & TR_DEFAULTMSG)
 		O << "<B>You are now a human.</B>"
+		
+	O.update_pipe_vision()
 
 	updateappearance(O)
 	. = O
@@ -212,8 +236,7 @@
 /mob/living/carbon/human/AIize()
 	if (notransform)
 		return
-	for(var/t in organs)
-		qdel(t)
+	qdel(organsystem)
 
 	return ..()
 
@@ -240,6 +263,8 @@
 		mind.transfer_to(O)
 	else
 		O.key = key
+		
+	O.update_pipe_vision()
 
 	var/obj/loc_landmark
 	for(var/obj/effect/landmark/start/sloc in landmarks_list)
@@ -281,13 +306,12 @@
 	O.job = "AI"
 
 	O.rename_self("ai",1)
-	. = O
 	qdel(src)
-	return
+	return O
 
 
-//human -> robot
-/mob/living/carbon/human/proc/Robotize(var/delete_items = 0)
+//mob -> robot
+/mob/proc/Robotize(var/delete_items = 0)
 	if (notransform)
 		return
 	for(var/obj/item/W in src)
@@ -300,8 +324,6 @@
 	canmove = 0
 	icon = null
 	invisibility = 101
-	for(var/t in organs)
-		qdel(t)
 
 	var/mob/living/silicon/robot/O = new /mob/living/silicon/robot( loc )
 
@@ -324,16 +346,18 @@
 			O.mind.store_memory("In case you look at this after being borged, the objectives are only here until I find a way to make them not show up for you, as I can't simply delete them without screwing up round-end reporting. --NeoFite")
 	else
 		O.key = key
+		
+	O.update_pipe_vision()
 
 	O.loc = loc
 	O.job = "Cyborg"
 	O.notify_ai(1)
 
-	. = O
 	qdel(src)
+	return O
 
-//human -> mommi
-/mob/living/carbon/human/proc/Mommize(var/delete_items = 0)
+//mob -> mommi
+/mob/proc/Mommize(var/delete_items = 0)
 	if (notransform)
 		return
 	for(var/obj/item/W in src)
@@ -346,8 +370,6 @@
 	canmove = 0
 	icon = null
 	invisibility = 101
-	for(var/t in organs)
-		qdel(t)
 
 	var/mob/living/silicon/robot/mommi/O = new /mob/living/silicon/robot/mommi( loc )
 
@@ -366,8 +388,9 @@
 	O.loc = loc
 	O.job = "MoMMI"
 	O.updateicon()
-	. = O
+	O.update_pipe_vision()
 	qdel(src)
+	return O
 
 
 //human -> alien
@@ -381,8 +404,7 @@
 	canmove = 0
 	icon = null
 	invisibility = 101
-	for(var/t in organs)
-		qdel(t)
+	qdel(organsystem)	//Until ayy lmaos have an organsystem
 
 	var/alien_caste = pick("Hunter","Sentinel","Drone")
 	var/mob/living/carbon/alien/humanoid/new_xeno
@@ -398,6 +420,7 @@
 	new_xeno.key = key
 
 	new_xeno << "<B>You are now an alien.</B>"
+	new_xeno.update_pipe_vision()
 	. = new_xeno
 	qdel(src)
 
@@ -411,8 +434,7 @@
 	canmove = 0
 	icon = null
 	invisibility = 101
-	for(var/t in organs)
-		qdel(t)
+	qdel(organsystem)
 
 	var/mob/living/carbon/slime/new_slime
 	if(reproduce)
@@ -429,6 +451,8 @@
 	new_slime.a_intent = "harm"
 	new_slime.key = key
 
+	new_slime.update_pipe_vision()
+	
 	new_slime << "<B>You are now a slime. Skreee!</B>"
 	. = new_slime
 	qdel(src)
@@ -458,13 +482,14 @@
 	canmove = 0
 	icon = null
 	invisibility = 101
-	for(var/t in organs)	//this really should not be necessary
-		qdel(t)
+	qdel(organsystem)
 
 	var/mob/living/simple_animal/corgi/new_corgi = new /mob/living/simple_animal/corgi (loc)
 	new_corgi.a_intent = "harm"
 	new_corgi.key = key
 
+	new_corgi.update_pipe_vision()
+	
 	new_corgi << "<B>You are now a Corgi. Yap Yap!</B>"
 	. = new_corgi
 	qdel(src)
@@ -489,8 +514,7 @@
 	icon = null
 	invisibility = 101
 
-	for(var/t in organs)
-		qdel(t)
+	qdel(organsystem)
 
 	var/mob/new_mob = new mobpath(src.loc)
 
@@ -499,6 +523,9 @@
 
 
 	new_mob << "You suddenly feel more... animalistic."
+
+	new_mob.update_pipe_vision()
+
 	. = new_mob
 	qdel(src)
 
@@ -516,6 +543,8 @@
 	new_mob.key = key
 	new_mob.a_intent = "harm"
 	new_mob << "You feel more... animalistic"
+	
+	new_mob.update_pipe_vision()
 
 	. = new_mob
 	qdel(src)

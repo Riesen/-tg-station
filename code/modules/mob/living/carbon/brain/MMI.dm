@@ -24,11 +24,11 @@
 	var/mob/living/carbon/brain/brainmob = null //The current occupant.
 	var/mob/living/silicon/robot = null //Appears unused.
 	var/obj/mecha = null //This does not appear to be used outside of reference in mecha.dm.
-	var/obj/item/organ/brain/brain = null //The actual brain
+	var/obj/item/organ/internal/brain/brain = null //The actual brain
 
 /obj/item/device/mmi/update_icon()
 	if(brain)
-		if(istype(brain,/obj/item/organ/brain/alien))
+		if(istype(brain,/obj/item/organ/internal/brain/alien))
 			icon_state = "mmi_alien"
 			braintype = "Xenoborg" //HISS....Beep.
 		else
@@ -105,6 +105,8 @@
 		M.cell.loc = M
 		src.loc = M//Should fix cybros run time erroring when blown up. It got deleted before, along with the frame.
 		M.mmi = src
+
+		M.initialize_killswitch() // Confine roboticist-build MoMMI to their z-level/service the station.
 		return TRUE
 	for(var/t in mommi_assembly_parts)
 		if(istype(O,t))
@@ -126,8 +128,8 @@
 /obj/item/device/mmi/attackby(var/obj/item/O as obj, var/mob/user as mob, params)
 	if(try_handling_mommi_construction(O,user))
 		return
-	if(istype(O,/obj/item/organ/brain)) //Time to stick a brain in it --NEO
-		var/obj/item/organ/brain/newbrain = O
+	if(istype(O,/obj/item/organ/internal/brain)) //Time to stick a brain in it --NEO
+		var/obj/item/organ/internal/brain/newbrain = O
 		if(brain)
 			user << "<span class='danger'>There's already a brain in the MMI!</span>"
 			return
@@ -150,8 +152,6 @@
 
 		name = "Man-Machine Interface: [brainmob.real_name]"
 		update_icon()
-
-		locked = 1
 
 		feedback_inc("cyborg_mmis_filled",1)
 
@@ -198,13 +198,14 @@
 	brainmob.container = src
 
 	if(istype(H))
-		var/obj/item/organ/brain/newbrain = H.getorgan(/obj/item/organ/brain)
-		newbrain.loc = src
-		brain = newbrain
+		var/datum/organ/internal/brain/B = H.get_organdatum("brain")
+		if(B && B.exists())
+			var/obj/item/organ/internal/brain/newbrain = B.organitem
+			newbrain.loc = src
+			brain = newbrain
 
 	name = "Man-Machine Interface: [brainmob.real_name]"
 	update_icon()
-	locked = 1
 	return
 
 /obj/item/device/mmi/radio_enabled

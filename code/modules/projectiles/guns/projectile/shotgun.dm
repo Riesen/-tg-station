@@ -83,7 +83,7 @@
 
 /obj/item/weapon/gun/projectile/shotgun/riot/attackby(var/obj/item/A as obj, mob/user as mob, params)
 	..()
-	if(istype(A, /obj/item/weapon/circular_saw) || istype(A, /obj/item/weapon/pickaxe/plasmacutter))
+	if(istype(A, /obj/item/weapon/circular_saw) || istype(A, /obj/item/weapon/gun/energy/plasmacutter))
 		sawoff(user)
 	if(istype(A, /obj/item/weapon/melee/energy))
 		var/obj/item/weapon/melee/energy/W = A
@@ -160,7 +160,7 @@
 		var/obj/item/weapon/melee/energy/W = A
 		if(W.active)
 			sawoff(user)
-	if(istype(A, /obj/item/weapon/circular_saw) || istype(A, /obj/item/weapon/pickaxe/plasmacutter))
+	if(istype(A, /obj/item/weapon/circular_saw) || istype(A, /obj/item/weapon/gun/energy/plasmacutter))
 		sawoff(user)
 
 /obj/item/weapon/gun/projectile/revolver/doublebarrel/attack_self(mob/living/user as mob)
@@ -239,7 +239,7 @@
 
 	sawn_state = SAWN_SAWING
 
-	if(do_after(user, 30))
+	if(do_after(user, 30, target = src))
 		user.visible_message("<span class='warning'>[user] shortens \the [src]!</span>", "<span class='warning'>You shorten \the [src]!</span>")
 		name = "sawn-off [src.name]"
 		desc = sawn_desc

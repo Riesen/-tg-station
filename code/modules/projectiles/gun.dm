@@ -10,13 +10,14 @@
 	item_state = "gun"
 	flags =  CONDUCT
 	slot_flags = SLOT_BELT
-	m_amt = 2000
+	materials = list(MAT_METAL=2000)
 	w_class = 3.0
 	throwforce = 5
 	throw_speed = 3
 	throw_range = 5
 	force = 5.0
 	origin_tech = "combat=1"
+	needs_permit = 1
 	attack_verb = list("struck", "hit", "bashed")
 
 	var/fire_sound = "gunshot"
@@ -203,9 +204,6 @@
 			sleep(fire_delay)
 
 	else
-		if(istype(src, /obj/item/weapon/gun/energy))
-			var/obj/item/weapon/gun/energy/G = src
-			G.newshot()
 		if(chambered)
 			if(!chambered.fire(target, user, params, , suppressed))
 				shoot_with_empty_chamber(user)
@@ -232,16 +230,89 @@
 		user.update_inv_r_hand(0)
 	return fired
 
+// Similar to the above proc, but does not require a user, which is ideal for things like turrets.
+/obj/item/weapon/gun/proc/Fire_userless(atom/target)
+	if(!target)
+		return
+
+	if(world.time < semicd)
+		return
+
+	var/shoot_time = (burst_size - 1)* fire_delay
+	semicd = world.time + shoot_time
+
+	var/turf/targloc = get_turf(target) //cache this in case target gets deleted during shooting, e.g. if it was a securitron that got destroyed.
+	for(var/i in 1 to burst_size)
+		var/obj/projectile = process_chamber()
+		if(!projectile)
+			src.visible_message("<span class='danger'>*click*</span>")
+			//handle_click_empty()
+			break
+
+		if(istype(projectile, /obj/item/projectile))
+			var/obj/item/projectile/P = projectile
+
+			//Not supported, maybe later
+			/*
+			var/acc = burst_accuracy[min(i, burst_accuracy.len)]
+			var/disp = dispersion[min(i, dispersion.len)]
+
+			P.accuracy = accuracy + acc
+			P.dispersion = disp
+			*/
+			P.firer = src.name
+			P.suppressed = suppressed
+
+			P.original = target
+			P.fire()
+
+			if(suppressed)
+				playsound(src, fire_sound, 10, 1)
+			else
+				playsound(src, fire_sound, 50, 1)
+
+			//if(muzzle_flash) //Not supported, maybe later
+				//set_light(muzzle_flash)
+			update_icon()
+
+		//process_accuracy(projectile, user, target, acc, disp)
+
+	//	if(pointblank)
+	//		process_point_blank(projectile, user, target)
+
+	//	if(process_projectile(projectile, null, target, user.zone_sel.selecting, clickparams))
+	//		handle_post_fire(null, target, pointblank, reflex)
+
+	//	update_icon()
+
+		if(i < burst_size)
+			sleep(fire_delay)
+
+		if(!(target && target.loc))
+			target = targloc
+			//pointblank = 0
+
+	//log_and_message_admins("Fired [src].")
+
+	//admin_attack_log(usr, attacker_message="Fired [src]", admin_message="fired a gun ([src]) (MODE: [src.mode_name]) [reflex ? "by reflex" : "manually"].")
+
+	//update timing
+	semicd = world.time + fire_delay
+
+	//if(muzzle_flash)
+		//set_light(0)
+
 
 /obj/item/weapon/gun/attack(mob/M as mob, mob/user)
 	if (M == user && user.zone_sel.selecting == "mouth" && !mouthshoot && ishuman(user)) //Handle gun suicide
-	/*	if(istype(M.wear_mask, /obj/item/clothing/mask/happy)) No happy mask in tg (yet)
-			M << "<span class='sinister'>BUT WHY? I'M SO HAPPY!</span>"
-			return */
+		var/mob/living/carbon/human/H = M
+		if(istype(H.wear_mask, /obj/item/clothing/mask/happy))
+			H << "<span class='sinister'>BUT WHY? I'M SO HAPPY!</span>"
+			return
 		if(src.can_trigger_gun(M)) //fug firing pins
 			mouthshoot = 1
 			M.visible_message("<span class='warning'>[user] sticks their gun in their mouth, ready to pull the trigger...</span>")
-			if(!do_after(user, 40))
+			if(!do_after(user, 40, target = M))
 				M.visible_message("<span class='notice'>[user] decided life was worth living</span>")
 				mouthshoot = 0
 				return
@@ -273,7 +344,7 @@
 				user.drop_item()
 				user << "<span class='notice'>You click [S] into place on [src].</span>"
 				if(S.on)
-					SetLuminosity(0)
+					set_light(0)
 				F = S
 				A.loc = src
 				update_icon()
@@ -323,35 +394,15 @@
 	if(F)
 		action_button_name = "Toggle Gunlight"
 		if(F.on)
-			if(loc == user)
-				user.AddLuminosity(F.brightness_on)
-			else if(isturf(loc))
-				SetLuminosity(F.brightness_on)
+			set_light(F.brightness_on)
 		else
-			if(loc == user)
-				user.AddLuminosity(-F.brightness_on)
-			else if(isturf(loc))
-				SetLuminosity(0)
+			set_light(0)
 		update_icon()
 	else
 		action_button_name = null
-		if(loc == user)
-			user.AddLuminosity(-5)
-		else if(isturf(loc))
-			SetLuminosity(0)
+		set_light(0)
 		return
 
-/obj/item/weapon/gun/pickup(mob/user)
-	if(F)
-		if(F.on)
-			user.AddLuminosity(F.brightness_on)
-			SetLuminosity(0)
-
-/obj/item/weapon/gun/dropped(mob/user)
-	if(F)
-		if(F.on)
-			user.AddLuminosity(-F.brightness_on)
-			SetLuminosity(F.brightness_on)
 
 
 /obj/item/weapon/gun/attack_hand(mob/user as mob)
@@ -381,3 +432,14 @@
 		name = input
 		M << "You name the gun [input]. Say hello to your new friend."
 		return
+
+
+/obj/item/weapon/gun/CheckParts(list/parts_list)
+	..()
+	var/obj/item/weapon/gun/G = locate(/obj/item/weapon/gun) in contents
+	if(G)
+		G.loc = loc
+		qdel(G.pin)
+		G.pin = null
+		visible_message("[G] can now fit a new pin, but old one was destroyed in the process.")
+		qdel(src)

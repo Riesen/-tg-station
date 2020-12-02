@@ -3,8 +3,8 @@
 /obj/machinery/computer/monitor
 	name = "power monitoring console"
 	desc = "It monitors power levels across the station."
-	icon = 'icons/obj/computer.dmi'
-	icon_state = "power"
+	icon_screen = "power"
+	icon_keyboard = "power_key"
 	density = 1
 	anchored = 1
 	use_power = 2
@@ -32,6 +32,15 @@
 			attached = locate() in T
 		if(attached)
 			powernet = attached.get_powernet()
+	return
+
+/obj/machinery/computer/monitor/proc/forceupdate() //Fucking powernets, how do they work?
+	var/obj/structure/cable/attached = null
+	var/turf/T = loc
+	if(isturf(T))
+		attached = locate() in T
+	if(attached)
+		powernet = attached.get_powernet()
 	return
 
 /obj/machinery/computer/monitor/attack_hand(mob/user)
@@ -95,5 +104,6 @@
 		usr.unset_machine()
 		return
 	if( href_list["update"] )
+		src.forceupdate()
 		src.updateDialog()
 		return

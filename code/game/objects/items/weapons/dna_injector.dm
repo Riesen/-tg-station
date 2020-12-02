@@ -39,6 +39,10 @@
 			if(fields["UI"])	//UI+UE
 				M.dna.uni_identity = merge_text(M.dna.uni_identity, fields["UI"])
 				updateappearance(M)
+
+		if(M && M.organsystem)
+			M.organsystem.set_dna(M.dna)
+
 		log_attack(log_msg)
 	else
 		user << "<span class='notice'>It appears that [M] does not have compatible DNA.</span>"
@@ -47,6 +51,9 @@
 /obj/item/weapon/dnainjector/attack(mob/target, mob/user)
 	if(!user.IsAdvancedToolUser())
 		user << "<span class='notice'>You don't have the dexterity to do this!</span>"
+		return
+	if(is_blind(user) && user != target)
+		user << "<span class='notice'>You can't see [target]!</span>"
 		return
 	add_logs(user, target, "attempted to inject", object="[name]")
 

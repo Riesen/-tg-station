@@ -13,28 +13,17 @@
 
 /mob/living/silicon/ai/compose_job(atom/movable/speaker, message_langs, raw_message, radio_freq)
 	//Also includes the </a> for AI hrefs, for convenience.
-	return " [radio_freq ? "(" + speaker.GetJob() + ")" : ""]" + "[speaker.GetSource() ? "</a>" : ""]"
+	return "[radio_freq ? " (" + speaker.GetJob() + ")" : ""]" + "[speaker.GetSource() ? "</a>" : ""]"
 
-/mob/living/silicon/ai/say_quote(var/text)
-	var/ending = copytext(text, length(text))
-
-	if(ending == "?")
-		return "queries, \"<span class = 'robot'>[text]</span>\"";
-	else if(copytext(text, length(text) - 1) == "!!")
-		return "alarms, \"<span class = 'robot'><span class = 'yell'>[text]</span></span>\"";
-	else if(ending == "!")
-		return "declares, \"[text]\"";
-
-	return "states, \"<span class = 'robot'>[text]</span>\"";
 
 /mob/living/silicon/ai/IsVocal()
 	return !config.silent_ai
 
-/mob/living/silicon/ai/radio(message, message_mode)
+/mob/living/silicon/ai/radio(message, message_mode, list/spans)
 	if(!radio_enabled || aiRestorePowerRoutine || stat) //AI cannot speak if radio is disabled (via intellicard) or depowered.
 		src << "<span class='danger'>Your radio transmitter is offline!</span>"
 		return 0
-	..(message,message_mode)
+	..()
 
 /mob/living/silicon/ai/get_message_mode(message)
 	if(copytext(message, 1, 3) in list(":h", ":H", ".h", ".H", "#h", "#H"))
@@ -106,7 +95,7 @@ var/const/VOX_DELAY = 600
 		src << "<span class='notice'>Please wait [round((announcing_vox - world.time) / 10)] seconds.</span>"
 		return
 
-	var/message = input(src, "WARNING: Misuse of this verb can result in you being job banned. More help is available in 'Announcement Help'", "Announcement", src.last_announcement) as text
+	var/message = stripped_input(src, "WARNING: Misuse of this verb can result in you being job banned. More help is available in 'Announcement Help'", "Announcement", src.last_announcement)
 
 	last_announcement = message
 
@@ -120,7 +109,7 @@ var/const/VOX_DELAY = 600
 		src << "<span class='notice'>Wireless interface disabled, unable to interact with announcement PA.</span>"
 		return
 
-	var/list/words = text2list(trim(message), " ")
+	var/list/words = splittext(trim(message), " ")
 	var/list/incorrect_words = list()
 
 	if(words.len > 30)

@@ -9,6 +9,7 @@
 	var/custom_name = ""
 	designation = "Default" //used for displaying the prefix & getting the current module of cyborg
 	var/braintype = "Cyborg"
+	has_limbs = 1
 
 //Hud stuff
 
@@ -60,6 +61,8 @@
 	var/tonermax = 40
 	var/jetpackoverlay = 0
 
+	var/magpulse = 0
+
 /mob/living/silicon/robot/New(loc)
 
 	if(ismommi(src))
@@ -106,7 +109,7 @@
 	//MMI stuff. Held togheter by magic. ~Miauw
 	if(!mmi || !mmi.brainmob)
 		mmi = new(src)
-		mmi.brain = new /obj/item/organ/brain(mmi)
+		mmi.brain = new /obj/item/organ/internal/brain(mmi)
 		mmi.brain.name = "[real_name]'s brain"
 		mmi.locked = 1
 		mmi.icon_state = "mmi_full"
@@ -257,6 +260,15 @@
 	set name = "Show Alerts"
 	robot_alerts()
 
+/mob/living/silicon/robot/verb/cmd_toggle_magpulse()
+	set category = "Robot Commands"
+	set name = "Toggle magnetic traction"
+	magpulse = !magpulse
+	if(magpulse)
+		src << "<span class='notice'>Switched on magnetic traction.</span>"
+	else
+		src << "<span class='notice'>Switched off magnetic traction.</span>"
+
 //for borg hotkeys, here module refers to borg inv slot, not core module
 /mob/living/silicon/robot/verb/cmd_toggle_module(module as num)
 	set name = "Toggle Module"
@@ -402,8 +414,8 @@
 
 
 /mob/living/silicon/robot/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
-	if (ismommi(user))
-		var/mob/living/silicon/robot/mommi/R = user
+	if (issilicon(user))
+		var/mob/living/silicon/R = user
 		if (!R.can_interfere(src))
 			user << "<span class ='warning'>Your laws prevent you from doing this</span>"
 			return
@@ -418,13 +430,13 @@
 			user << "<span class='warning'>You lack the reach to be able to repair yourself.</span>"
 			return 1
 		if (src.health >= src.maxHealth)
-			user << "<span class='warning'>[src] is already in good condition.</span>"
+			user << "<span class='warning'>[src.name] is already in good condition.</span>"
 			return 1
 		if (WT.remove_fuel(0, user))
 			adjustBruteLoss(-30)
 			updatehealth()
 			add_fingerprint(user)
-			visible_message("<span class='notice'>[user] has fixed some of the dents on [src].</span>")
+			visible_message("<span class='notice'>[user] has fixed some of the dents on [src.name].</span>")
 			return 0
 		else
 			user << "<span class='warning'>The welder must be on for this task.</span>"
@@ -435,9 +447,9 @@
 		if (coil.use(1))
 			adjustFireLoss(-30)
 			updatehealth()
-			visible_message("<span class='notice'>[user] has fixed some of the burnt wires on [src].</span>")
+			visible_message("<span class='notice'>[user] has fixed some of the burnt wires on [src.name].</span>")
 		else
-			user << "<span class='warning'>You need one length of cable to repair [src].</span>"
+			user << "<span class='warning'>You need one length of cable to repair [src.name].</span>"
 
 	else if (istype(W, /obj/item/weapon/crowbar))	// crowbar means open or close the cover
 		if(opened)
@@ -467,6 +479,8 @@
 
 	else if (istype(W, /obj/item/weapon/wirecutters) || istype(W, /obj/item/device/multitool) || istype(W, /obj/item/device/assembly/signaler))
 		if (wiresexposed)
+			if(!wires)
+				return
 			wires.Interact(user)
 		else
 			user << "You can't reach the wiring."
@@ -490,12 +504,15 @@
 			return
 		else
 			playsound(src, 'sound/items/Ratchet.ogg', 50, 1)
-			if(do_after(user, 50) && !cell)
+			if(do_after(user, 50, target = src) && !cell)
 				user.visible_message("<span class='danger'>[user] deconstructs [src]!</span>", "<span class='notice'>You unfasten the securing bolts, and [src] falls to pieces!</span>")
 				deconstruct()
 
 	else if(istype(W, /obj/item/weapon/aiModule))
 		var/obj/item/weapon/aiModule/MOD = W
+		if(ismommi(src) && src.scrambledcodes)
+			user << "You cannot use this module with a MoMMI"
+			return
 		if(!opened)
 			user << "You need access to the robot's insides to do that."
 			return
@@ -531,6 +548,9 @@
 				user << "<span class='danger'>Access denied.</span>"
 
 	else if(istype(W, /obj/item/borg/upgrade/))
+		if(ismommi(src))
+			user << "You cannot use this upgrade with a MoMMI"
+			return
 		var/obj/item/borg/upgrade/U = W
 		if(!opened)
 			usr << "You must access the borgs internals!"
@@ -585,6 +605,7 @@
 					SetEmagged(1)
 					SetLockdown(1) //Borgs were getting into trouble because they would attack the emagger before the new laws were shown
 					lawupdate = 0
+					keeper = 0
 					connected_ai = null
 					user << "You emag [src]'s interface."
 					message_admins("[key_name_admin(user)] emagged cyborg [key_name_admin(src)].  Laws overridden.")
@@ -654,7 +675,7 @@
 
 /mob/living/silicon/robot/attack_slime(mob/living/carbon/slime/M as mob)
 	if(..()) //successful slime shock
-		flick("noise", flash)
+		flash_eyes()
 		var/stunprob = M.powerlevel * 7 + 10
 		if(prob(stunprob) && M.powerlevel >= 8)
 			adjustBruteLoss(M.powerlevel * rand(6,10))
@@ -681,8 +702,8 @@
 			return
 
 		if(cell)
-			if(ismommi(user))
-				var/mob/living/silicon/robot/mommi/R = user
+			if(issilicon(user))
+				var/mob/living/silicon/R = user
 				if(R.keeper)
 					user << "<span class ='warning'>Your laws prevent you from doing this</span>"
 					return
@@ -1107,3 +1128,17 @@
 			sight_mode = 0
 			remove_med_sec_hud()
 			src << "Sensor augmentations disabled."
+
+/mob/living/silicon/robot/singularity_pull(S)
+	if(mob_negates_gravity())
+		return
+	..()
+
+/mob/living/silicon/robot/proc/unrestrict()	//Only used by MoMMIs for now
+	return 0
+
+/mob/living/silicon/robot/experience_pressure_difference()
+	playsound(src, 'sound/effects/space_wind.ogg', 50, 1)
+	if(magpulse)
+		return 0
+	. = ..()

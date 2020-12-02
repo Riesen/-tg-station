@@ -31,6 +31,8 @@
 	interact(user)
 
 /obj/machinery/artifact_analyser/interact(mob/user)
+	if(!owned_scanner)
+		reconnect_scanner()
 	if(..()) return
 	if(stat & (NOPOWER|BROKEN) || get_dist(src, user) > 1)
 		user.unset_machine(src)
@@ -85,8 +87,8 @@
 
 		if(scanned_object && istype(scanned_object, /obj/machinery/artifact))
 			var/obj/machinery/artifact/A = scanned_object
+			A.user = null
 			A.anchored = 0
-			A.being_used = 0
 
 /obj/machinery/artifact_analyser/Topic(href, href_list)
 	if(..()) return
@@ -102,11 +104,11 @@
 					continue
 				if(istype(scanned_object, /obj/machinery/artifact))
 					var/obj/machinery/artifact/A = scanned_object
-					if(A.being_used)
+					if(A.user)
 						artifact_in_use = 1
 					else
+						A.user = src
 						A.anchored = 1
-						A.being_used = 1
 
 				if(artifact_in_use)
 					src.visible_message("<b>[name]</b> states, \"Cannot harvest. Too much interference.\"")

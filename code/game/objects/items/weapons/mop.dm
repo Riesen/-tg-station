@@ -18,7 +18,7 @@
 	create_reagents(mopcap)
 
 
-obj/item/weapon/mop/proc/clean(turf/simulated/A)
+/obj/item/weapon/mop/proc/clean(turf/simulated/A)
 	if(reagents.has_reagent("water", 1) || reagents.has_reagent("holywater", 1))
 		A.clean_blood()
 		var/turf/simulated/floor/F = A
@@ -45,7 +45,7 @@ obj/item/weapon/mop/proc/clean(turf/simulated/A)
 	if(istype(turf))
 		user.visible_message("<span class='warning'>[user] begins to clean \the [turf] with [src].</span>")
 
-		if(do_after(user, mopspeed))
+		if(do_after(user, mopspeed, target = turf))
 			clean(turf)
 			user << "<span class='notice'>You have finished mopping!</span>"
 

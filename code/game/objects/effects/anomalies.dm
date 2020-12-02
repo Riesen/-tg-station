@@ -8,11 +8,11 @@
 	unacidable = 1
 	density = 0
 	anchored = 1
-	luminosity = 3
+	light_range = 3
 	var/obj/item/device/assembly/signaler/anomaly/aSignal = null
 
 /obj/effect/anomaly/New()
-	SetLuminosity(initial(luminosity))
+	set_light(initial(light_range))
 	aSignal = new(src)
 	aSignal.code = rand(1,100)
 
@@ -27,7 +27,7 @@
 
 
 /obj/effect/anomaly/proc/anomalyNeutralize()
-	PoolOrNew(/obj/effect/effect/bad_smoke, loc)
+	PoolOrNew(/obj/effect/effect/smoke/bad, loc)
 
 	for(var/atom/movable/O in src)
 		O.loc = src.loc
@@ -44,7 +44,7 @@
 /obj/effect/anomaly/grav
 	name = "gravitational anomaly"
 	icon_state = "shield2"
-	density = 1
+	density = 0
 	var/boing = 0
 
 /obj/effect/anomaly/grav/New()
@@ -60,12 +60,20 @@
 			step_towards(O,src)
 	for(var/mob/living/M in orange(4, src))
 		step_towards(M,src)
+	for(var/obj/O in range(2,src))
+		if(!O.anchored)
+			var/mob/living/target = locate() in view(10,src)
+			if(target)
+				O.throw_at(target, 5, 10)
 
 /obj/effect/anomaly/grav/Bump(mob/A)
 	gravShock(A)
 	return
 
 /obj/effect/anomaly/grav/Bumped(mob/A)
+	gravShock(A)
+	return
+/obj/effect/anomaly/grav/Crossed(mob/A)
 	gravShock(A)
 	return
 
@@ -177,3 +185,59 @@
 	if( T && istype(T,/turf/simulated) && prob(turf_removal_chance) )
 		T.ex_act(ex_act_force)
 	return
+
+
+
+/obj/effect/timestop
+	anchored = 1
+	name = "chronofield"
+	desc = "ZA WARUDO"
+	icon = 'icons/effects/160x160.dmi'
+	icon_state = "time"
+	layer = FLY_LAYER
+	pixel_x = -64
+	pixel_y = -64
+	unacidable = 1
+	var/mob/living/immune = null // the one who creates the timestop is immune
+	var/freezerange = 2
+	var/duration = 140
+
+/obj/effect/timestop/New()
+	..()
+	timestop()
+
+
+/obj/effect/timestop/proc/timestop()
+	playsound(get_turf(src), 'sound/magic/TIMEPARADOX2.ogg', 100, 1, -1)
+	while(loc)
+		if(duration)
+			for(var/mob/living/M in orange (freezerange, src.loc))
+				if(M == immune)
+					continue
+				M.stunned = 10
+				M.anchored = 1
+				if(istype(M, /mob/living/simple_animal/hostile))
+					var/mob/living/simple_animal/hostile/H = M
+					H.AIStatus = AI_OFF
+					H.LoseTarget()
+					H.stop_automated_movement = 1
+					continue
+			for(var/atom/movable/P in orange (freezerange, src.loc))
+				if(P == immune)
+					continue
+				P.paused = TRUE
+			duration --
+		else
+			for(var/mob/living/M in orange (freezerange+2, src.loc)) //longer range incase they lag out of it or something
+				M.stunned = 0
+				M.anchored = 0
+				if(istype(M, /mob/living/simple_animal/hostile))
+					var/mob/living/simple_animal/hostile/H = M
+					H.AIStatus = initial(H.AIStatus)
+					H.stop_automated_movement = initial(H.stop_automated_movement)
+					continue
+			for(var/atom/movable/P in orange(freezerange+2, src.loc))
+				P.paused = FALSE
+			qdel(src)
+			return
+		sleep(1)

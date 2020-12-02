@@ -16,6 +16,9 @@
 	var/stack_list[0] //Key: Type.  Value: Instance of type.
 	var/obj/item/weapon/card/id/inserted_id
 	var/points = 0
+	var/ore_pickup_rate = 15
+	var/sheet_per_ore = 1
+	var/point_upgrade = 1
 	var/list/ore_values = list(("sand" = 1), ("iron" = 1), ("gold" = 20), ("silver" = 20), ("uranium" = 20), ("bananium" = 30), ("diamond" = 40), ("plasma" = 40))
 
 /obj/machinery/mineral/ore_redemption/New()
@@ -23,9 +26,28 @@
 	component_parts = list()
 	component_parts += new /obj/item/weapon/circuitboard/ore_redemption(null)
 	component_parts += new /obj/item/weapon/stock_parts/matter_bin(null)
+	component_parts += new /obj/item/weapon/stock_parts/manipulator(null)
+	component_parts += new /obj/item/weapon/stock_parts/micro_laser(null)
 	component_parts += new /obj/item/device/assembly/igniter(null)
 	component_parts += new /obj/item/weapon/stock_parts/console_screen(null)
 	RefreshParts()
+
+/obj/machinery/mineral/ore_redemption/RefreshParts()
+	var/ore_pickup_rate_temp = 15
+	var/point_upgrade_temp = 1
+	var/sheet_per_ore_temp = 1
+	for(var/obj/item/weapon/stock_parts/matter_bin/B in component_parts)
+		if (B.rating > 2)
+			sheet_per_ore_temp = 2
+		if (B.rating <= 2)
+			sheet_per_ore_temp = 1
+	for(var/obj/item/weapon/stock_parts/manipulator/M in component_parts)
+		ore_pickup_rate_temp = 15 * M.rating
+	for(var/obj/item/weapon/stock_parts/micro_laser/L in component_parts)
+		point_upgrade_temp = L.rating
+	ore_pickup_rate = ore_pickup_rate_temp
+	point_upgrade = point_upgrade_temp
+	sheet_per_ore = sheet_per_ore_temp
 
 /obj/machinery/mineral/ore_redemption/proc/process_sheet(obj/item/weapon/ore/O)
 	var/obj/item/stack/sheet/processed_sheet = SmeltMineral(O)
@@ -40,7 +62,7 @@
 					if(D.department == "Science" || D.department == "Robotics" || D.department == "Research Director's Desk" || (D.department == "Chemistry" && (s.name == "uranium" || s.name == "solid plasma")))
 						D.createmessage("Ore Redemption Machine", "New minerals available!", msg, 1, 0)
 		var/obj/item/stack/sheet/storage = stack_list[processed_sheet]
-		storage.amount += 1 //Stack the sheets
+		storage.amount += sheet_per_ore //Stack the sheets
 		O.loc = null //Let the old sheet...
 		qdel(O) //... garbage collect
 
@@ -50,7 +72,7 @@
 		var/i
 		if(T)
 			if(locate(/obj/item/weapon/ore) in T)
-				for (i = 0; i < 10; i++)
+				for (i = 0; i < ore_pickup_rate; i++)
 					var/obj/item/weapon/ore/O = locate() in T
 					if(O)
 						process_sheet(O)
@@ -59,7 +81,7 @@
 			else
 				var/obj/structure/ore_box/B = locate() in T
 				if(B)
-					for (i = 0; i < 10; i++)
+					for (i = 0; i < ore_pickup_rate; i++)
 						var/obj/item/weapon/ore/O = locate() in B.contents
 						if(O)
 							process_sheet(O)
@@ -75,6 +97,14 @@
 			inserted_id = I
 			interact(user)
 		return
+	if(exchange_parts(user, W))
+		return
+
+	if(default_pry_open(W))
+		return
+
+	if(default_unfasten_wrench(user, W))
+		return
 	if(default_deconstruction_screwdriver(user, "ore_redemption-open", "ore_redemption", W))
 		updateUsrDialog()
 		return
@@ -88,7 +118,7 @@
 /obj/machinery/mineral/ore_redemption/proc/SmeltMineral(var/obj/item/weapon/ore/O)
 	if(O.refined_type)
 		var/obj/item/stack/sheet/M = O.refined_type
-		points += O.points
+		points += O.points * point_upgrade
 		return M
 	qdel(O)//No refined type? Purge it.
 	return
@@ -429,7 +459,7 @@
 	else
 		user.visible_message("<span class='notice'>[user.name] activates the [src.name]!</span>")
 		var/list/L = list()
-		for(var/obj/item/device/radio/beacon/B in world)
+		for(var/obj/item/device/beacon/B in beacons)
 			var/turf/T = get_turf(B)
 			if(T.z == ZLEVEL_STATION)
 				L += B
@@ -562,6 +592,7 @@
 /**********************Facehugger toy**********************/
 
 /obj/item/clothing/mask/facehugger/toy
+	item_state = "facehugger_inactive"
 	desc = "A toy often used to play pranks on other miners by putting it in their beds. It takes a bit to recharge after latching onto something."
 	throwforce = 0
 	real = 0
@@ -584,14 +615,7 @@
 	mouse_opacity = 1
 	faction = list("neutral")
 	a_intent = "harm"
-	min_oxy = 0
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 0
-	min_co2 = 0
-	max_co2 = 0
-	min_n2 = 0
-	max_n2 = 0
+	atmos_requirements = list("min_oxy" = 0, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
 	minbodytemp = 0
 	wander = 0
 	idle_vision_range = 5
@@ -633,7 +657,7 @@
 		return
 	..()
 
-/mob/living/simple_animal/hostile/mining_drone/Die()
+/mob/living/simple_animal/hostile/mining_drone/death()
 	..()
 	visible_message("<span class='danger'>[src] is destroyed!</span>")
 	new /obj/effect/decal/cleanable/robot_debris(src.loc)
@@ -780,23 +804,10 @@
 		cooldown = 1
 		spawn(40)
 			cooldown = 0
-		var/client/C = user.client
-		var/list/L = list()
-		var/turf/simulated/mineral/M
-		for(M in range(7, user))
-			if(M.scan_state)
-				L += M
-		if(!L.len)
-			user << "<span class='info'>[src] reports that nothing was detected nearby.</span>"
-			return
-		else
-			for(M in L)
-				var/turf/T = get_turf(M)
-				var/image/I = image('icons/turf/walls.dmi', loc = T, icon_state = M.scan_state, layer = 18)
-				C.images += I
-				spawn(30)
-					if(C)
-						C.images -= I
+		var/list/mobs = list()
+		mobs |= user
+		mineral_scan_pulse(mobs, get_turf(user))
+
 
 //Debug item to identify all ore spread quickly
 /obj/item/device/mining_scanner/admin
@@ -820,28 +831,30 @@
 /obj/item/device/t_scanner/adv_mining_scanner/scan()
 	if(!cooldown)
 		cooldown = 1
-		spawn(60)
+		spawn(35)
 			cooldown = 0
 		var/turf/t = get_turf(src)
 		var/list/mobs = recursive_mob_check(t, 1,0,0)
 		if(!mobs.len)
 			return
-		var/list/L = list()
-		var/turf/simulated/mineral/M
-		for(M in range(7, t))
-			if(M.scan_state)
-				L += M
-		if(L.len)
-			for(var/mob/user in mobs)
-				if(user.client)
-					var/client/C = user.client
-					for(M in L)
-						var/turf/T = get_turf(M)
-						var/image/I = image('icons/turf/walls.dmi', loc = T, icon_state = M.scan_state, layer = 18)
-						C.images += I
-						spawn(30)
-							if(C)
-								C.images -= I
+		mineral_scan_pulse(mobs, t)
+
+/proc/mineral_scan_pulse(list/mobs, turf/T, range = world.view)
+	var/list/minerals = list()
+	for(var/turf/simulated/mineral/M in range(range, T))
+		if(M.scan_state)
+			minerals += M
+	if(minerals.len)
+		for(var/mob/user in mobs)
+			if(user.client)
+				var/client/C = user.client
+				for(var/turf/simulated/mineral/M in minerals)
+					var/turf/F = get_turf(M)
+					var/image/I = image('icons/turf/mining.dmi', loc = F, icon_state = M.scan_state, layer = 18)
+					C.images += I
+					spawn(30)
+						if(C)
+							C.images -= I
 
 /**********************Xeno Warning Sign**********************/
 /obj/structure/sign/xeno_warning_mining

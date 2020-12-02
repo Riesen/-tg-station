@@ -15,7 +15,7 @@ Quartermaster
 	default_pda = /obj/item/device/pda/quartermaster
 	default_headset = /obj/item/device/radio/headset/headset_cargo
 
-	access = list(access_maint_tunnels, access_mailsorting, access_cargo, access_cargo_bot, access_qm, access_mining, access_mining_station, access_mineral_storeroom)
+	access = list(access_maint_tunnels, access_mailsorting, access_cargo, access_cargo_bot, access_qm, access_mining, access_mining_station, access_mineral_storeroom,access_heads,access_hop)
 	minimal_access = list(access_maint_tunnels, access_mailsorting, access_cargo, access_cargo_bot, access_qm, access_mining, access_mining_station, access_mineral_storeroom)
 
 /datum/job/qm/equip_items(var/mob/living/carbon/human/H)
@@ -186,6 +186,8 @@ Botanist
 	selection_color = "#bbe291"
 
 	default_pda = /obj/item/device/pda/botanist
+	default_backpack = /obj/item/weapon/storage/backpack/botany
+	default_satchel = /obj/item/weapon/storage/backpack/satchel_hyd
 	default_headset = /obj/item/device/radio/headset/headset_srv
 
 	access = list(access_hydroponics, access_bar, access_kitchen, access_morgue) // Removed tox and chem access because STOP PISSING OFF THE CHEMIST GUYS // //Removed medical access because WHAT THE FUCK YOU AREN'T A DOCTOR YOU GROW WHEAT //Given Morgue access because they have a viable means of cloning.

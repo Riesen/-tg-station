@@ -3,22 +3,13 @@
 	caste = "s"
 	maxHealth = 125
 	health = 125
-	storedPlasma = 100
-	max_plasma = 250
 	icon_state = "aliens_s"
-	plasma_rate = 10
 
 
-/mob/living/carbon/alien/humanoid/sentinel/New()
-	create_reagents(100)
-	if(name == "alien sentinel")
-		name = text("alien sentinel ([rand(1, 1000)])")
-	real_name = name
+/mob/living/carbon/alien/humanoid/sentinel/New(loc, var/datum/organsystem/alienlarva/oldorgans)
+	organsystem = new/datum/organsystem/humanoid/alien/sentinel(src, oldorgans)
 
-	AddAbility(new/obj/effect/proc_holder/alien/acid(null))
-	AddAbility(new/obj/effect/proc_holder/alien/neurotoxin(null))
-
-	..()
+	..(loc)
 
 /mob/living/carbon/alien/humanoid/sentinel/handle_hud_icons_health()
 	if (healths)

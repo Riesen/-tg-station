@@ -1,5 +1,9 @@
 // reference: /client/proc/modify_variables(var/atom/O, var/param_var_name = null, var/autodetect_class = 0)
 
+datum/proc/on_varedit(modified_var) //called whenever a var is edited
+	return
+
+
 /client/proc/debug_variables(datum/D in world)
 	set category = "Debug"
 	set name = "View Variables"
@@ -237,6 +241,7 @@
 
 
 	body += "<option value='?_src_=vars;mark_object=\ref[D]'>Mark Object</option>"
+	body += "<option value='?_src_=vars;proc_call=\ref[D]'>Call Proc</option>"
 	if(ismob(D))
 		body += "<option value='?_src_=vars;mob_player_panel=\ref[D]'>Show player panel</option>"
 
@@ -251,10 +256,12 @@
 		body += "<option value='?_src_=vars;direct_control=\ref[D]'>Assume Direct Control</option>"
 		body += "<option value='?_src_=vars;drop_everything=\ref[D]'>Drop Everything</option>"
 		body += "<option value='?_src_=vars;regenerateicons=\ref[D]'>Regenerate Icons</option>"
-		if(ishuman(D))
+		if(iscarbon(D))
 			body += "<option value>---</option>"
-			body += "<option value='?_src_=vars;setspecies=\ref[D]'>Set Species</option>"
+			body += "<option value='?_src_=vars;editorgans=\ref[D]'>Modify organs</option>"
 			body += "<option value='?_src_=vars;makeai=\ref[D]'>Make AI</option>"
+		if(ishuman(D))
+			body += "<option value='?_src_=vars;setspecies=\ref[D]'>Set Species</option>"
 			body += "<option value='?_src_=vars;makerobot=\ref[D]'>Make cyborg</option>"
 			body += "<option value='?_src_=vars;makemommi=\ref[D]'>Make MoMMI</option>"
 			body += "<option value='?_src_=vars;makemonkey=\ref[D]'>Make monkey</option>"
@@ -443,6 +450,15 @@ body
 
 		src.holder.marked_datum = D
 		href_list["datumrefresh"] = href_list["mark_object"]
+
+	else if(href_list["proc_call"])
+		if(!check_rights(0))    return
+
+		var/T = locate(href_list["proc_call"])
+
+		if(T)
+			callproc_datum(T)
+
 
 	else if(href_list["regenerateicons"])
 		if(!check_rights(0))	return
@@ -691,6 +707,17 @@ body
 				if("left")	A.dir = turn(A.dir, 45)
 			href_list["datumrefresh"] = href_list["rotatedatum"]
 
+		else if(href_list["editorgans"])
+			if(!check_rights(0))	return
+
+			var/mob/living/carbon/C = locate(href_list["editorgans"])
+			if(!istype(C))
+				usr << "This can only be done to instances of type /mob/living/carbon"
+				return
+
+			manipulate_organs(C)
+			href_list["datumrefresh"] = href_list["editorgans"]
+
 		else if(href_list["makehuman"])
 			if(!check_rights(R_SPAWN))	return
 
@@ -779,7 +806,7 @@ body
 		else if(href_list["makeai"])
 			if(!check_rights(R_SPAWN))	return
 
-			var/mob/living/carbon/human/H = locate(href_list["makeai"])
+			var/mob/living/carbon/H = locate(href_list["makeai"])
 			if(!istype(H))
 				usr << "This can only be done to instances of type /mob/living/carbon/human"
 				return

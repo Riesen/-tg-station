@@ -58,17 +58,17 @@
 	viewers(user) << "<span class='suicide'>[user] is huffing the [src.name]! It looks like \he's trying to commit suicide.</span>"
 	return (TOXLOSS)
 
-/obj/item/weapon/minihoe // -- Numbers
-	name = "mini hoe"
+/obj/item/weapon/cultivator // -- Numbers
+	name = "cultivator"
 	desc = "It's used for removing weeds or scratching your back."
 	icon = 'icons/obj/weapons.dmi'
-	icon_state = "hoe"
-	item_state = "hoe"
+	icon_state = "cultivator"
+	item_state = "cultivator"
 	flags = CONDUCT
 	force = 5.0
 	throwforce = 7.0
 	w_class = 2.0
-	m_amt = 50
+	materials = list(MAT_METAL=50)
 	attack_verb = list("slashed", "sliced", "cut", "clawed")
 	hitsound = 'sound/weapons/bladeslice.ogg'
 
@@ -136,3 +136,17 @@
 /obj/item/weapon/reagent_containers/glass/bottle/pestkiller/New()
 	..()
 	reagents.add_reagent("pestkiller", 50)
+
+
+
+/obj/item/weapon/rsp  //Probably doesn't work
+	name = "\improper Rapid-Seed-Producer (RSP)"
+	desc = "A device used to rapidly deploy seeds."
+	icon = 'icons/obj/items.dmi'
+	icon_state = "rcd"
+	opacity = 0
+	density = 0
+	anchored = 0.0
+	var/matter = 0
+	var/mode = 1
+	w_class = 3.0

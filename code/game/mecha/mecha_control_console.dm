@@ -1,8 +1,8 @@
 /obj/machinery/computer/mecha
 	name = "exosuit control console"
 	desc = "Used to remotely locate or lockdown exosuits."
-	icon = 'icons/obj/computer.dmi'
-	icon_state = "mecha"
+	icon_screen = "mecha"
+	icon_keyboard = "tech_key"
 	req_access = list(access_robotics)
 	circuit = "/obj/item/weapon/circuitboard/mecha_control"
 	var/list/located = list()
@@ -38,19 +38,19 @@
 /obj/machinery/computer/mecha/Topic(href, href_list)
 	if(..())
 		return
-	var/datum/topic_input/filter = new /datum/topic_input(href,href_list)
+	var/datum/topic_input/entry = new /datum/topic_input(href,href_list)
 	if(href_list["send_message"])
-		var/obj/item/mecha_parts/mecha_tracking/MT = filter.getObj("send_message")
+		var/obj/item/mecha_parts/mecha_tracking/MT = entry.getObj("send_message")
 		var/message = stripped_input(usr,"Input message","Transmit message")
 		var/obj/mecha/M = MT.in_mecha()
 		if(trim(message) && M)
 			M.occupant_message(message)
 		return
 	if(href_list["shock"])
-		var/obj/item/mecha_parts/mecha_tracking/MT = filter.getObj("shock")
+		var/obj/item/mecha_parts/mecha_tracking/MT = entry.getObj("shock")
 		MT.shock()
 	if(href_list["get_log"])
-		var/obj/item/mecha_parts/mecha_tracking/MT = filter.getObj("get_log")
+		var/obj/item/mecha_parts/mecha_tracking/MT = entry.getObj("get_log")
 		stored_data = MT.get_mecha_log()
 		screen = 1
 	if(href_list["return"])
@@ -59,14 +59,6 @@
 	return
 
 
-/obj/machinery/computer/mecha/update_icon()
-	if(stat & NOPOWER)
-		icon_state = "mecha0"
-		return
-	if(stat & BROKEN)
-		icon_state = "mechab"
-		return
-	icon_state = "mecha"
 
 /obj/item/mecha_parts/mecha_tracking
 	name = "exosuit tracking beacon"

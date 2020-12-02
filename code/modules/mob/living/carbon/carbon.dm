@@ -1,3 +1,12 @@
+/mob/living/carbon/New()
+	if(organsystem)
+		organsystem.set_owner(src)
+		for(var/datum/organ/internal/OR in get_all_internal_organs())
+			if(OR.exists())
+				var/obj/item/organ/internal/OI = OR.organitem
+				OI.on_insertion()
+	..()
+
 /mob/living/carbon/prepare_huds()
 	..()
 	prepare_data_huds()
@@ -13,8 +22,6 @@
 	med_hud_set_status()
 
 /mob/living/carbon/Destroy()
-	for(var/atom/movable/guts in internal_organs)
-		qdel(guts)
 	for(var/atom/movable/food in stomach_contents)
 		qdel(food)
 	remove_from_all_data_huds()
@@ -46,7 +53,7 @@
 				var/d = rand(round(I.force / 4), I.force)
 				if(istype(src, /mob/living/carbon/human))
 					var/mob/living/carbon/human/H = src
-					var/organ = H.get_organ("chest")
+					var/organ = H.get_organitem("chest")
 					if (istype(organ, /obj/item/organ/limb))
 						var/obj/item/organ/limb/temp = organ
 						if(temp.take_damage(d, 0))
@@ -73,6 +80,12 @@
 			stomach_contents.Remove(M)
 		M.loc = loc
 		visible_message("<span class='danger'>[M] bursts out of [src]!</span>")
+	if(organsystem)
+		for(var/datum/organ/limb/limbdata in get_limbs())
+			if(limbdata.name != "head")	//Since gibbing usually destroys the brain
+				var/obj/item/organ/limb/O = limbdata.dismember(ORGAN_DESTROYED)
+				if(O)
+					O.streak()
 	. = ..()
 
 
@@ -160,6 +173,8 @@
 /mob/living/carbon/flash_eyes(intensity = 1, override_blindness_check = 0)
 	var/damage = intensity - check_eye_prot()
 	if(..()) // we've been flashed
+		if(weakeyes)
+			Stun(2)
 		switch(damage)
 			if(1)
 				src << "<span class='warning'>Your eyes sting a little.</span>"
@@ -196,11 +211,6 @@
 /mob/living/carbon/proc/tintcheck()
 	return 0
 
-/mob/living/carbon/proc/eyecheck()
-	var/obj/item/cybernetic_implant/eyes/EFP = locate() in src
-	if(EFP)
-		return EFP.flash_protect
-	return 0
 
 /mob/living/carbon/clean_blood()
 	if(ishuman(src))
@@ -252,7 +262,7 @@
 
 	if(istype(item, /obj/item/weapon/grab))
 		var/obj/item/weapon/grab/G = item
-		item = G.throw() //throw the person instead of the grab
+		item = G.get_mob_if_throwable() //throw the person instead of the grab
 		qdel(G)			//We delete the grab, as it needs to stay around until it's returned.
 		if(ismob(item))
 			var/turf/start_T = get_turf(loc) //Get the start and target tile for the descriptors
@@ -281,9 +291,11 @@
 		item.throw_at(target, item.throw_range, item.throw_speed)
 
 /mob/living/carbon/can_use_hands()
-	if(handcuffed)
-		return 0
 	if(buckled && ! istype(buckled, /obj/structure/stool/bed/chair)) // buckling does not restrict hands
+		return 0
+	if(handcuffed)
+		if(organsystem)
+			return (exists("l_arm") && exists("r_arm")) //Handcuffs only work if you have 2 hands.
 		return 0
 	return 1
 
@@ -317,32 +329,6 @@
 		legcuffed = null
 		update_inv_legcuffed(0)
 
-
-/mob/living/carbon/proc/get_temperature(var/datum/gas_mixture/environment)
-	var/loc_temp = T0C
-	if(istype(loc, /obj/mecha))
-		var/obj/mecha/M = loc
-		loc_temp =  M.return_temperature()
-
-	else if(istype(loc, /obj/structure/transit_tube_pod))
-		loc_temp = environment.temperature
-
-	else if(istype(get_turf(src), /turf/space))
-		var/turf/heat_turf = get_turf(src)
-		loc_temp = heat_turf.temperature
-
-	else if(istype(loc, /obj/machinery/atmospherics/unary/cryo_cell))
-		var/obj/machinery/atmospherics/unary/cryo_cell/C = loc
-
-		if(C.air_contents.total_moles() < 10)
-			loc_temp = environment.temperature
-		else
-			loc_temp = C.air_contents.temperature
-
-	else
-		loc_temp = environment.temperature
-
-	return loc_temp
 
 
 /mob/living/carbon/show_inv(mob/user)
@@ -514,3 +500,202 @@ var/const/GALOSHES_DONT_HELP = 8
 	else
 		src << "You do not have enough chemicals stored to reproduce."
 		return
+
+
+/mob/living/carbon/proc/is_mouth_covered(head_only = 0, mask_only = 0)		//fuck
+	if( (!mask_only && head && (head.body_parts_covered & MOUTH)) || (!head_only && wear_mask && (wear_mask.body_parts_covered & MOUTH)) )
+		return 1
+
+
+
+/mob/living/carbon/proc/spin(spintime, speed)
+	spawn()
+		var/D = dir
+		while(spintime >= speed)
+			sleep(speed)
+			switch(D)
+				if(NORTH)
+					D = EAST
+				if(SOUTH)
+					D = WEST
+				if(EAST)
+					D = SOUTH
+				if(WEST)
+					D = NORTH
+			dir = D
+			spintime -= speed
+	return
+
+/mob/living/carbon/resist_buckle()
+	if(restrained())
+		changeNext_move(CLICK_CD_BREAKOUT)
+		last_special = world.time + CLICK_CD_BREAKOUT
+		visible_message("<span class='warning'>[src] attempts to unbuckle themself!</span>", \
+					"<span class='notice'>You attempt to unbuckle yourself... (This will take around one minute and you need to stay still.)</span>")
+		if(do_after(src, 600, needhand = 0, target = src))
+			if(!buckled)
+				return
+			buckled.user_unbuckle_mob(src,src)
+		else
+			if(src && buckled)
+				src << "<span class='warning'>You fail to unbuckle yourself!</span>"
+	else
+		buckled.user_unbuckle_mob(src,src)
+
+/mob/living/carbon/resist_fire()
+	fire_stacks -= 5
+	Weaken(3,1)
+	spin(32,2)
+	visible_message("<span class='danger'>[src] rolls on the floor, trying to put themselves out!</span>", \
+		"<span class='notice'>You stop, drop, and roll!</span>")
+	sleep(30)
+	if(fire_stacks <= 0)
+		visible_message("<span class='danger'>[src] has successfully extinguished themselves!</span>", \
+			"<span class='notice'>You extinguish yourself.</span>")
+		ExtinguishMob()
+	return
+
+/mob/living/carbon/resist_restraints()
+	var/obj/item/I = null
+	if(handcuffed)
+		I = handcuffed
+	else if(legcuffed)
+		I = legcuffed
+	if(I)
+		changeNext_move(CLICK_CD_BREAKOUT)
+		last_special = world.time + CLICK_CD_BREAKOUT
+		cuff_resist(I)
+
+
+/mob/living/carbon/cuff_resist(obj/item/I, var/breakouttime = 600, cuff_break = 0)
+	if(istype(I, /obj/item/weapon/restraints))
+		var/obj/item/weapon/restraints/R = I
+		breakouttime = R.breakouttime
+	var/displaytime = breakouttime / 600
+	if(!cuff_break)
+		visible_message("<span class='warning'>[src] attempts to remove [I]!</span>")
+		src << "<span class='notice'>You attempt to remove [I]... (This will take around [displaytime] minutes and you need to stand still.)</span>"
+		if(do_after(src, breakouttime, 10, 0, target = src))
+			if(I.loc != src || buckled)
+				return
+			visible_message("<span class='danger'>[src] manages to remove [I]!</span>")
+			src << "<span class='notice'>You successfully remove [I].</span>"
+
+			if(handcuffed)
+				handcuffed.loc = loc
+				handcuffed.dropped(src)
+				handcuffed = null
+				if(buckled && buckled.buckle_requires_restraints)
+					buckled.unbuckle_mob()
+				update_inv_handcuffed(0)
+				return
+			if(legcuffed)
+				legcuffed.loc = loc
+				legcuffed = null
+				update_inv_legcuffed(0)
+		else
+			src << "<span class='warning'>You fail to remove [I]!</span>"
+
+	else
+		breakouttime = 50
+		visible_message("<span class='warning'>[src] is trying to break [I]!</span>")
+		src << "<span class='notice'>You attempt to break [I]... (This will take around 5 seconds and you need to stand still.)</span>"
+		if(do_after(src, breakouttime, needhand = 0, target = src))
+			if(!I.loc || buckled)
+				return
+			visible_message("<span class='danger'>[src] manages to break [I]!</span>")
+			src << "<span class='notice'>You successfully break [I].</span>"
+			qdel(I)
+
+			if(handcuffed)
+				handcuffed = null
+				update_inv_handcuffed(0)
+				return
+			else
+				legcuffed = null
+				update_inv_legcuffed(0)
+		else
+			src << "<span class='warning'>You fail to break [I]!</span>"
+
+
+/mob/living/carbon/get_standard_pixel_y_offset(lying = 0)
+	if(lying)
+		return -6
+	else
+		return initial(pixel_y)
+
+
+
+/mob/living/carbon/emp_act(severity)
+	for(var/datum/organ/internal/O in get_all_internal_organs())
+		if(O.exists())
+			O.organitem.emp_act(severity)
+	..()
+
+/mob/living/carbon/check_eye_prot()
+	var/number = ..()
+	var/datum/organ/internal/eyes/EY = get_organdatum("eyes")
+	if(EY && EY.exists())
+		var/obj/item/organ/internal/eyes/EFP = EY.organitem
+		number += EFP.flash_protect
+	return number
+
+/mob/living/carbon/proc/uncuff()
+	if (handcuffed)
+		var/obj/item/weapon/W = handcuffed
+		handcuffed = null
+		if (buckled && buckled.buckle_requires_restraints)
+			buckled.unbuckle_mob()
+		update_inv_handcuffed()
+		if (client)
+			client.screen -= W
+		if (W)
+			W.loc = loc
+			W.dropped(src)
+			if (W)
+				W.layer = initial(W.layer)
+	if (legcuffed)
+		var/obj/item/weapon/W = legcuffed
+		legcuffed = null
+		update_inv_legcuffed()
+		if (client)
+			client.screen -= W
+		if (W)
+			W.loc = loc
+			W.dropped(src)
+			if (W)
+				W.layer = initial(W.layer)
+
+
+/mob/living/carbon/proc/AddAbility(obj/effect/proc_holder/alien/A)
+	abilities.Add(A)
+	A.on_gain(src)
+	if(A.has_action)
+		if(!A.action)
+			A.action = new/datum/action/spell_action/alien
+			A.action.target = A
+			A.action.name = A.name
+			A.action.button_icon = A.action_icon
+			A.action.button_icon_state = A.action_icon_state
+			A.action.background_icon_state = A.action_background_icon_state
+		A.action.Grant(src)
+	sortInsert(abilities, /proc/cmp_abilities_cost, 0)
+
+/mob/living/carbon/proc/RemoveAbility(obj/effect/proc_holder/alien/A)
+	abilities.Remove(A)
+	A.on_lose(src)
+	if(A.action)
+		A.action.Remove(src)
+
+/mob/living/carbon/proc/add_abilities_to_panel()
+	for(var/obj/effect/proc_holder/alien/A in abilities)
+		statpanel("[A.panel]",A.plasma_cost > 0?"([A.plasma_cost])":"",A)
+
+/mob/living/carbon/Stat()
+	..()
+	if(statpanel("Status"))
+		var/datum/organ/internal/alien/plasmavessel/vessel = get_organdatum("plasmavessel")
+		if(vessel && vessel.exists())
+			var/obj/item/organ/internal/alien/plasmavessel/PV = vessel.organitem
+			stat(null, "Plasma Stored: [PV.storedPlasma]/[PV.max_plasma]")
+	add_abilities_to_panel()

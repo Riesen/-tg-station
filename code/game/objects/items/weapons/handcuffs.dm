@@ -1,3 +1,10 @@
+
+/obj/item/weapon/restraints
+	var/breakouttime = 600
+	var/cufftime = 30 //allows configuration of the time to cuff someone
+
+
+
 //Handcuffs
 
 /obj/item/weapon/restraints/handcuffs
@@ -12,9 +19,9 @@
 	w_class = 2.0
 	throw_speed = 3
 	throw_range = 5
-	m_amt = 500
+	cufftime = 20  //Slightly better than cabel cuffs
+	materials = list(MAT_METAL=500)
 	origin_tech = "materials=1"
-	var/breakouttime = 600 //Deciseconds = 60s = 1 minute
 	var/cuffsound = 'sound/weapons/handcuffs.ogg'
 	var/trashtype = null //for disposable cuffs
 
@@ -29,7 +36,7 @@
 							"<span class='userdanger'>[user] is trying to put [src.name] on [C]!</span>")
 
 		playsound(loc, cuffsound, 30, 1, -2)
-		if(do_mob(user, C, 30))
+		if(do_mob(user, C, cufftime))
 			apply_cuffs(C,user)
 			user << "<span class='notice'>You handcuff [C].</span>"
 			if(istype(src, /obj/item/weapon/restraints/handcuffs/cable))
@@ -107,7 +114,7 @@
 			playsound(loc, 'sound/weapons/cablecuff.ogg', 30, 1, -2)
 			C.visible_message("<span class='danger'>[user] is trying to put zipties on [C]!</span>", \
 								"<span class='userdanger'>[user] is trying to put zipties on [C]!</span>")
-			if(do_mob(user, C, 30))
+			if(do_mob(user, C, cufftime))
 				if(!C.handcuffed)
 					C.handcuffed = new /obj/item/weapon/restraints/handcuffs/cable/zipties/used(C)
 					C.update_inv_handcuffed(0)
@@ -121,6 +128,7 @@
 	desc = "Plastic, disposable zipties that can be used to restrain temporarily but are destroyed after use."
 	icon_state = "cuff_white"
 	breakouttime = 450 //Deciseconds = 45s
+	cufftime = 15 //slithgtly faster than normal cuffs
 	trashtype = /obj/item/weapon/restraints/handcuffs/cable/zipties/used
 
 /obj/item/weapon/restraints/handcuffs/cable/zipties/used
@@ -144,12 +152,11 @@
 	w_class = 3.0
 	origin_tech = "materials=1"
 	slowdown = 7
-	var/breakouttime = 300	//Deciseconds = 30s = 0.5 minute
+	breakouttime = 300	//Deciseconds = 30s = 0.5 minute
 
 /obj/item/weapon/restraints/legcuffs/beartrap
 	name = "bear trap"
 	throw_speed = 1
-	throw_range = 1
 	icon_state = "beartrap0"
 	desc = "A trap used to catch bears and other legged creatures."
 	var/armed = 0
@@ -180,9 +187,9 @@
 			if(ishuman(AM))
 				var/mob/living/carbon/H = AM
 				if(H.lying)
-					H.apply_damage(20,BRUTE,"chest")
+					H.apply_damage(50,BRUTE,"chest")
 				else
-					H.apply_damage(20,BRUTE,(pick("l_leg", "r_leg")))
+					H.apply_damage(50,BRUTE,(pick("l_leg", "r_leg")))
 				if(!H.legcuffed) //beartrap can't cuff you leg if there's already a beartrap or legcuffs.
 					H.legcuffed = src
 					src.loc = H
@@ -190,5 +197,5 @@
 					feedback_add_details("handcuffs","B") //Yes, I know they're legcuffs. Don't change this, no need for an extra variable. The "B" is used to tell them apart.
 
 			else
-				L.apply_damage(20,BRUTE)
+				L.apply_damage(50,BRUTE)
 	..()

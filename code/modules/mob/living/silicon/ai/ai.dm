@@ -134,6 +134,7 @@ var/list/ai_list = list()
 /mob/living/silicon/ai/Destroy()
 	ai_list -= src
 	shuttle_caller_list -= src
+	eyeobj = null
 	SSshuttle.autoEvac()
 	..()
 
@@ -229,6 +230,8 @@ var/list/ai_list = list()
 			for(var/mob/living/silicon/robot/R in connected_robots)
 				borg_area = get_area(R)
 				//Name, Health, Battery, Module, Area, and Status! Everything an AI wants to know about its borgies!
+				if(!R)
+					continue
 				stat(null, text("[R.name] | S.Integrity: [R.health]% | Cell: [R.cell ? "[R.cell.charge]/[R.cell.maxcharge]" : "Empty"] | \
  Module: [R.designation] | Loc: [borg_area.name] | Status: [R.stat || !R.client ? "OFFLINE" : "Normal"]"))
 		else
@@ -287,7 +290,7 @@ var/list/ai_list = list()
 			usr << "Wireless control is disabled!"
 			return
 
-	var/reason = input(src, "What is the nature of your emergency? ([CALL_SHUTTLE_REASON_LENGTH] characters required.)", "Confirm Shuttle Call") as text
+	var/reason = stripped_input(src, "What is the nature of your emergency? ([CALL_SHUTTLE_REASON_LENGTH] characters required.)", "Confirm Shuttle Call")
 
 	if(trim(reason))
 		SSshuttle.requestEvac(src, reason)
@@ -724,7 +727,7 @@ var/list/ai_list = list()
 		src << "Camera lights deactivated."
 
 		for (var/obj/machinery/camera/C in lit_cameras)
-			C.SetLuminosity(0)
+			C.set_light(0)
 			lit_cameras = list()
 
 		return
@@ -750,10 +753,10 @@ var/list/ai_list = list()
 	remove = lit_cameras - visible
 
 	for (var/obj/machinery/camera/C in remove)
-		C.SetLuminosity(0)
+		C.set_light(0)
 		lit_cameras -= C
 	for (var/obj/machinery/camera/C in add)
-		C.SetLuminosity(AI_CAMERA_LUMINOSITY)
+		C.set_light(AI_CAMERA_LUMINOSITY)
 		lit_cameras |= C
 
 /mob/living/silicon/ai/proc/control_integrated_radio()
@@ -779,3 +782,5 @@ var/list/ai_list = list()
 /mob/living/silicon/ai/attack_slime(mob/living/carbon/slime/user)
 	return
 
+/mob/living/silicon/ai/get_multitool(var/active_only=0)
+	return aiMulti

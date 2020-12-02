@@ -1,7 +1,8 @@
 /obj/machinery/computer/HolodeckControl
 	name = "holodeck control console"
 	desc = "A computer used to control a nearby holodeck."
-	icon_state = "holocontrol"
+	icon_screen = "holocontrol"
+	icon_keyboard = "tech_key"
 	var/area/linkedholodeck = null
 	var/area/target = null
 	var/active = 0
@@ -279,12 +280,12 @@
 	return
 	// HOLOFLOOR DOES NOT GIVE A FUCK
 
-/turf/simulated/floor/fancy/grass/holo
+/turf/simulated/floor/grass/holo
 	thermal_conductivity = 0
 	gender = PLURAL
 	name = "lush grass"
 
-/turf/simulated/floor/fancy/grass/holo/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
+/turf/simulated/floor/grass/holo/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	return
 	// HOLOGRASS DOES NOT GIVE A FUCK
 
@@ -390,7 +391,7 @@
 
 //BASKETBALL OBJECTS
 
-/obj/item/weapon/beach_ball/holoball
+/obj/item/toy/beach_ball/holoball
 	name = "basketball"
 	icon = 'icons/obj/basketball.dmi'
 	icon_state = "basketball"
@@ -398,13 +399,13 @@
 	desc = "Here's your chance, do your dance at the Space Jam."
 	w_class = 4 //Stops people from hiding it in their bags/pockets
 
-/obj/item/weapon/beach_ball/holoball/dodgeball
+/obj/item/toy/beach_ball/holoball/dodgeball
 	name = "dodgeball"
 	icon_state = "dodgeball"
 	item_state = "dodgeball"
 	desc = "Used for playing the most violent and degrading of childhood games."
 
-/obj/item/weapon/beach_ball/holoball/dodgeball/throw_impact(atom/hit_atom)
+/obj/item/toy/beach_ball/holoball/dodgeball/throw_impact(atom/hit_atom)
 	..()
 	if((ishuman(hit_atom)))
 		var/mob/living/carbon/M = hit_atom
@@ -421,7 +422,7 @@
 	icon_state = "hoop"
 	anchored = 1
 	density = 1
-	throwpass = 1
+	pass_flags = LETPASSTHROW
 
 /obj/structure/holohoop/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if (istype(W, /obj/item/weapon/grab) && get_dist(src,user)<2)

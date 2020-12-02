@@ -13,9 +13,9 @@
 		visible_message("<span class='danger'>[user] has hit [src] with [W].</span>")
 
 /mob/living/attackby(obj/item/I, mob/user, params)
-	if(ismommi(user))
-		var/mob/living/silicon/robot/mommi/R = user
-		if(!R.can_interfere(src))	//MoMMI proc
+	if(issilicon(user))
+		var/mob/living/silicon/R = user
+		if(!R.can_interfere(src))	//Silicon proc
 			user << "<span class ='warning'>Your laws prevent you from doing this</span>"
 			return
 	user.changeNext_move(CLICK_CD_MELEE)
@@ -51,7 +51,7 @@
 	return
 
 
-obj/item/proc/get_clamped_volume()
+/obj/item/proc/get_clamped_volume()
 	if(src.force && src.w_class)
 		return Clamp((src.force + src.w_class) * 4, 30, 100)// Add the item's force to its weight class and multiply by 4, then clamp the value between 30 and 100
 	else if(!src.force && src.w_class)
@@ -75,6 +75,11 @@ obj/item/proc/get_clamped_volume()
 	//spawn(1800)            // this wont work right
 	//	M.lastattacker = null
 	/////////////////////////
+	if(!def_zone)
+		def_zone = user.zone_sel.selecting
+		if(!def_zone)
+			def_zone = ran_zone(def_zone)
+			def_zone = check_zone(def_zone)
 	M.attacked_by(src, user, def_zone)
 	add_fingerprint(user)
 	return 1

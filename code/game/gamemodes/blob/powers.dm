@@ -192,7 +192,7 @@
 
 	var/mob/living/simple_animal/hostile/blob/blobbernaut/blobber = new /mob/living/simple_animal/hostile/blob/blobbernaut (get_turf(B))
 	if(blobber)
-		B.Destroy()
+		qdel(B)
 	blobber.color = blob_reagent_datum.color
 	blobber.overmind = src
 	blob_mobs.Add(blobber)
@@ -243,7 +243,7 @@
 		src << "Unable to remove this blob."
 		return
 
-	B.Destroy()
+	qdel(B)
 	return
 
 
@@ -255,30 +255,28 @@
 	var/turf/T = get_turf(src)
 	expand_blob(T)
 
-/mob/camera/blob/proc/expand_blob(var/turf/T)
-	if(!T)
-		return
-
+/mob/camera/blob/proc/expand_blob(turf/T)
 	if(!can_attack())
 		return
 	var/obj/effect/blob/B = locate() in T
 	if(B)
 		src << "There is a blob here!"
 		return
-
 	var/obj/effect/blob/OB = locate() in circlerange(T, 1)
 	if(!OB)
 		src << "There is no blob adjacent to you."
 		return
-
 	if(!can_buy(5))
 		return
 	last_attack = world.time
 	OB.expand(T, 0, blob_reagent_datum.color)
 	for(var/mob/living/L in T)
-		blob_reagent_datum.reaction_mob(L, TOUCH)
+		if("blob" in L.faction) //no friendly fire
+			continue
+		var/mob_protection = L.get_permeability_protection()
+		blob_reagent_datum.reaction_mob(L, VAPOR, 25, 1, mob_protection)
+		blob_reagent_datum.send_message(L)
 	OB.color = blob_reagent_datum.color
-	return
 
 
 /mob/camera/blob/verb/rally_spores_power()
@@ -307,44 +305,32 @@
 	return
 
 
+
+
 /mob/camera/blob/verb/split_consciousness()
 	set category = "Blob"
 	set name = "Split consciousness (100) (One use)"
 	set desc = "Expend resources to attempt to produce another sentient overmind"
 
+	if(!blob_nodes || !blob_nodes.len)
+		src << "<span class='warning'>A node is required to birth your offspring...</span>"
+		return
+	var/obj/effect/blob/node/N = locate(/obj/effect/blob) in blob_nodes
+	if(!N)
+		src << "<span class='warning'>A node is required to birth your offspring...</span>"
+		return
 
-	var/client/C = null
-	var/list/candidates = get_candidates(BE_BLOB)
-	if(candidates.len)
-		C = pick(candidates)
+	if(!can_buy(100))
+		return
 
-	if(C)
-		if(!blob_nodes || !blob_nodes.len)
-			src << "<span class='warning'>A node is required to birth your offspring...</span>"
-			return
-		var/obj/effect/blob/node/N = locate(/obj/effect/blob) in blob_nodes
-		if(!N)
-			src << "<span class='warning'>A node is required to birth your offspring...</span>"
-			return
+	verbs -= /mob/camera/blob/verb/split_consciousness //we've used our split_consciousness
+	new /obj/effect/blob/core/ (get_turf(N), 200, null, blob_core.point_rate, "offspring")
+	qdel(N)
 
-		if(!can_buy(100))
-			return
+	if(ticker && ticker.mode.name == "blob")
+		var/datum/game_mode/blob/BL = ticker.mode
+		BL.blobwincount = initial(BL.blobwincount) * 2
 
-		verbs -= /mob/camera/blob/verb/split_consciousness //we've used our split_consciousness
-		var/obj/effect/blob/core/new_core = new(get_turf(N), 200, C, blob_core.point_rate)
-		qdel(N)
-		var/mob/camera/blob/B = new(get_turf(new_core))
-		B.verbs -= /mob/camera/blob/verb/split_consciousness // this was a bad idea to allow you were right remie
-		B.key = C.key
-		B.blob_core = new_core
-		new_core.overmind = B
-
-		if(ticker && ticker.mode.name == "blob")
-			var/datum/game_mode/blob/BL = ticker.mode
-			BL.blobwincount = initial(BL.blobwincount) * 2
-
-	else
-		src << "<span class='warning'>You weren't able to split your consciousness at this time...</span>"
 
 /mob/camera/blob/verb/blob_broadcast()
 	set category = "Blob"

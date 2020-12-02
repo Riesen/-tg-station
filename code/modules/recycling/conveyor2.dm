@@ -16,6 +16,7 @@
 	var/list/affecting	// the list of all items that will be moved this ptick
 	var/id = ""			// the control ID	- must match controller ID
 	var/verted = 1		// set to -1 to have the conveyour belt be inverted, so you can use the other corner icons
+	speed_process = 1
 
 /obj/machinery/conveyor/centcom_auto
 	id = "round_end_belt"
@@ -204,7 +205,7 @@
 
 	spawn(5)		// allow map load
 		conveyors = list()
-		for(var/obj/machinery/conveyor/C in world)
+		for(var/obj/machinery/conveyor/C in machines)
 			if(C.id == id)
 				conveyors += C
 
@@ -252,7 +253,7 @@
 	update()
 
 	// find any switches with same id as this one, and set their positions to match us
-	for(var/obj/machinery/conveyor_switch/S in world)
+	for(var/obj/machinery/conveyor_switch/S in machines)
 		if(S.id == src.id)
 			S.position = position
 			S.update()
